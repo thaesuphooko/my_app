@@ -1,0 +1,5 @@
+RewriteEngine On
+# URL ကနေ index.html ကို အလိုလို ဖြုတ်ပေးမယ်
+RewriteCond %{THE_REQUEST} /index\.html [NC]
+RewriteRule ^(.*)index\.html$ /$1 [L,R=301,NC]
+
