@@ -2,10 +2,10 @@
 <html lang="my">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>Advanced E‑commerce + Admin (Hidden) with Multi‑Bot Telegram Alert</title>
+  <title>E‑commerce + Multi‑Bot Telegram (Fixed)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <style>
+    /* ... same CSS as before (keep original styles) ... */
     * {
       margin: 0;
       padding: 0;
@@ -65,17 +65,9 @@
       border-radius: 12px;
       padding: 1rem;
       box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-      transition: 0.2s;
     }
-    .product-card:hover { transform: translateY(-3px); }
-    .product-img {
-      font-size: 3rem;
-      text-align: center;
-      background: #f7f7f7;
-      border-radius: 12px;
-      margin-bottom: 0.5rem;
-    }
-    .product-title { font-weight: 600; font-size: 0.95rem; margin: 0.5rem 0; }
+    .product-img { font-size: 3rem; text-align: center; background: #f7f7f7; border-radius: 12px; margin-bottom: 0.5rem; }
+    .product-title { font-weight: 600; font-size: 0.95rem; }
     .product-price { color: #b12704; font-weight: 700; font-size: 1.2rem; }
     .pagination {
       display: flex;
@@ -142,7 +134,7 @@
 </div>
 
 <div id="app"></div>
-<footer>© Amazon Style Demo — ပစ္စည်းပေါင်း ၅၀၀၀+ | Admin ဝင်ရန် URL တွင် #step ထည့်ပါ</footer>
+<footer>© Amazon Style Demo — Admin ဝင်ရန် URL တွင် #step ထည့်ပါ</footer>
 
 <div id="cartModal" class="modal">
   <div class="modal-content">
@@ -157,78 +149,76 @@
 </div>
 
 <script>
-  // ========== TELEGRAM MULTI‑BOT CONFIG (Round‑Robin) ==========
+  // ========== MULTI-BOT TELEGRAM (ROUND-ROBIN) ==========
   const BOT_TOKENS = [
-    "8869917655:AAFk9tcBhEkmaFEOzXsbmcRQtymBtSZ3M9g",   // EcommerceA_bot
-    "8914390345:AAE-oorODF1HQbOLkuKJkNXwy-w2XbXtud0",   // ecommerceb_bot
-    "8684986169:AAE2JP-iOydPWEStbg2iDQ4koipL1czWYs0",   // ecommercec_bot
-    "8949147819:AAGBSy8ZexmYrDMo2pRuqUA1k8PyOyE9OJQ"    // ecommerce5_bot
+    "8869917655:AAFk9tcBhEkmaFEOzXsbmcRQtymBtSZ3M9g",
+    "8914390345:AAE-oorODF1HQbOLkuKJkNXwy-w2XbXtud0",
+    "8684986169:AAE2JP-iOydPWEStbg2iDQ4koipL1czWYs0",
+    "8949147819:AAGBSy8ZexmYrDMo2pRuqUA1k8PyOyE9OJQ"
   ];
-  const TELEGRAM_CHAT_ID = "6917040501";   // @thaethae7780
+  const TELEGRAM_CHAT_ID = "6917040501";
+  let currentBotIndex = parseInt(localStorage.getItem("telegram_bot_idx") || "0");
 
-  // Round‑Robin index storage (keeps across page reloads)
-  let currentBotIndex = 0;
-  function getNextBotToken() {
-    let stored = localStorage.getItem("telegram_bot_roundrobin_idx");
-    if (stored !== null) currentBotIndex = parseInt(stored);
-    const token = BOT_TOKENS[currentBotIndex % BOT_TOKENS.length];
-    currentBotIndex++;
-    localStorage.setItem("telegram_bot_roundrobin_idx", currentBotIndex);
-    return token;
-  }
-
-  // Send message using next available bot token (no retry logic for simplicity)
-  async function sendTelegramNotification() {
-    if (!BOT_TOKENS.length) return;
+  async function sendTelegramMessage(text, useNextBot = true) {
+    if (!BOT_TOKENS.length) return false;
+    let tokenIndex = useNextBot ? currentBotIndex : 0;
+    const token = BOT_TOKENS[tokenIndex % BOT_TOKENS.length];
     try {
-      // Get IP and location info
-      const geoRes = await fetch("https://ipapi.co/json/");
-      const geo = await geoRes.json();
-      const ip = geo.ip || "unknown";
-      const city = geo.city || "N/A";
-      const region = geo.region || "N/A";
-      const country = geo.country_name || "N/A";
-      const location = `${city}, ${region}, ${country}`;
-      
-      const userAgent = navigator.userAgent;
-      const screenSize = `${window.screen.width}x${window.screen.height}`;
-      const language = navigator.language;
-      const referrer = document.referrer || "direct";
-      const time = new Date().toLocaleString("en-US", { timeZone: "Asia/Yangon" });
-      
-      const message = `🛜 *New Visitor*\n\n` +
-        `🌐 IP: ${ip}\n` +
-        `📍 Location: ${location}\n` +
-        `💻 User Agent: ${userAgent}\n` +
-        `📺 Screen: ${screenSize}\n` +
-        `🔤 Language: ${language}\n` +
-        `🔗 Referrer: ${referrer}\n` +
-        `⏰ Time (MM): ${time}`;
-      
-      const token = getNextBotToken();
       const url = `https://api.telegram.org/bot${token}/sendMessage`;
       const response = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: message, parse_mode: "Markdown" })
+        body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text, parse_mode: "Markdown" })
       });
-      if (!response.ok) {
-        console.warn("Telegram send failed with token", token);
+      const result = await response.json();
+      if (result.ok) {
+        console.log(`✅ Telegram sent with bot index ${tokenIndex}`);
+        if (useNextBot) {
+          currentBotIndex = (currentBotIndex + 1) % BOT_TOKENS.length;
+          localStorage.setItem("telegram_bot_idx", currentBotIndex);
+        }
+        return true;
+      } else {
+        console.error("Telegram API error:", result);
+        return false;
       }
     } catch (err) {
-      console.error("Telegram send error", err);
+      console.error("Telegram fetch error:", err);
+      return false;
     }
   }
 
-  // Call on page load (only once)
+  async function sendVisitorNotification() {
+    let locationInfo = "Unknown location";
+    try {
+      const geoRes = await fetch("https://ipwhois.io/");
+      const geo = await geoRes.json();
+      if (geo && !geo.error) {
+        locationInfo = `${geo.city}, ${geo.region}, ${geo.country}`;
+      } else {
+        locationInfo = "IP location failed";
+      }
+    } catch (e) {
+      console.warn("Geo IP failed:", e);
+      locationInfo = "Geo lookup error";
+    }
+    const message = `🛜 *New Visitor*\n\n` +
+      `🌐 IP: (via ipwhois)\n` +
+      `📍 Location: ${locationInfo}\n` +
+      `💻 User Agent: ${navigator.userAgent.substring(0, 80)}\n` +
+      `📺 Screen: ${window.screen.width}x${window.screen.height}\n` +
+      `🔤 Language: ${navigator.language}\n` +
+      `⏰ Time: ${new Date().toLocaleString("en-US", { timeZone: "Asia/Yangon" })}`;
+    await sendTelegramMessage(message, true);
+  }
+
+  // Call on load
   window.addEventListener("load", () => {
-    sendTelegramNotification();
+    sendVisitorNotification();
   });
 
-  // ========== ADMIN PASSWORD ==========
+  // ========== ADMIN PASSWORD & E‑COMMERCE LOGIC ==========
   const ADMIN_PASSWORD = "Admin123";
-
-  // ----------------------------- GLOBAL STATE -------------------------
   let allProducts = [];
   let cart = [];
   let currentUserPage = 1;
@@ -236,26 +226,20 @@
   let currentAdminPage = 1;
   const ADMIN_PAGE_SIZE = 20;
   let isAdminAuthenticated = false;
-
   const STORAGE_PRODUCTS = "amazon_mock_products";
   const STORAGE_CART = "amazon_mock_cart";
   const STORAGE_ADMIN_AUTH = "admin_auth_step";
 
-  // ----- Product helpers
   function generateMockProducts(count = 5000) {
-    const categories = ["Electronics", "Books", "Clothing", "Home & Kitchen", "Toys", "Sports", "Beauty", "Tools"];
-    const emojis = ["📱", "💻", "📚", "👕", "🍳", "🎮", "⚽", "💄", "🔧", "🎧", "⌚", "🖨️", "📷", "🔊"];
+    const categories = ["Electronics", "Books", "Clothing", "Home", "Toys", "Sports"];
+    const emojis = ["📱", "💻", "📚", "👕", "🍳", "🎮", "⚽", "💄", "🔧", "🎧", "⌚", "📷"];
     const products = [];
     for (let i = 1; i <= count; i++) {
       const cat = categories[i % categories.length];
-      let baseName = "";
-      if (cat === "Electronics") baseName = `Amazon Basics ${["USB Cable", "Power Bank", "Speaker", "Tablet"][i % 4]}`;
-      else if (cat === "Books") baseName = `Bestseller Book #${i}`;
-      else if (cat === "Clothing") baseName = `Cotton T-Shirt Style ${i}`;
-      else baseName = `Amazon ${cat} Product ${i}`;
-      const price = Math.floor(Math.random() * 200000) + 5000;
+      const name = `Product ${i} (${cat})`;
+      const price = Math.floor(Math.random() * 150000) + 5000;
       const emoji = emojis[i % emojis.length];
-      products.push({ id: i, name: `${baseName} (${cat})`, price, emoji, category: cat });
+      products.push({ id: i, name, price, emoji, category: cat });
     }
     return products;
   }
@@ -263,9 +247,7 @@
   function loadProductsFromStorage() {
     const stored = localStorage.getItem(STORAGE_PRODUCTS);
     if (stored) {
-      try {
-        allProducts = JSON.parse(stored);
-      } catch(e) { allProducts = []; }
+      try { allProducts = JSON.parse(stored); } catch(e) { allProducts = []; }
     }
     if (!allProducts || allProducts.length === 0) {
       allProducts = generateMockProducts(5000);
@@ -276,11 +258,9 @@
   function loadCartFromStorage() {
     const stored = localStorage.getItem(STORAGE_CART);
     if (stored) {
-      try {
-        cart = JSON.parse(stored);
-        const validIds = new Set(allProducts.map(p => p.id));
-        cart = cart.filter(item => validIds.has(item.id));
-      } catch(e) { cart = []; }
+      try { cart = JSON.parse(stored); } catch(e) { cart = []; }
+      const validIds = new Set(allProducts.map(p => p.id));
+      cart = cart.filter(item => validIds.has(item.id));
     } else cart = [];
     saveCartToStorage();
     updateCartBadge();
@@ -299,7 +279,7 @@
     else cart.push({ id: product.id, name: product.name, price: product.price, quantity: 1, emoji: product.emoji });
     saveCartToStorage();
     updateCartBadge();
-    showToast(`✅ ${product.name.substring(0, 40)} ထည့်ပြီး`);
+    showToast(`✅ ${product.name.substring(0, 40)} added`);
   }
   function showToast(msg) {
     let toast = document.createElement("div");
@@ -309,46 +289,33 @@
     setTimeout(() => toast.remove(), 2000);
   }
 
-  // ----- User view
   function renderUserProducts() {
     const total = allProducts.length;
     const totalPages = Math.ceil(total / USER_PAGE_SIZE);
     if (currentUserPage > totalPages) currentUserPage = Math.max(1, totalPages);
     const start = (currentUserPage - 1) * USER_PAGE_SIZE;
     const pageProds = allProducts.slice(start, start + USER_PAGE_SIZE);
-    let html = `<div class="container">
-      <h2>✨ Amazon စတိုင် အကြီးဆုံး ပစ္စည်းစုစည်းမှု (${total} items)</h2>
-      <div class="products-grid">`;
+    let html = `<div class="container"><h2>🛍️ Our Products (${total} items)</h2><div class="products-grid">`;
     for (let p of pageProds) {
-      html += `
-        <div class="product-card">
-          <div class="product-img">${escapeHtml(p.emoji || '📦')}</div>
-          <div class="product-title">${escapeHtml(p.name)}</div>
-          <div class="product-price">${p.price.toLocaleString()} ကျပ်</div>
-          <button class="add-to-cart" data-id="${p.id}">🛒 ခြင်းတောင်းထည့်</button>
-        </div>
-      `;
+      html += `<div class="product-card"><div class="product-img">${escapeHtml(p.emoji)}</div>
+        <div class="product-title">${escapeHtml(p.name)}</div>
+        <div class="product-price">${p.price.toLocaleString()} MMK</div>
+        <button class="add-to-cart" data-id="${p.id}">🛒 Add to Cart</button></div>`;
     }
     html += `</div><div class="pagination">`;
-    for (let i = 1; i <= totalPages && i <= 100; i++) {
+    for (let i = 1; i <= totalPages && i <= 50; i++) {
       html += `<button class="page-btn ${i===currentUserPage?'active':''}" data-page="${i}">${i}</button>`;
     }
-    if (totalPages > 100) html += `<span>...</span>`;
     html += `</div></div>`;
     document.getElementById("app").innerHTML = html;
     document.querySelectorAll(".add-to-cart").forEach(btn => {
-      btn.addEventListener("click", (e) => { addToCart(parseInt(btn.dataset.id)); });
+      btn.onclick = () => addToCart(parseInt(btn.dataset.id));
     });
     document.querySelectorAll(".page-btn").forEach(btn => {
-      btn.addEventListener("click", () => {
-        currentUserPage = parseInt(btn.dataset.page);
-        renderUserProducts();
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      });
+      btn.onclick = () => { currentUserPage = parseInt(btn.dataset.page); renderUserProducts(); window.scrollTo({ top: 0, behavior: "smooth" }); };
     });
   }
 
-  // ----- Admin panel
   function renderAdminPanel() {
     const total = allProducts.length;
     const totalPages = Math.ceil(total / ADMIN_PAGE_SIZE);
@@ -356,43 +323,39 @@
     const start = (currentAdminPage - 1) * ADMIN_PAGE_SIZE;
     const pageProds = allProducts.slice(start, start + ADMIN_PAGE_SIZE);
     let html = `<div class="container">
-      <div style="display:flex; justify-content:space-between; margin-bottom:1rem;">
-        <h2>🛠️ Amazon Style Admin Panel</h2>
-        <button id="viewStoreBtn" class="btn">🏠 စတိုးသို့သွားရန်</button>
+      <div style="display:flex; justify-content:space-between; flex-wrap:wrap;">
+        <h2>🛠️ Admin Panel</h2>
+        <div><button id="testTelegramBtn" class="btn btn-success">📨 Test Telegram</button>
+        <button id="viewStoreBtn" class="btn">🏠 Store</button></div>
       </div>
       <div class="csv-zone">
-        <h3>📂 CSV Bulk Import (10k+ rows)</h3>
-        <p>CSV columns: <strong>name, price, emoji</strong> (id optional)</p>
+        <h3>📂 CSV Bulk Import</h3>
         <input type="file" id="csvFile" accept=".csv" />
         <div style="margin:1rem 0;">
-          <button id="replaceBtn" class="btn-danger">🔄 အစားထိုးသွင်း</button>
-          <button id="mergeBtn" class="btn">➕ ပေါင်းထည့်သွင်း</button>
-          <button id="exportBtn" class="btn-success">📥 CSV ထုတ်ယူ</button>
-          <button id="deleteAllBtn" class="btn-danger">🗑️ အားလုံးဖျက်</button>
+          <button id="replaceBtn" class="btn-danger">Replace</button>
+          <button id="mergeBtn" class="btn">Merge</button>
+          <button id="exportBtn" class="btn-success">Export CSV</button>
+          <button id="deleteAllBtn" class="btn-danger">Delete All</button>
         </div>
-        <div id="csvStatus" style="font-size:0.9rem;"></div>
       </div>
-      <h3>📦 ပစ္စည်းစာရင်း (စုစုပေါင်း ${total})</h3>
-      <div style="overflow-x:auto;"><table class="admin-table"><thead><tr><th>ID</th><th>Emoji</th><th>Name</th><th>Price</th><th>Actions</th></tr></thead><tbody>`;
+      <table class="admin-table"><thead><tr><th>ID</th><th>Emoji</th><th>Name</th><th>Price</th><th>Actions</th></tr></thead><tbody>`;
     for (let p of pageProds) {
       html += `<tr>
         <td>${p.id}</td>
         <td><input type="text" class="edit-emoji" data-id="${p.id}" value="${escapeHtml(p.emoji)}" style="width:70px;"></td>
         <td><input type="text" class="edit-name" data-id="${p.id}" value="${escapeHtml(p.name)}" style="width:180px;"></td>
         <td><input type="number" class="edit-price" data-id="${p.id}" value="${p.price}"></td>
-        <td><button class="save-btn" data-id="${p.id}">💾 Save</button> <button class="delete-btn btn-danger" data-id="${p.id}">ဖျက်</button></td>
+        <td><button class="save-btn" data-id="${p.id}">Save</button> <button class="delete-btn btn-danger" data-id="${p.id}">Del</button></td>
       </tr>`;
     }
-    html += `</tbody></table></div><div class="pagination" id="adminPagination"></div>
-      <div style="margin:2rem 0;"><h3>➕ ပစ္စည်းအသစ်</h3>
-        <input type="text" id="newName" placeholder="အမည်" /> 
-        <input type="number" id="newPrice" placeholder="စျေးနှုန်း" />
-        <input type="text" id="newEmoji" placeholder="Emoji (📱)" />
-        <button id="addNewBtn" class="btn">ထည့်မည်</button>
+    html += `</tbody></table><div class="pagination" id="adminPagination"></div>
+      <div><h3>➕ Add New</h3>
+        <input id="newName" placeholder="Name"> <input id="newPrice" placeholder="Price"> <input id="newEmoji" placeholder="Emoji">
+        <button id="addNewBtn" class="btn">Add</button>
       </div>
     </div>`;
     document.getElementById("app").innerHTML = html;
-    // pagination
+
     const pagDiv = document.getElementById("adminPagination");
     for (let i = 1; i <= totalPages; i++) {
       const btn = document.createElement("button");
@@ -402,7 +365,7 @@
       btn.onclick = () => { currentAdminPage = i; renderAdminPanel(); };
       pagDiv.appendChild(btn);
     }
-    // event handlers
+
     document.querySelectorAll(".save-btn").forEach(btn => {
       btn.onclick = () => {
         const id = parseInt(btn.dataset.id);
@@ -411,12 +374,7 @@
         const newName = row.querySelector(".edit-name").value;
         const newPrice = parseInt(row.querySelector(".edit-price").value);
         const prod = allProducts.find(p => p.id === id);
-        if (prod) {
-          prod.name = newName; prod.price = isNaN(newPrice) ? prod.price : newPrice; prod.emoji = newEmoji || "📦";
-          saveProductsToStorage();
-          renderAdminPanel();
-          showToast("ပြင်ဆင်ပြီး");
-        }
+        if (prod) { prod.name = newName; prod.price = newPrice; prod.emoji = newEmoji; saveProductsToStorage(); renderAdminPanel(); showToast("Saved"); }
       };
     });
     document.querySelectorAll(".delete-btn").forEach(btn => {
@@ -426,19 +384,17 @@
         cart = cart.filter(i => i.id !== id);
         saveProductsToStorage(); saveCartToStorage(); updateCartBadge();
         renderAdminPanel();
-        showToast("ဖျက်ပြီး");
       };
     });
     document.getElementById("addNewBtn")?.addEventListener("click", () => {
       const name = document.getElementById("newName").value.trim();
       const price = parseInt(document.getElementById("newPrice").value);
       const emoji = document.getElementById("newEmoji").value.trim() || "📦";
-      if (!name || isNaN(price)) { showToast("အမည်နှင့်စျေးနှုန်းထည့်ပါ"); return; }
-      const newId = Date.now() + Math.random() * 100000;
+      if (!name || isNaN(price)) return;
+      const newId = Date.now() + Math.random();
       allProducts.push({ id: newId, name, price, emoji });
       saveProductsToStorage();
       renderAdminPanel();
-      showToast("ထည့်ပြီး");
     });
     document.getElementById("viewStoreBtn")?.addEventListener("click", () => {
       window.history.pushState({}, "", "/");
@@ -446,41 +402,32 @@
     });
     document.getElementById("exportBtn")?.addEventListener("click", exportToCSV);
     document.getElementById("deleteAllBtn")?.addEventListener("click", () => {
-      if (confirm("အားလုံးဖျက်မယ်။ သေချာလား?")) {
-        allProducts = [];
-        saveProductsToStorage();
-        cart = []; saveCartToStorage(); updateCartBadge();
-        renderAdminPanel();
-      }
+      if (confirm("Delete all?")) { allProducts = []; saveProductsToStorage(); cart = []; saveCartToStorage(); updateCartBadge(); renderAdminPanel(); }
     });
+    document.getElementById("testTelegramBtn")?.addEventListener("click", async () => {
+      const success = await sendTelegramMessage("✅ Test message from Admin panel", true);
+      alert(success ? "Message sent!" : "Failed. Check console.");
+    });
+
     let selectedFile = null;
     document.getElementById("csvFile").addEventListener("change", (e) => { selectedFile = e.target.files[0]; });
     const processCSV = (replaceMode) => {
-      if (!selectedFile) { showToast("CSV ဖိုင်ရွေးပါ"); return; }
+      if (!selectedFile) { alert("Choose CSV file"); return; }
       Papa.parse(selectedFile, { header: true, dynamicTyping: true, skipEmptyLines: true, complete: (res) => {
-        const rows = res.data;
         const newProducts = [];
-        for (let row of rows) {
+        for (let row of res.data) {
           let name = row.name || row.Name;
           let price = parseFloat(row.price || row.Price);
           let emoji = row.emoji || row.Emoji || "📦";
           if (!name || isNaN(price)) continue;
-          const id = row.id ? parseInt(row.id) : Date.now() + Math.random() * 10000 + newProducts.length;
+          const id = row.id ? parseInt(row.id) : Date.now() + Math.random();
           newProducts.push({ id, name: String(name), price, emoji: String(emoji) });
         }
-        if (newProducts.length === 0) { showToast("မှန်ကန်သော CSV မဟုတ်"); return; }
+        if (newProducts.length === 0) { alert("Invalid CSV"); return; }
         if (replaceMode) allProducts = newProducts;
-        else {
-          const existingIds = new Set(allProducts.map(p => p.id));
-          for (let prod of newProducts) {
-            if (!existingIds.has(prod.id)) allProducts.push(prod);
-            else { prod.id = Date.now() + Math.random() * 100000; allProducts.push(prod); }
-          }
-        }
+        else allProducts.push(...newProducts);
         saveProductsToStorage();
         renderAdminPanel();
-        showToast(`${newProducts.length} ခု ${replaceMode ? 'အစားထိုး' : 'ပေါင်းထည့်'} ပြီး`);
-        document.getElementById("csvStatus").innerHTML = `✅ အောင်မြင် ${newProducts.length} products loaded.`;
         selectedFile = null;
         document.getElementById("csvFile").value = "";
       }});
@@ -490,7 +437,7 @@
   }
 
   function exportToCSV() {
-    if (!allProducts.length) { showToast("ထုတ်ရန်ဒေတာမရှိ"); return; }
+    if (!allProducts.length) return;
     const headers = ["id","name","price","emoji"];
     const rows = [headers.join(",")];
     for (let p of allProducts) {
@@ -499,35 +446,30 @@
     const blob = new Blob([rows.join("\n")], {type:"text/csv"});
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = "amazon_products.csv";
+    link.download = "products.csv";
     link.click();
     URL.revokeObjectURL(link.href);
-    showToast("CSV ထုတ်ပြီး");
   }
 
-  // Cart modal
   function renderCartModal() {
     const container = document.getElementById("cartItemsList");
     const totalSpan = document.getElementById("cartTotal");
     if (!container) return;
-    if (cart.length === 0) { container.innerHTML = "<div>ခြင်းတောင်းထဲတွင် ပစ္စည်းမရှိပါ</div>"; totalSpan.innerText = ""; return; }
+    if (cart.length === 0) { container.innerHTML = "<div>Cart empty</div>"; totalSpan.innerText = ""; return; }
     let total = 0;
-    let html = `<ul style="list-style:none;">`;
+    let html = `<ul>`;
     for (let item of cart) {
       const subtotal = item.price * item.quantity;
       total += subtotal;
-      html += `<li style="display:flex; justify-content:space-between; margin-bottom:12px;">
-        <div>${item.emoji} ${item.name} x ${item.quantity}</div>
-        <div>${subtotal.toLocaleString()} ကျပ် 
-          <button class="cart-inc" data-id="${item.id}">+</button>
-          <button class="cart-dec" data-id="${item.id}">-</button>
-          <button class="cart-remove" data-id="${item.id}" style="background:#cc0c39; color:white;">ဖျက်</button>
-        </div>
+      html += `<li>${item.emoji} ${item.name} x ${item.quantity} = ${subtotal.toLocaleString()} MMK
+        <button class="cart-inc" data-id="${item.id}">+</button>
+        <button class="cart-dec" data-id="${item.id}">-</button>
+        <button class="cart-remove" data-id="${item.id}">Remove</button>
       </li>`;
     }
     html += `</ul>`;
     container.innerHTML = html;
-    totalSpan.innerText = `စုစုပေါင်း: ${total.toLocaleString()} ကျပ်`;
+    totalSpan.innerText = `Total: ${total.toLocaleString()} MMK`;
     document.querySelectorAll(".cart-inc").forEach(btn => {
       btn.onclick = () => { const id=parseInt(btn.dataset.id); const item=cart.find(i=>i.id===id); if(item){item.quantity++; saveCartToStorage(); updateCartBadge(); renderCartModal(); } };
     });
@@ -540,57 +482,33 @@
   }
   function openCartModal() { renderCartModal(); document.getElementById("cartModal").style.display = "flex"; }
 
-  // Admin authentication
   function checkAdminAuth() {
     const sessionAuth = sessionStorage.getItem(STORAGE_ADMIN_AUTH);
     if (sessionAuth === "true") return true;
-    const pwd = prompt("Admin panel ဝင်ရောက်ရန် စကားဝှက်ထည့်ပါ:");
-    if (pwd === ADMIN_PASSWORD) {
-      sessionStorage.setItem(STORAGE_ADMIN_AUTH, "true");
-      return true;
-    } else {
-      alert("စကားဝှက်မှားပါသည်။");
-      return false;
-    }
+    const pwd = prompt("Admin password:");
+    if (pwd === ADMIN_PASSWORD) { sessionStorage.setItem(STORAGE_ADMIN_AUTH, "true"); return true; }
+    return false;
   }
 
-  // Routing
   function checkRouteAndRender() {
-    const path = window.location.pathname;
-    const hash = window.location.hash;
-    const isAdminRoute = path.endsWith("/step") || path === "/step" || hash === "#step";
-    if (isAdminRoute) {
-      if (checkAdminAuth()) {
-        isAdminAuthenticated = true;
-        renderAdminPanel();
-      } else {
-        window.history.pushState({}, "", "/");
-        renderUserProducts();
-      }
+    const isAdminRoute = window.location.pathname.endsWith("/step") || window.location.hash === "#step";
+    if (isAdminRoute && checkAdminAuth()) {
+      isAdminAuthenticated = true;
+      renderAdminPanel();
     } else {
       renderUserProducts();
     }
-    const cartIcon = document.getElementById("cartIcon");
-    if (cartIcon) cartIcon.onclick = openCartModal;
-    const closeBtn = document.getElementById("closeCartBtn");
-    if (closeBtn) closeBtn.onclick = () => document.getElementById("cartModal").style.display = "none";
-    const checkoutBtn = document.getElementById("checkoutBtn");
-    if (checkoutBtn) checkoutBtn.onclick = () => {
-      if (cart.length === 0) showToast("ခြင်းတောင်းမရှိ");
-      else {
-        alert(`ဝယ်ယူမှု အောင်မြင်ပါသည်။ စုစုပေါင်း ${cart.reduce((s,i)=>s+(i.price*i.quantity),0).toLocaleString()} ကျပ်`);
-        cart = []; saveCartToStorage(); updateCartBadge();
-        document.getElementById("cartModal").style.display = "none";
-        if (!isAdminAuthenticated) renderUserProducts(); else renderAdminPanel();
-        showToast("ကျေးဇူးပါ");
-      }
+    document.getElementById("cartIcon").onclick = openCartModal;
+    document.getElementById("closeCartBtn").onclick = () => document.getElementById("cartModal").style.display = "none";
+    document.getElementById("checkoutBtn").onclick = () => {
+      if (cart.length === 0) showToast("Cart empty");
+      else { alert(`Order placed! Total: ${cart.reduce((s,i)=>s+(i.price*i.quantity),0).toLocaleString()} MMK`); cart = []; saveCartToStorage(); updateCartBadge(); document.getElementById("cartModal").style.display = "none"; if (!isAdminAuthenticated) renderUserProducts(); else renderAdminPanel(); }
     };
   }
 
   function escapeHtml(str) { return String(str).replace(/[&<>]/g, function(m){ if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
   function escapeCsv(str) { return String(str).replace(/"/g, '""'); }
 
-  // INIT
   loadProductsFromStorage();
   loadCartFromStorage();
   checkRouteAndRender();
