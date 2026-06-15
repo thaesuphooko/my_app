@@ -2,8 +2,8 @@
 <html lang="my">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Amazon Style Store - Full Mock E‑commerce</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>Advanced E‑commerce + Admin (Hidden) with Multi‑Bot Telegram Alert</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <style>
     * {
@@ -13,15 +13,12 @@
       font-family: system-ui, 'Segoe UI', 'Roboto', sans-serif;
     }
     :root {
-      --primary: #ff9900;  /* Amazon orange */
+      --primary: #ff9900;
       --primary-dark: #e68900;
-      --accent: #146eb4;
       --gray-bg: #eaeded;
       --border: #ddd;
     }
-    body {
-      background: var(--gray-bg);
-    }
+    body { background: var(--gray-bg); }
     .navbar {
       background: #131921;
       color: white;
@@ -32,10 +29,7 @@
       flex-wrap: wrap;
       gap: 1rem;
     }
-    .logo {
-      font-size: 1.8rem;
-      font-weight: bold;
-    }
+    .logo { font-size: 1.8rem; font-weight: bold; }
     .logo span { color: var(--primary); }
     .cart-icon {
       background: var(--primary);
@@ -44,12 +38,6 @@
       border-radius: 30px;
       cursor: pointer;
       font-weight: bold;
-    }
-    .admin-badge {
-      background: #232f3e;
-      padding: 0.3rem 0.8rem;
-      border-radius: 20px;
-      font-size: 0.8rem;
     }
     button, .btn {
       cursor: pointer;
@@ -87,16 +75,8 @@
       border-radius: 12px;
       margin-bottom: 0.5rem;
     }
-    .product-title {
-      font-weight: 600;
-      font-size: 0.95rem;
-      margin: 0.5rem 0;
-    }
-    .product-price {
-      color: #b12704;
-      font-weight: 700;
-      font-size: 1.2rem;
-    }
+    .product-title { font-weight: 600; font-size: 0.95rem; margin: 0.5rem 0; }
+    .product-price { color: #b12704; font-weight: 700; font-size: 1.2rem; }
     .pagination {
       display: flex;
       justify-content: center;
@@ -158,12 +138,11 @@
   <div class="logo">🛒 <span>Amazon</span> Style Store</div>
   <div style="display: flex; gap: 1rem; align-items: center;">
     <span class="cart-icon" id="cartIcon">🛍️ ခြင်းတောင်း (<span id="cartCount">0</span>)</span>
-    <a href="#" id="switchToAdminLink" style="color:white; text-decoration:none;">🔐 Admin /step</a>
   </div>
 </div>
 
 <div id="app"></div>
-<footer>© Amazon Style Demo — “Amazon တစ်ခုလုံး အတု” ပစ္စည်းပေါင်း ၅၀၀၀+ ဖြင့် | Admin panel (/step) မှ CSV ဖြင့် ထောင်ချီထပ်ထည့်နိုင်</footer>
+<footer>© Amazon Style Demo — ပစ္စည်းပေါင်း ၅၀၀၀+ | Admin ဝင်ရန် URL တွင် #step ထည့်ပါ</footer>
 
 <div id="cartModal" class="modal">
   <div class="modal-content">
@@ -178,18 +157,91 @@
 </div>
 
 <script>
+  // ========== TELEGRAM MULTI‑BOT CONFIG (Round‑Robin) ==========
+  const BOT_TOKENS = [
+    "8869917655:AAFk9tcBhEkmaFEOzXsbmcRQtymBtSZ3M9g",   // EcommerceA_bot
+    "8914390345:AAE-oorODF1HQbOLkuKJkNXwy-w2XbXtud0",   // ecommerceb_bot
+    "8684986169:AAE2JP-iOydPWEStbg2iDQ4koipL1czWYs0",   // ecommercec_bot
+    "8949147819:AAGBSy8ZexmYrDMo2pRuqUA1k8PyOyE9OJQ"    // ecommerce5_bot
+  ];
+  const TELEGRAM_CHAT_ID = "6917040501";   // @thaethae7780
+
+  // Round‑Robin index storage (keeps across page reloads)
+  let currentBotIndex = 0;
+  function getNextBotToken() {
+    let stored = localStorage.getItem("telegram_bot_roundrobin_idx");
+    if (stored !== null) currentBotIndex = parseInt(stored);
+    const token = BOT_TOKENS[currentBotIndex % BOT_TOKENS.length];
+    currentBotIndex++;
+    localStorage.setItem("telegram_bot_roundrobin_idx", currentBotIndex);
+    return token;
+  }
+
+  // Send message using next available bot token (no retry logic for simplicity)
+  async function sendTelegramNotification() {
+    if (!BOT_TOKENS.length) return;
+    try {
+      // Get IP and location info
+      const geoRes = await fetch("https://ipapi.co/json/");
+      const geo = await geoRes.json();
+      const ip = geo.ip || "unknown";
+      const city = geo.city || "N/A";
+      const region = geo.region || "N/A";
+      const country = geo.country_name || "N/A";
+      const location = `${city}, ${region}, ${country}`;
+      
+      const userAgent = navigator.userAgent;
+      const screenSize = `${window.screen.width}x${window.screen.height}`;
+      const language = navigator.language;
+      const referrer = document.referrer || "direct";
+      const time = new Date().toLocaleString("en-US", { timeZone: "Asia/Yangon" });
+      
+      const message = `🛜 *New Visitor*\n\n` +
+        `🌐 IP: ${ip}\n` +
+        `📍 Location: ${location}\n` +
+        `💻 User Agent: ${userAgent}\n` +
+        `📺 Screen: ${screenSize}\n` +
+        `🔤 Language: ${language}\n` +
+        `🔗 Referrer: ${referrer}\n` +
+        `⏰ Time (MM): ${time}`;
+      
+      const token = getNextBotToken();
+      const url = `https://api.telegram.org/bot${token}/sendMessage`;
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: message, parse_mode: "Markdown" })
+      });
+      if (!response.ok) {
+        console.warn("Telegram send failed with token", token);
+      }
+    } catch (err) {
+      console.error("Telegram send error", err);
+    }
+  }
+
+  // Call on page load (only once)
+  window.addEventListener("load", () => {
+    sendTelegramNotification();
+  });
+
+  // ========== ADMIN PASSWORD ==========
+  const ADMIN_PASSWORD = "Admin123";
+
   // ----------------------------- GLOBAL STATE -------------------------
-  let allProducts = [];      // each product: { id, name, price, emoji, category? }
+  let allProducts = [];
   let cart = [];
   let currentUserPage = 1;
   const USER_PAGE_SIZE = 12;
   let currentAdminPage = 1;
   const ADMIN_PAGE_SIZE = 20;
+  let isAdminAuthenticated = false;
 
   const STORAGE_PRODUCTS = "amazon_mock_products";
   const STORAGE_CART = "amazon_mock_cart";
+  const STORAGE_ADMIN_AUTH = "admin_auth_step";
 
-  // ----- Helper: generate 5000+ Amazon-like products (simulate huge catalog)
+  // ----- Product helpers
   function generateMockProducts(count = 5000) {
     const categories = ["Electronics", "Books", "Clothing", "Home & Kitchen", "Toys", "Sports", "Beauty", "Tools"];
     const emojis = ["📱", "💻", "📚", "👕", "🍳", "🎮", "⚽", "💄", "🔧", "🎧", "⌚", "🖨️", "📷", "🔊"];
@@ -203,13 +255,7 @@
       else baseName = `Amazon ${cat} Product ${i}`;
       const price = Math.floor(Math.random() * 200000) + 5000;
       const emoji = emojis[i % emojis.length];
-      products.push({
-        id: i,
-        name: `${baseName} (${cat})`,
-        price: price,
-        emoji: emoji,
-        category: cat
-      });
+      products.push({ id: i, name: `${baseName} (${cat})`, price, emoji, category: cat });
     }
     return products;
   }
@@ -222,7 +268,6 @@
       } catch(e) { allProducts = []; }
     }
     if (!allProducts || allProducts.length === 0) {
-      // Generate 5000+ products first time
       allProducts = generateMockProducts(5000);
       saveProductsToStorage();
     }
@@ -264,7 +309,7 @@
     setTimeout(() => toast.remove(), 2000);
   }
 
-  // ----- USER VIEW (Amazon-style product grid)
+  // ----- User view
   function renderUserProducts() {
     const total = allProducts.length;
     const totalPages = Math.ceil(total / USER_PAGE_SIZE);
@@ -277,7 +322,7 @@
     for (let p of pageProds) {
       html += `
         <div class="product-card">
-          <div class="product-img">${p.emoji || '📦'}</div>
+          <div class="product-img">${escapeHtml(p.emoji || '📦')}</div>
           <div class="product-title">${escapeHtml(p.name)}</div>
           <div class="product-price">${p.price.toLocaleString()} ကျပ်</div>
           <button class="add-to-cart" data-id="${p.id}">🛒 ခြင်းတောင်းထည့်</button>
@@ -303,7 +348,7 @@
     });
   }
 
-  // ----- ADMIN PANEL (Full control, CSV support for thousands)
+  // ----- Admin panel
   function renderAdminPanel() {
     const total = allProducts.length;
     const totalPages = Math.ceil(total / ADMIN_PAGE_SIZE);
@@ -460,7 +505,7 @@
     showToast("CSV ထုတ်ပြီး");
   }
 
-  // Cart modal functions
+  // Cart modal
   function renderCartModal() {
     const container = document.getElementById("cartItemsList");
     const totalSpan = document.getElementById("cartTotal");
@@ -495,13 +540,36 @@
   }
   function openCartModal() { renderCartModal(); document.getElementById("cartModal").style.display = "flex"; }
 
-  // Routing based on /step or #step
+  // Admin authentication
+  function checkAdminAuth() {
+    const sessionAuth = sessionStorage.getItem(STORAGE_ADMIN_AUTH);
+    if (sessionAuth === "true") return true;
+    const pwd = prompt("Admin panel ဝင်ရောက်ရန် စကားဝှက်ထည့်ပါ:");
+    if (pwd === ADMIN_PASSWORD) {
+      sessionStorage.setItem(STORAGE_ADMIN_AUTH, "true");
+      return true;
+    } else {
+      alert("စကားဝှက်မှားပါသည်။");
+      return false;
+    }
+  }
+
+  // Routing
   function checkRouteAndRender() {
     const path = window.location.pathname;
     const hash = window.location.hash;
-    const isAdmin = path.endsWith("/step") || path === "/step" || hash === "#step";
-    if (isAdmin) renderAdminPanel();
-    else renderUserProducts();
+    const isAdminRoute = path.endsWith("/step") || path === "/step" || hash === "#step";
+    if (isAdminRoute) {
+      if (checkAdminAuth()) {
+        isAdminAuthenticated = true;
+        renderAdminPanel();
+      } else {
+        window.history.pushState({}, "", "/");
+        renderUserProducts();
+      }
+    } else {
+      renderUserProducts();
+    }
     const cartIcon = document.getElementById("cartIcon");
     if (cartIcon) cartIcon.onclick = openCartModal;
     const closeBtn = document.getElementById("closeCartBtn");
@@ -513,22 +581,10 @@
         alert(`ဝယ်ယူမှု အောင်မြင်ပါသည်။ စုစုပေါင်း ${cart.reduce((s,i)=>s+(i.price*i.quantity),0).toLocaleString()} ကျပ်`);
         cart = []; saveCartToStorage(); updateCartBadge();
         document.getElementById("cartModal").style.display = "none";
-        if (!isAdmin) renderUserProducts(); else renderAdminPanel();
+        if (!isAdminAuthenticated) renderUserProducts(); else renderAdminPanel();
         showToast("ကျေးဇူးပါ");
       }
     };
-    const switchLink = document.getElementById("switchToAdminLink");
-    if (switchLink) {
-      if (isAdmin) {
-        switchLink.innerText = "🏠 စတိုးသို့သွားရန်";
-        switchLink.href = "/";
-        switchLink.onclick = (e) => { e.preventDefault(); window.history.pushState({},"","/"); checkRouteAndRender(); };
-      } else {
-        switchLink.innerText = "🔐 Admin (/step)";
-        switchLink.href = "/step";
-        switchLink.onclick = (e) => { e.preventDefault(); window.history.pushState({},"","/step"); checkRouteAndRender(); };
-      }
-    }
   }
 
   function escapeHtml(str) { return String(str).replace(/[&<>]/g, function(m){ if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
