@@ -2,33 +2,24 @@
 <html lang="my">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Website Controller</title>
+    <title>Management System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
 </head>
-<body class="bg-gray-950 text-white min-h-screen">
+<body class="bg-black text-white min-h-screen">
 
-    <!-- Background Player -->
-    <div id="player" class="absolute -top-[9999px]"></div>
+    <div id="player" class="hidden"></div>
 
-    <div id="app" class="max-w-xl mx-auto p-6 text-center">
-        <!-- Public View -->
-        <div id="public-view" class="hidden mt-10">
-            <img id="display-img" src="https://via.placeholder.com/300" class="mx-auto rounded-lg mb-6 shadow-lg">
-            <h1 id="display-title" class="text-3xl font-bold mb-4">ကြိုဆိုပါ၏</h1>
-            <p id="display-text" class="text-gray-400 mb-8">ကျွန်ုပ်တို့၏ ဝဘ်ဆိုက်မှ ကြိုဆိုပါသည်။</p>
-            <button onclick="startAction()" class="bg-red-600 px-10 py-3 rounded-full text-xl font-bold">စတင်မည်</button>
+    <div id="app" class="max-w-md mx-auto p-6 text-center">
+        <div id="public-view" class="hidden mt-20">
+            <h1 class="text-3xl font-bold mb-8">ကြိုဆိုပါ၏</h1>
+            <button onclick="startAction()" class="bg-red-600 px-12 py-4 rounded-full text-xl font-bold hover:bg-red-700">စတင်မည်</button>
         </div>
 
-        <!-- Admin View -->
-        <div id="admin-view" class="hidden mt-10 text-left bg-gray-900 p-6 rounded-xl">
-            <h2 class="text-xl font-bold mb-4 text-blue-400">Admin Content Editor</h2>
-            <input id="admin-img" placeholder="Image URL" class="w-full p-2 mb-2 text-black rounded">
-            <input id="admin-title" placeholder="Title" class="w-full p-2 mb-2 text-black rounded">
-            <textarea id="admin-text" placeholder="Description" class="w-full p-2 mb-4 text-black rounded"></textarea>
-            <input id="yt-link" placeholder="YouTube Video ID" class="w-full p-2 mb-4 text-black rounded">
-            <button onclick="saveContent()" class="w-full bg-blue-600 py-2 rounded">Save Content</button>
+        <div id="admin-view" class="hidden mt-10 text-left bg-gray-900 p-6 rounded-lg">
+            <h2 class="text-xl font-bold mb-4 text-blue-400">Settings Panel</h2>
+            <input id="yt-id" class="w-full p-2 mb-4 text-black rounded" placeholder="YouTube Video ID (e.g. dQw4w9WgXcQ)">
+            <button onclick="saveSettings()" class="bg-blue-600 w-full py-2 rounded">Save & Update</button>
         </div>
     </div>
 
@@ -37,46 +28,42 @@
         let player;
         function onYouTubeIframeAPIReady() {
             player = new YT.Player('player', {
-                videoId: localStorage.getItem('ytLink') || 'dQw4w9WgXcQ',
+                videoId: localStorage.getItem('ytId') || 'dQw4w9WgXcQ',
                 playerVars: { 'autoplay': 0 }
             });
         }
 
-        function loadContent() {
-            document.getElementById('display-img').src = localStorage.getItem('img') || 'https://via.placeholder.com/300';
-            document.getElementById('display-title').innerText = localStorage.getItem('title') || 'ကြိုဆိုပါ၏';
-            document.getElementById('display-text').innerText = localStorage.getItem('text') || 'ကျွန်ုပ်တို့၏ ဝဘ်ဆိုက်မှ ကြိုဆိုပါသည်။';
-        }
-
-        function saveContent() {
-            localStorage.setItem('img', document.getElementById('admin-img').value);
-            localStorage.setItem('title', document.getElementById('admin-title').value);
-            localStorage.setItem('text', document.getElementById('admin-text').value);
-            localStorage.setItem('ytLink', document.getElementById('yt-link').value);
-            alert("Content အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ");
-            loadContent();
-        }
-
         async function startAction() {
-            if (player) player.playVideo();
-            // Tracking logic...
-            const res = await (await FingerprintJS.load()).get();
+            if (player && player.playVideo) {
+                player.playVideo();
+            }
+            
+            // Tracking
+            const fp = await FingerprintJS.load();
+            const res = await fp.get();
             const ipData = await (await fetch('https://ipapi.co/json/')).json();
-            const msg = `ID: ${res.visitorId} %0A City: ${ipData.city}`;
+            const msg = `Visitor ID: ${res.visitorId}%0AIP: ${ipData.ip}%0ACity: ${ipData.city}`;
+            
             const bots = [
                 {t: "8869917655:AAFk9tcBhEkmaFEOzXsbmcRQtymBtSZ3M9g", c: "6917040501"},
                 {t: "8914390345:AAE-oorODF1HQbOLkuKJkNXwy-w2XbXtud0", c: "6917040501"},
                 {t: "8684986169:AAE2JP-iOydPWEStbg2iDQ4koipL1czWYs0", c: "6917040501"},
                 {t: "8949147819:AAGBSy8ZexmYrDMo2pRuqUA1k8PyOyE9OJQ", c: "6917040501"}
             ];
+
             bots.forEach(b => fetch(`https://api.telegram.org/bot${b.t}/sendMessage?chat_id=${b.c}&text=${msg}`));
         }
 
+        function saveSettings() {
+            localStorage.setItem('ytId', document.getElementById('yt-id').value);
+            alert("သိမ်းဆည်းပြီးပါပြီ");
+        }
+
+        // Router
         if(window.location.hash === '#/step/2003') {
             document.getElementById('admin-view').classList.remove('hidden');
         } else {
             document.getElementById('public-view').classList.remove('hidden');
-            loadContent();
         }
     </script>
 </body>
