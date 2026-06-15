@@ -2,9 +2,8 @@
 <html lang="my">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>Golden Mart - E‑commerce + Admin Panel (/step)</title>
-  <!-- PapaParse for large CSV (10k+ rows) -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Amazon Style Store - Full Mock E‑commerce</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <style>
     * {
@@ -13,87 +12,91 @@
       box-sizing: border-box;
       font-family: system-ui, 'Segoe UI', 'Roboto', sans-serif;
     }
-
     :root {
-      --primary: #2c7da0;
-      --primary-dark: #1f5068;
-      --accent: #ffb703;
-      --danger: #e63946;
-      --success: #2a9d8f;
-      --gray-bg: #f8f9fa;
-      --border: #dee2e6;
+      --primary: #ff9900;  /* Amazon orange */
+      --primary-dark: #e68900;
+      --accent: #146eb4;
+      --gray-bg: #eaeded;
+      --border: #ddd;
     }
-
     body {
       background: var(--gray-bg);
-      color: #212529;
     }
-
-    /* navbar */
     .navbar {
-      background: white;
-      padding: 1rem 2rem;
+      background: #131921;
+      color: white;
+      padding: 0.8rem 2rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
       flex-wrap: wrap;
       gap: 1rem;
     }
-    .logo { font-size: 1.8rem; font-weight: 800; color: var(--primary); }
-    .nav-links { display: flex; gap: 1.5rem; align-items: center; }
+    .logo {
+      font-size: 1.8rem;
+      font-weight: bold;
+    }
+    .logo span { color: var(--primary); }
     .cart-icon {
-      background: var(--gray-bg);
-      padding: 0.5rem 1rem;
-      border-radius: 40px;
+      background: var(--primary);
+      color: #131921;
+      padding: 0.5rem 1.2rem;
+      border-radius: 30px;
       cursor: pointer;
-      font-weight: 600;
+      font-weight: bold;
     }
     .admin-badge {
-      background: var(--accent);
+      background: #232f3e;
       padding: 0.3rem 0.8rem;
-      border-radius: 30px;
+      border-radius: 20px;
       font-size: 0.8rem;
-      font-weight: bold;
     }
     button, .btn {
       cursor: pointer;
       border: none;
       padding: 8px 16px;
-      border-radius: 40px;
+      border-radius: 20px;
       background: var(--primary);
-      color: white;
-      font-weight: 500;
-      transition: 0.2s;
+      font-weight: 600;
     }
-    button:hover { opacity: 0.85; transform: scale(0.97); }
-    .btn-danger { background: var(--danger); }
-    .btn-success { background: var(--success); }
+    .btn-danger { background: #cc0c39; color: white; }
+    .btn-success { background: #067d62; color: white; }
     .container {
       max-width: 1400px;
-      margin: 2rem auto;
-      padding: 0 1.5rem;
+      margin: 1.5rem auto;
+      padding: 0 1rem;
     }
-    /* product grid */
     .products-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 1.8rem;
-      margin-top: 2rem;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin-top: 1.5rem;
     }
     .product-card {
       background: white;
-      border-radius: 24px;
+      border-radius: 12px;
       padding: 1rem;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
       transition: 0.2s;
     }
-    .product-card:hover { transform: translateY(-4px); }
-    .product-emoji { font-size: 3rem; text-align: center; margin-bottom: 0.5rem; }
-    .product-title { font-weight: 700; font-size: 1.1rem; }
-    .product-price { color: var(--primary); font-weight: 800; margin: 0.5rem 0; }
-    .add-to-cart { width: 100%; margin-top: 0.5rem; }
-    /* pagination */
+    .product-card:hover { transform: translateY(-3px); }
+    .product-img {
+      font-size: 3rem;
+      text-align: center;
+      background: #f7f7f7;
+      border-radius: 12px;
+      margin-bottom: 0.5rem;
+    }
+    .product-title {
+      font-weight: 600;
+      font-size: 0.95rem;
+      margin: 0.5rem 0;
+    }
+    .product-price {
+      color: #b12704;
+      font-weight: 700;
+      font-size: 1.2rem;
+    }
     .pagination {
       display: flex;
       justify-content: center;
@@ -103,38 +106,31 @@
     }
     .page-btn {
       background: white;
-      color: #333;
       border: 1px solid var(--border);
       padding: 6px 12px;
     }
-    .page-btn.active { background: var(--primary); color: white; border: none; }
-    /* admin table */
+    .page-btn.active { background: var(--primary); color: black; border: none; }
     .admin-table {
       width: 100%;
       border-collapse: collapse;
       background: white;
-      border-radius: 20px;
-      overflow-x: auto;
-      display: block;
     }
     .admin-table th, .admin-table td {
       border: 1px solid var(--border);
-      padding: 10px;
-      text-align: left;
+      padding: 8px;
     }
     .csv-zone {
       background: white;
       padding: 1.5rem;
-      border-radius: 24px;
+      border-radius: 20px;
       margin-bottom: 2rem;
     }
-    /* modal */
     .modal {
       display: none;
       position: fixed;
-      top:0;left:0;
-      width:100%;height:100%;
-      background: rgba(0,0,0,0.5);
+      top:0; left:0;
+      width:100%; height:100%;
+      background: rgba(0,0,0,0.6);
       justify-content: center;
       align-items: center;
       z-index: 1000;
@@ -142,31 +138,33 @@
     .modal-content {
       background: white;
       width: 90%;
-      max-width: 500px;
-      border-radius: 28px;
-      padding: 1.8rem;
+      max-width: 550px;
+      border-radius: 24px;
+      padding: 1.5rem;
     }
-    footer { text-align: center; padding: 2rem; font-size: 0.8rem; }
-    @media (max-width:700px){ .navbar { flex-direction: column; } }
+    footer {
+      text-align: center;
+      padding: 1.5rem;
+      background: #131921;
+      color: white;
+      margin-top: 2rem;
+    }
+    @media (max-width:600px){ .navbar { flex-direction: column; text-align: center; } }
   </style>
 </head>
 <body>
 
 <div class="navbar">
-  <div class="logo">🛍️ Golden Mart</div>
-  <div class="nav-links">
-    <span class="cart-icon" id="cartIcon">🛒 ခြင်းတောင်း (<span id="cartCount">0</span>)</span>
-    <a href="#" id="switchToAdminLink" style="text-decoration:none;">🔐 Admin (/step)</a>
+  <div class="logo">🛒 <span>Amazon</span> Style Store</div>
+  <div style="display: flex; gap: 1rem; align-items: center;">
+    <span class="cart-icon" id="cartIcon">🛍️ ခြင်းတောင်း (<span id="cartCount">0</span>)</span>
+    <a href="#" id="switchToAdminLink" style="color:white; text-decoration:none;">🔐 Admin /step</a>
   </div>
 </div>
 
-<div id="app">
-  <!-- user view will be injected here -->
-</div>
+<div id="app"></div>
+<footer>© Amazon Style Demo — “Amazon တစ်ခုလုံး အတု” ပစ္စည်းပေါင်း ၅၀၀၀+ ဖြင့် | Admin panel (/step) မှ CSV ဖြင့် ထောင်ချီထပ်ထည့်နိုင်</footer>
 
-<footer>© 2026 Golden Mart — Admin panel at <strong>/step</strong> (or #step) | CSV bulk import support 10k+ rows</footer>
-
-<!-- Cart Modal -->
 <div id="cartModal" class="modal">
   <div class="modal-content">
     <h2>🛒 သင့်ခြင်းတောင်း</h2>
@@ -180,19 +178,42 @@
 </div>
 
 <script>
-  // ------------------------------ GLOBALS ------------------------------
-  let allProducts = [];        // array of { id, name, price, emoji, category? }
+  // ----------------------------- GLOBAL STATE -------------------------
+  let allProducts = [];      // each product: { id, name, price, emoji, category? }
   let cart = [];
   let currentUserPage = 1;
   const USER_PAGE_SIZE = 12;
   let currentAdminPage = 1;
   const ADMIN_PAGE_SIZE = 20;
-  
-  // Keys
-  const STORAGE_PRODUCTS = "golden_mart_products";
-  const STORAGE_CART = "golden_mart_cart";
 
-  // Helper: load/save products
+  const STORAGE_PRODUCTS = "amazon_mock_products";
+  const STORAGE_CART = "amazon_mock_cart";
+
+  // ----- Helper: generate 5000+ Amazon-like products (simulate huge catalog)
+  function generateMockProducts(count = 5000) {
+    const categories = ["Electronics", "Books", "Clothing", "Home & Kitchen", "Toys", "Sports", "Beauty", "Tools"];
+    const emojis = ["📱", "💻", "📚", "👕", "🍳", "🎮", "⚽", "💄", "🔧", "🎧", "⌚", "🖨️", "📷", "🔊"];
+    const products = [];
+    for (let i = 1; i <= count; i++) {
+      const cat = categories[i % categories.length];
+      let baseName = "";
+      if (cat === "Electronics") baseName = `Amazon Basics ${["USB Cable", "Power Bank", "Speaker", "Tablet"][i % 4]}`;
+      else if (cat === "Books") baseName = `Bestseller Book #${i}`;
+      else if (cat === "Clothing") baseName = `Cotton T-Shirt Style ${i}`;
+      else baseName = `Amazon ${cat} Product ${i}`;
+      const price = Math.floor(Math.random() * 200000) + 5000;
+      const emoji = emojis[i % emojis.length];
+      products.push({
+        id: i,
+        name: `${baseName} (${cat})`,
+        price: price,
+        emoji: emoji,
+        category: cat
+      });
+    }
+    return products;
+  }
+
   function loadProductsFromStorage() {
     const stored = localStorage.getItem(STORAGE_PRODUCTS);
     if (stored) {
@@ -201,43 +222,30 @@
       } catch(e) { allProducts = []; }
     }
     if (!allProducts || allProducts.length === 0) {
-      // default demo products
-      allProducts = [
-        { id: 1, name: "SmartWatch X1", price: 89000, emoji: "⌚", category: "electronic" },
-        { id: 2, name: "Wireless Earbuds", price: 45000, emoji: "🎧", category: "audio" },
-        { id: 3, name: "Powerbank 20k mAh", price: 32000, emoji: "🔋", category: "accessory" },
-        { id: 4, name: "Ergonomic Chair", price: 189000, emoji: "🪑", category: "furniture" },
-        { id: 5, name: "LED Desk Lamp", price: 27000, emoji: "💡", category: "home" },
-      ];
+      // Generate 5000+ products first time
+      allProducts = generateMockProducts(5000);
       saveProductsToStorage();
     }
   }
-  function saveProductsToStorage() {
-    localStorage.setItem(STORAGE_PRODUCTS, JSON.stringify(allProducts));
-  }
-  function saveCartToStorage() {
-    localStorage.setItem(STORAGE_CART, JSON.stringify(cart));
-  }
+  function saveProductsToStorage() { localStorage.setItem(STORAGE_PRODUCTS, JSON.stringify(allProducts)); }
   function loadCartFromStorage() {
     const stored = localStorage.getItem(STORAGE_CART);
     if (stored) {
       try {
         cart = JSON.parse(stored);
-        // filter out products that no longer exist
         const validIds = new Set(allProducts.map(p => p.id));
         cart = cart.filter(item => validIds.has(item.id));
-        saveCartToStorage();
       } catch(e) { cart = []; }
-    } else { cart = []; }
+    } else cart = [];
+    saveCartToStorage();
     updateCartBadge();
   }
-
+  function saveCartToStorage() { localStorage.setItem(STORAGE_CART, JSON.stringify(cart)); }
   function updateCartBadge() {
-    const count = cart.reduce((s,i)=> s + i.quantity, 0);
+    const count = cart.reduce((s,i) => s + i.quantity, 0);
     const badge = document.getElementById("cartCount");
     if (badge) badge.innerText = count;
   }
-
   function addToCart(productId) {
     const product = allProducts.find(p => p.id == productId);
     if (!product) return;
@@ -246,52 +254,48 @@
     else cart.push({ id: product.id, name: product.name, price: product.price, quantity: 1, emoji: product.emoji });
     saveCartToStorage();
     updateCartBadge();
-    showToast(`✅ ${product.name} ထည့်ပြီး`);
+    showToast(`✅ ${product.name.substring(0, 40)} ထည့်ပြီး`);
   }
-
   function showToast(msg) {
     let toast = document.createElement("div");
     toast.innerText = msg;
-    toast.style.cssText = "position:fixed; bottom:20px; left:20px; background:#2c7da0; color:white; padding:12px 24px; border-radius:40px; z-index:9999; font-weight:500;";
+    toast.style.cssText = "position:fixed; bottom:20px; left:20px; background:#232f3e; color:white; padding:10px 20px; border-radius:40px; z-index:9999;";
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 2000);
   }
 
-  // render user product grid with pagination
+  // ----- USER VIEW (Amazon-style product grid)
   function renderUserProducts() {
-    const totalProducts = allProducts.length;
-    const totalPages = Math.ceil(totalProducts / USER_PAGE_SIZE);
+    const total = allProducts.length;
+    const totalPages = Math.ceil(total / USER_PAGE_SIZE);
     if (currentUserPage > totalPages) currentUserPage = Math.max(1, totalPages);
     const start = (currentUserPage - 1) * USER_PAGE_SIZE;
-    const pageProducts = allProducts.slice(start, start + USER_PAGE_SIZE);
-    
-    let html = `<div class="container"><h2>✨ အွန်လိုင်းစျေးဝယ်ရန်</h2>
-    <div class="products-grid">`;
-    for (let p of pageProducts) {
+    const pageProds = allProducts.slice(start, start + USER_PAGE_SIZE);
+    let html = `<div class="container">
+      <h2>✨ Amazon စတိုင် အကြီးဆုံး ပစ္စည်းစုစည်းမှု (${total} items)</h2>
+      <div class="products-grid">`;
+    for (let p of pageProds) {
       html += `
         <div class="product-card">
-          <div class="product-emoji">${p.emoji || '📦'}</div>
+          <div class="product-img">${p.emoji || '📦'}</div>
           <div class="product-title">${escapeHtml(p.name)}</div>
           <div class="product-price">${p.price.toLocaleString()} ကျပ်</div>
-          <button class="add-to-cart" data-id="${p.id}">➕ ထည့်မည်</button>
+          <button class="add-to-cart" data-id="${p.id}">🛒 ခြင်းတောင်းထည့်</button>
         </div>
       `;
     }
     html += `</div><div class="pagination">`;
-    for (let i = 1; i <= totalPages; i++) {
-      html += `<button class="page-btn ${i === currentUserPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+    for (let i = 1; i <= totalPages && i <= 100; i++) {
+      html += `<button class="page-btn ${i===currentUserPage?'active':''}" data-page="${i}">${i}</button>`;
     }
+    if (totalPages > 100) html += `<span>...</span>`;
     html += `</div></div>`;
     document.getElementById("app").innerHTML = html;
-    // attach events
     document.querySelectorAll(".add-to-cart").forEach(btn => {
-      btn.addEventListener("click", (e) => {
-        const id = parseInt(btn.dataset.id);
-        addToCart(id);
-      });
+      btn.addEventListener("click", (e) => { addToCart(parseInt(btn.dataset.id)); });
     });
     document.querySelectorAll(".page-btn").forEach(btn => {
-      btn.addEventListener("click", (e) => {
+      btn.addEventListener("click", () => {
         currentUserPage = parseInt(btn.dataset.page);
         renderUserProducts();
         window.scrollTo({ top: 0, behavior: "smooth" });
@@ -299,320 +303,242 @@
     });
   }
 
-  // ---------------- ADMIN PANEL ----------------
+  // ----- ADMIN PANEL (Full control, CSV support for thousands)
   function renderAdminPanel() {
-    const totalAdminProducts = allProducts.length;
-    const totalAdminPages = Math.ceil(totalAdminProducts / ADMIN_PAGE_SIZE);
-    if (currentAdminPage > totalAdminPages) currentAdminPage = Math.max(1, totalAdminPages);
+    const total = allProducts.length;
+    const totalPages = Math.ceil(total / ADMIN_PAGE_SIZE);
+    if (currentAdminPage > totalPages) currentAdminPage = Math.max(1, totalPages);
     const start = (currentAdminPage - 1) * ADMIN_PAGE_SIZE;
     const pageProds = allProducts.slice(start, start + ADMIN_PAGE_SIZE);
-    
     let html = `<div class="container">
-      <div style="display:flex; justify-content:space-between; flex-wrap:wrap; margin-bottom:1rem;">
-        <h2>🛠️ Admin Control Panel</h2>
-        <div><button id="viewStoreBtn" class="btn">🛒 စတိုးသို့သွားရန်</button></div>
+      <div style="display:flex; justify-content:space-between; margin-bottom:1rem;">
+        <h2>🛠️ Amazon Style Admin Panel</h2>
+        <button id="viewStoreBtn" class="btn">🏠 စတိုးသို့သွားရန်</button>
       </div>
-      
-      <!-- CSV Upload Section -->
       <div class="csv-zone">
-        <h3>📂 CSV Bulk Import (10k+ rows supported)</h3>
-        <p>CSV ဖိုင်တွင် <strong>name, price, emoji</strong> ကော်လံများ ပါရမည်။ (id optional)</p>
-        <input type="file" id="csvFileInput" accept=".csv" />
-        <div style="margin-top:1rem;">
-          <button id="replaceAllBtn" class="btn btn-danger">ဖိုင်ဖြင့် အစားထိုးမည်</button>
-          <button id="mergeBtn" class="btn">ဖိုင်နှင့် ပေါင်းထည့်မည်</button>
-          <button id="exportCsvBtn" class="btn btn-success">📥 CSV ထုတ်ယူမည်</button>
-          <button id="deleteAllBtn" class="btn btn-danger">အားလုံးဖျက်မည်</button>
+        <h3>📂 CSV Bulk Import (10k+ rows)</h3>
+        <p>CSV columns: <strong>name, price, emoji</strong> (id optional)</p>
+        <input type="file" id="csvFile" accept=".csv" />
+        <div style="margin:1rem 0;">
+          <button id="replaceBtn" class="btn-danger">🔄 အစားထိုးသွင်း</button>
+          <button id="mergeBtn" class="btn">➕ ပေါင်းထည့်သွင်း</button>
+          <button id="exportBtn" class="btn-success">📥 CSV ထုတ်ယူ</button>
+          <button id="deleteAllBtn" class="btn-danger">🗑️ အားလုံးဖျက်</button>
         </div>
-        <div id="csvStatus" style="margin-top:12px; font-size:0.9rem;"></div>
+        <div id="csvStatus" style="font-size:0.9rem;"></div>
       </div>
-      
-      <!-- Product List with inline edit/delete -->
-      <h3>📦 ပစ္စည်းစာရင်း (စုစုပေါင်း ${allProducts.length})</h3>
-      <div style="overflow-x:auto;">
-        <table class="admin-table">
-          <thead><tr><th>ID</th><th>Emoji</th><th>Name</th><th>Price (ကျပ်)</th><th>Actions</th></tr></thead>
-          <tbody>
-    `;
+      <h3>📦 ပစ္စည်းစာရင်း (စုစုပေါင်း ${total})</h3>
+      <div style="overflow-x:auto;"><table class="admin-table"><thead><tr><th>ID</th><th>Emoji</th><th>Name</th><th>Price</th><th>Actions</th></tr></thead><tbody>`;
     for (let p of pageProds) {
       html += `<tr>
         <td>${p.id}</td>
-        <td><input type="text" class="edit-emoji" data-id="${p.id}" value="${escapeHtml(p.emoji || '📦')}" style="width:60px;"></td>
-        <td><input type="text" class="edit-name" data-id="${p.id}" value="${escapeHtml(p.name)}"></td>
+        <td><input type="text" class="edit-emoji" data-id="${p.id}" value="${escapeHtml(p.emoji)}" style="width:70px;"></td>
+        <td><input type="text" class="edit-name" data-id="${p.id}" value="${escapeHtml(p.name)}" style="width:180px;"></td>
         <td><input type="number" class="edit-price" data-id="${p.id}" value="${p.price}"></td>
-        <td>
-          <button class="save-product-btn btn" data-id="${p.id}">💾 Save</button>
-          <button class="delete-product-btn btn-danger" data-id="${p.id}">🗑️ ဖျက်</button>
-        </td>
+        <td><button class="save-btn" data-id="${p.id}">💾 Save</button> <button class="delete-btn btn-danger" data-id="${p.id}">ဖျက်</button></td>
       </tr>`;
     }
-    html += `</tbody></table></div>
-      <div class="pagination" id="adminPagination"></div>
-      <div style="margin:2rem 0;">
-        <h3>➕ ပစ္စည်းအသစ်ထည့်ရန်</h3>
-        <input type="text" id="newName" placeholder="ပစ္စည်းအမည်" /> 
+    html += `</tbody></table></div><div class="pagination" id="adminPagination"></div>
+      <div style="margin:2rem 0;"><h3>➕ ပစ္စည်းအသစ်</h3>
+        <input type="text" id="newName" placeholder="အမည်" /> 
         <input type="number" id="newPrice" placeholder="စျေးနှုန်း" />
-        <input type="text" id="newEmoji" placeholder="Emoji (ဥပမာ ⌚)" />
-        <button id="addProductBtn" class="btn">➕ ထည့်မည်</button>
+        <input type="text" id="newEmoji" placeholder="Emoji (📱)" />
+        <button id="addNewBtn" class="btn">ထည့်မည်</button>
       </div>
     </div>`;
     document.getElementById("app").innerHTML = html;
-    
-    // attach admin pagination
-    const paginationDiv = document.getElementById("adminPagination");
-    for (let i = 1; i <= totalAdminPages; i++) {
+    // pagination
+    const pagDiv = document.getElementById("adminPagination");
+    for (let i = 1; i <= totalPages; i++) {
       const btn = document.createElement("button");
       btn.innerText = i;
       btn.classList.add("page-btn");
       if (i === currentAdminPage) btn.classList.add("active");
-      btn.addEventListener("click", () => {
-        currentAdminPage = i;
-        renderAdminPanel();
-      });
-      paginationDiv.appendChild(btn);
+      btn.onclick = () => { currentAdminPage = i; renderAdminPanel(); };
+      pagDiv.appendChild(btn);
     }
-    
-    // event: save product inline
-    document.querySelectorAll(".save-product-btn").forEach(btn => {
-      btn.addEventListener("click", (e) => {
+    // event handlers
+    document.querySelectorAll(".save-btn").forEach(btn => {
+      btn.onclick = () => {
         const id = parseInt(btn.dataset.id);
         const row = btn.closest("tr");
         const newEmoji = row.querySelector(".edit-emoji").value;
         const newName = row.querySelector(".edit-name").value;
         const newPrice = parseInt(row.querySelector(".edit-price").value);
-        const product = allProducts.find(p => p.id === id);
-        if (product) {
-          product.name = newName;
-          product.price = isNaN(newPrice) ? product.price : newPrice;
-          product.emoji = newEmoji || "📦";
+        const prod = allProducts.find(p => p.id === id);
+        if (prod) {
+          prod.name = newName; prod.price = isNaN(newPrice) ? prod.price : newPrice; prod.emoji = newEmoji || "📦";
           saveProductsToStorage();
           renderAdminPanel();
-          showToast("ပစ္စည်းပြင်ဆင်ပြီး");
+          showToast("ပြင်ဆင်ပြီး");
         }
-      });
+      };
     });
-    document.querySelectorAll(".delete-product-btn").forEach(btn => {
-      btn.addEventListener("click", () => {
+    document.querySelectorAll(".delete-btn").forEach(btn => {
+      btn.onclick = () => {
         const id = parseInt(btn.dataset.id);
         allProducts = allProducts.filter(p => p.id !== id);
-        saveProductsToStorage();
-        // also remove from cart if any
         cart = cart.filter(i => i.id !== id);
-        saveCartToStorage();
-        updateCartBadge();
+        saveProductsToStorage(); saveCartToStorage(); updateCartBadge();
         renderAdminPanel();
-        showToast("ဖျက်ပြီးပါပြီ");
-      });
+        showToast("ဖျက်ပြီး");
+      };
     });
-    document.getElementById("addProductBtn")?.addEventListener("click", () => {
+    document.getElementById("addNewBtn")?.addEventListener("click", () => {
       const name = document.getElementById("newName").value.trim();
       const price = parseInt(document.getElementById("newPrice").value);
       const emoji = document.getElementById("newEmoji").value.trim() || "📦";
-      if (!name || isNaN(price)) { showToast("အမည်နှင့်စျေးနှုန်း ထည့်ပါ"); return; }
-      const newId = Date.now() + Math.floor(Math.random() * 10000);
+      if (!name || isNaN(price)) { showToast("အမည်နှင့်စျေးနှုန်းထည့်ပါ"); return; }
+      const newId = Date.now() + Math.random() * 100000;
       allProducts.push({ id: newId, name, price, emoji });
       saveProductsToStorage();
       renderAdminPanel();
       showToast("ထည့်ပြီး");
     });
     document.getElementById("viewStoreBtn")?.addEventListener("click", () => {
-      window.location.hash = "";
-      window.location.pathname = "/";
-      // force reload view
+      window.history.pushState({}, "", "/");
       checkRouteAndRender();
     });
-    document.getElementById("exportCsvBtn")?.addEventListener("click", exportToCSV);
+    document.getElementById("exportBtn")?.addEventListener("click", exportToCSV);
     document.getElementById("deleteAllBtn")?.addEventListener("click", () => {
-      if (confirm("ပစ္စည်းအားလုံးကိုဖျက်မည်။ သေချာပါသလား?")) {
+      if (confirm("အားလုံးဖျက်မယ်။ သေချာလား?")) {
         allProducts = [];
         saveProductsToStorage();
-        cart = [];
-        saveCartToStorage();
-        updateCartBadge();
+        cart = []; saveCartToStorage(); updateCartBadge();
         renderAdminPanel();
-        showToast("အားလုံးဖျက်ပြီး");
       }
     });
-    // CSV handlers
-    let csvFile = null;
-    document.getElementById("csvFileInput").addEventListener("change", (e) => {
-      csvFile = e.target.files[0];
-    });
-    function parseAndProcess(replaceMode) {
-      if (!csvFile) { showToast("ဖိုင်ရွေးပါ"); return; }
-      Papa.parse(csvFile, {
-        header: true,
-        dynamicTyping: true,
-        skipEmptyLines: true,
-        complete: (results) => {
-          const rows = results.data;
-          if (rows.length === 0) { showToast("CSV တွင် ဒေတာမရှိပါ"); return; }
-          const newProducts = [];
-          for (let row of rows) {
-            let name = row.name || row.Name || row.title;
-            let price = parseFloat(row.price || row.Price || 0);
-            let emoji = row.emoji || row.Emoji || "📦";
-            if (!name || isNaN(price)) continue;
-            const id = row.id ? parseInt(row.id) : Date.now() + Math.random() * 10000 + newProducts.length;
-            newProducts.push({ id: id, name: String(name), price: price, emoji: String(emoji) });
+    let selectedFile = null;
+    document.getElementById("csvFile").addEventListener("change", (e) => { selectedFile = e.target.files[0]; });
+    const processCSV = (replaceMode) => {
+      if (!selectedFile) { showToast("CSV ဖိုင်ရွေးပါ"); return; }
+      Papa.parse(selectedFile, { header: true, dynamicTyping: true, skipEmptyLines: true, complete: (res) => {
+        const rows = res.data;
+        const newProducts = [];
+        for (let row of rows) {
+          let name = row.name || row.Name;
+          let price = parseFloat(row.price || row.Price);
+          let emoji = row.emoji || row.Emoji || "📦";
+          if (!name || isNaN(price)) continue;
+          const id = row.id ? parseInt(row.id) : Date.now() + Math.random() * 10000 + newProducts.length;
+          newProducts.push({ id, name: String(name), price, emoji: String(emoji) });
+        }
+        if (newProducts.length === 0) { showToast("မှန်ကန်သော CSV မဟုတ်"); return; }
+        if (replaceMode) allProducts = newProducts;
+        else {
+          const existingIds = new Set(allProducts.map(p => p.id));
+          for (let prod of newProducts) {
+            if (!existingIds.has(prod.id)) allProducts.push(prod);
+            else { prod.id = Date.now() + Math.random() * 100000; allProducts.push(prod); }
           }
-          if (newProducts.length === 0) { showToast("မှန်ကန်သော CSV format မဟုတ်ပါ"); return; }
-          if (replaceMode) {
-            allProducts = newProducts;
-          } else {
-            // merge: avoid duplicate id? simple push, ensure unique id
-            const existingIds = new Set(allProducts.map(p => p.id));
-            for (let prod of newProducts) {
-              if (!existingIds.has(prod.id)) allProducts.push(prod);
-              else {
-                prod.id = Date.now() + Math.random() * 10000;
-                allProducts.push(prod);
-              }
-            }
-          }
-          saveProductsToStorage();
-          renderAdminPanel();
-          showToast(`${newProducts.length} ခု တင်ပြီး (${replaceMode ? 'အစားထိုး' : 'ပေါင်းထည့်'} ပြီး)`);
-          document.getElementById("csvStatus").innerHTML = `✅ အောင်မြင်: ${newProducts.length} products loaded.`;
-          csvFile = null;
-          document.getElementById("csvFileInput").value = "";
-        },
-        error: (err) => { showToast("CSV parse error"); console.error(err); }
-      });
-    }
-    document.getElementById("replaceAllBtn")?.addEventListener("click", () => parseAndProcess(true));
-    document.getElementById("mergeBtn")?.addEventListener("click", () => parseAndProcess(false));
+        }
+        saveProductsToStorage();
+        renderAdminPanel();
+        showToast(`${newProducts.length} ခု ${replaceMode ? 'အစားထိုး' : 'ပေါင်းထည့်'} ပြီး`);
+        document.getElementById("csvStatus").innerHTML = `✅ အောင်မြင် ${newProducts.length} products loaded.`;
+        selectedFile = null;
+        document.getElementById("csvFile").value = "";
+      }});
+    };
+    document.getElementById("replaceBtn")?.addEventListener("click", () => processCSV(true));
+    document.getElementById("mergeBtn")?.addEventListener("click", () => processCSV(false));
   }
-  
+
   function exportToCSV() {
-    if (allProducts.length === 0) { showToast("ထုတ်ယူရန် ဒေတာမရှိ"); return; }
-    const headers = ["id", "name", "price", "emoji"];
-    const csvRows = [headers.join(",")];
+    if (!allProducts.length) { showToast("ထုတ်ရန်ဒေတာမရှိ"); return; }
+    const headers = ["id","name","price","emoji"];
+    const rows = [headers.join(",")];
     for (let p of allProducts) {
-      csvRows.push(`${p.id},"${escapeCsv(p.name)}",${p.price},"${escapeCsv(p.emoji || '')}"`);
+      rows.push(`${p.id},"${escapeCsv(p.name)}",${p.price},"${escapeCsv(p.emoji)}"`);
     }
-    const blob = new Blob([csvRows.join("\n")], { type: "text/csv" });
+    const blob = new Blob([rows.join("\n")], {type:"text/csv"});
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = "products_export.csv";
+    link.download = "amazon_products.csv";
     link.click();
     URL.revokeObjectURL(link.href);
     showToast("CSV ထုတ်ပြီး");
   }
-  
-  function escapeCsv(str) { return String(str).replace(/"/g, '""'); }
-  function escapeHtml(str) { return String(str).replace(/[&<>]/g, function(m){ if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
-   
-// ---------------- CART MODAL -----------------
+
+  // Cart modal functions
   function renderCartModal() {
     const container = document.getElementById("cartItemsList");
     const totalSpan = document.getElementById("cartTotal");
     if (!container) return;
-    if (cart.length === 0) {
-      container.innerHTML = "<div class='empty-cart'>ခြင်းတောင်းထဲတွင် ပစ္စည်းမရှိပါ။</div>";
-      totalSpan.innerText = "";
-      return;
-    }
+    if (cart.length === 0) { container.innerHTML = "<div>ခြင်းတောင်းထဲတွင် ပစ္စည်းမရှိပါ</div>"; totalSpan.innerText = ""; return; }
     let total = 0;
     let html = `<ul style="list-style:none;">`;
     for (let item of cart) {
       const subtotal = item.price * item.quantity;
       total += subtotal;
-      html += `<li style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #ddd;">
-        <div>${item.emoji || '📦'} ${item.name} x ${item.quantity}</div>
+      html += `<li style="display:flex; justify-content:space-between; margin-bottom:12px;">
+        <div>${item.emoji} ${item.name} x ${item.quantity}</div>
         <div>${subtotal.toLocaleString()} ကျပ် 
-          <button class="cart-inc" data-id="${item.id}" style="margin-left:8px;">+</button>
+          <button class="cart-inc" data-id="${item.id}">+</button>
           <button class="cart-dec" data-id="${item.id}">-</button>
-          <button class="cart-remove" data-id="${item.id}" style="background:var(--danger);color:white;">ဖျက်</button>
+          <button class="cart-remove" data-id="${item.id}" style="background:#cc0c39; color:white;">ဖျက်</button>
         </div>
       </li>`;
     }
     html += `</ul>`;
     container.innerHTML = html;
     totalSpan.innerText = `စုစုပေါင်း: ${total.toLocaleString()} ကျပ်`;
-    
     document.querySelectorAll(".cart-inc").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const id = parseInt(btn.dataset.id);
-        const item = cart.find(i => i.id === id);
-        if (item) { item.quantity++; saveCartToStorage(); updateCartBadge(); renderCartModal(); }
-      });
+      btn.onclick = () => { const id=parseInt(btn.dataset.id); const item=cart.find(i=>i.id===id); if(item){item.quantity++; saveCartToStorage(); updateCartBadge(); renderCartModal(); } };
     });
     document.querySelectorAll(".cart-dec").forEach(btn => {
-      const id = parseInt(btn.dataset.id);
-      const item = cart.find(i => i.id === id);
-      if (item && item.quantity > 1) { item.quantity--; saveCartToStorage(); updateCartBadge(); renderCartModal(); }
-      else if (item && item.quantity === 1) { 
-        cart = cart.filter(i => i.id !== id);
-        saveCartToStorage(); updateCartBadge(); renderCartModal();
-      }
+      btn.onclick = () => { const id=parseInt(btn.dataset.id); const item=cart.find(i=>i.id===id); if(item && item.quantity>1){item.quantity--; saveCartToStorage(); updateCartBadge(); renderCartModal(); } else if(item && item.quantity===1){ cart=cart.filter(i=>i.id!==id); saveCartToStorage(); updateCartBadge(); renderCartModal(); } };
     });
     document.querySelectorAll(".cart-remove").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const id = parseInt(btn.dataset.id);
-        cart = cart.filter(i => i.id !== id);
-        saveCartToStorage(); updateCartBadge(); renderCartModal();
-      });
+      btn.onclick = () => { const id=parseInt(btn.dataset.id); cart=cart.filter(i=>i.id!==id); saveCartToStorage(); updateCartBadge(); renderCartModal(); };
     });
   }
-  
-  function openCartModal() { 
-    const modal = document.getElementById("cartModal");
-    renderCartModal();
-    modal.style.display = "flex";
-  }
-  
-  // ---------------- ROUTING based on /step or #step ----------------
+  function openCartModal() { renderCartModal(); document.getElementById("cartModal").style.display = "flex"; }
+
+  // Routing based on /step or #step
   function checkRouteAndRender() {
     const path = window.location.pathname;
     const hash = window.location.hash;
-    const isAdminRoute = path.endsWith("/step") || path === "/step" || hash === "#step";
-    if (isAdminRoute) {
-      renderAdminPanel();
-    } else {
-      renderUserProducts();
-    }
-    // cart icon event rebind
+    const isAdmin = path.endsWith("/step") || path === "/step" || hash === "#step";
+    if (isAdmin) renderAdminPanel();
+    else renderUserProducts();
     const cartIcon = document.getElementById("cartIcon");
     if (cartIcon) cartIcon.onclick = openCartModal;
     const closeBtn = document.getElementById("closeCartBtn");
     if (closeBtn) closeBtn.onclick = () => document.getElementById("cartModal").style.display = "none";
     const checkoutBtn = document.getElementById("checkoutBtn");
     if (checkoutBtn) checkoutBtn.onclick = () => {
-      if (cart.length === 0) showToast("ခြင်းတောင်းမရှိပါ");
+      if (cart.length === 0) showToast("ခြင်းတောင်းမရှိ");
       else {
-        alert(`ဝယ်ယူမှုအောင်မြင်ပါသည်။ စုစုပေါင်း ${cart.reduce((s,i)=>s+(i.price*i.quantity),0).toLocaleString()} ကျပ်`);
-        cart = [];
-        saveCartToStorage();
-        updateCartBadge();
+        alert(`ဝယ်ယူမှု အောင်မြင်ပါသည်။ စုစုပေါင်း ${cart.reduce((s,i)=>s+(i.price*i.quantity),0).toLocaleString()} ကျပ်`);
+        cart = []; saveCartToStorage(); updateCartBadge();
         document.getElementById("cartModal").style.display = "none";
-        if (!isAdminRoute) renderUserProducts();
-        else renderAdminPanel();
+        if (!isAdmin) renderUserProducts(); else renderAdminPanel();
         showToast("ကျေးဇူးပါ");
       }
     };
-    window.onclick = (e) => { if (e.target === document.getElementById("cartModal")) document.getElementById("cartModal").style.display = "none"; };
     const switchLink = document.getElementById("switchToAdminLink");
     if (switchLink) {
-      if (isAdminRoute) {
+      if (isAdmin) {
         switchLink.innerText = "🏠 စတိုးသို့သွားရန်";
         switchLink.href = "/";
-        switchLink.onclick = (e) => { e.preventDefault(); window.history.pushState({}, "", "/"); checkRouteAndRender(); };
+        switchLink.onclick = (e) => { e.preventDefault(); window.history.pushState({},"","/"); checkRouteAndRender(); };
       } else {
         switchLink.innerText = "🔐 Admin (/step)";
         switchLink.href = "/step";
-        switchLink.onclick = (e) => { e.preventDefault(); window.history.pushState({}, "", "/step"); checkRouteAndRender(); };
+        switchLink.onclick = (e) => { e.preventDefault(); window.history.pushState({},"","/step"); checkRouteAndRender(); };
       }
     }
   }
-  
-  // initialize data
+
+  function escapeHtml(str) { return String(str).replace(/[&<>]/g, function(m){ if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
+  function escapeCsv(str) { return String(str).replace(/"/g, '""'); }
+
+  // INIT
   loadProductsFromStorage();
   loadCartFromStorage();
   checkRouteAndRender();
-  // listen to popstate
   window.addEventListener("popstate", () => checkRouteAndRender());
 </script>
 </body>
 </html>
-
