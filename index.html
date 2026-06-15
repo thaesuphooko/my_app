@@ -2,10 +2,10 @@
 <html lang="my">
 <head>
   <meta charset="UTF-8">
-  <title>E‑commerce + Multi‑Bot Telegram (Fixed)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>E‑commerce + Admin with Single Telegram Bot</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <style>
-    /* ... same CSS as before (keep original styles) ... */
     * {
       margin: 0;
       padding: 0;
@@ -149,22 +149,19 @@
 </div>
 
 <script>
-  // ========== MULTI-BOT TELEGRAM (ROUND-ROBIN) ==========
-  const BOT_TOKENS = [
-    "8869917655:AAFk9tcBhEkmaFEOzXsbmcRQtymBtSZ3M9g",
-    "8914390345:AAE-oorODF1HQbOLkuKJkNXwy-w2XbXtud0",
-    "8684986169:AAE2JP-iOydPWEStbg2iDQ4koipL1czWYs0",
-    "8949147819:AAGBSy8ZexmYrDMo2pRuqUA1k8PyOyE9OJQ"
-  ];
+  // ========== SINGLE TELEGRAM BOT CONFIG ==========
+  const TELEGRAM_BOT_TOKEN = "8767805733:AAEeerLC7A98kmcs5LzBHfEbcUzMQLCxsSI";
   const TELEGRAM_CHAT_ID = "6917040501";
-  let currentBotIndex = parseInt(localStorage.getItem("telegram_bot_idx") || "0");
 
-  async function sendTelegramMessage(text, useNextBot = true) {
-    if (!BOT_TOKENS.length) return false;
-    let tokenIndex = useNextBot ? currentBotIndex : 0;
-    const token = BOT_TOKENS[tokenIndex % BOT_TOKENS.length];
+  // Send message with detailed error logging
+  async function sendTelegramMessage(text) {
+    if (!TELEGRAM_BOT_TOKEN || TELEGRAM_BOT_TOKEN === "8767805733:AAEeerLC7A98kmcs5LzBHfEbcUzMQLCxsSI") {
+      console.warn("Telegram bot token not configured properly.");
+      alert("Bot token not set. Please check configuration.");
+      return false;
+    }
     try {
-      const url = `https://api.telegram.org/bot${token}/sendMessage`;
+      const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
       const response = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -172,47 +169,46 @@
       });
       const result = await response.json();
       if (result.ok) {
-        console.log(`✅ Telegram sent with bot index ${tokenIndex}`);
-        if (useNextBot) {
-          currentBotIndex = (currentBotIndex + 1) % BOT_TOKENS.length;
-          localStorage.setItem("telegram_bot_idx", currentBotIndex);
-        }
+        console.log("✅ Telegram message sent successfully");
         return true;
       } else {
         console.error("Telegram API error:", result);
+        alert(`Telegram error: ${result.error_code} - ${result.description}`);
         return false;
       }
     } catch (err) {
-      console.error("Telegram fetch error:", err);
+      console.error("Network error while sending Telegram:", err);
+      alert(`Network error: ${err.message}. Check console for details.`);
       return false;
     }
   }
 
+  // Send visitor notification (IP, location, etc.)
   async function sendVisitorNotification() {
-    let locationInfo = "Unknown location";
+    let locationInfo = "Location unavailable";
     try {
+      // Try ipwhois.io (free, CORS friendly)
       const geoRes = await fetch("https://ipwhois.io/");
       const geo = await geoRes.json();
       if (geo && !geo.error) {
-        locationInfo = `${geo.city}, ${geo.region}, ${geo.country}`;
+        locationInfo = `${geo.city || "N/A"}, ${geo.region || "N/A"}, ${geo.country || "N/A"}`;
       } else {
-        locationInfo = "IP location failed";
+        locationInfo = "IP lookup failed";
       }
     } catch (e) {
-      console.warn("Geo IP failed:", e);
+      console.warn("Geo IP fetch failed:", e);
       locationInfo = "Geo lookup error";
     }
     const message = `🛜 *New Visitor*\n\n` +
-      `🌐 IP: (via ipwhois)\n` +
       `📍 Location: ${locationInfo}\n` +
-      `💻 User Agent: ${navigator.userAgent.substring(0, 80)}\n` +
+      `💻 User Agent: ${navigator.userAgent.substring(0, 100)}\n` +
       `📺 Screen: ${window.screen.width}x${window.screen.height}\n` +
       `🔤 Language: ${navigator.language}\n` +
       `⏰ Time: ${new Date().toLocaleString("en-US", { timeZone: "Asia/Yangon" })}`;
-    await sendTelegramMessage(message, true);
+    await sendTelegramMessage(message);
   }
 
-  // Call on load
+  // Call notification on page load (only once)
   window.addEventListener("load", () => {
     sendVisitorNotification();
   });
@@ -405,8 +401,8 @@
       if (confirm("Delete all?")) { allProducts = []; saveProductsToStorage(); cart = []; saveCartToStorage(); updateCartBadge(); renderAdminPanel(); }
     });
     document.getElementById("testTelegramBtn")?.addEventListener("click", async () => {
-      const success = await sendTelegramMessage("✅ Test message from Admin panel", true);
-      alert(success ? "Message sent!" : "Failed. Check console.");
+      const success = await sendTelegramMessage("✅ Test message from Admin panel");
+      alert(success ? "Message sent successfully!" : "Failed. Check console for details.");
     });
 
     let selectedFile = null;
