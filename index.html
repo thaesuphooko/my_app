@@ -2,41 +2,12 @@
 <html lang="my">
 <head>
     <meta charset="UTF-8">
-    <title>Simple Shop</title>
-    <style>
-        body { font-family: sans-serif; margin: 0; }
-        .page { display: none; padding: 20px; }
-        .active { display: block; }
-        nav { background: #333; color: white; padding: 10px; }
-    </style>
+    <title>My E-Commerce</title>
 </head>
 <body>
-
-    <nav>
-        <button onclick="showPage('home')">Home</button>
-        <button onclick="showPage('step')">Admin /step</button>
-    </nav>
-
-    <div id="home" class="page active">
-        <h1>Store Front</h1>
-        <p>ပစ္စည်းတွေက ဒီမှာပေါ်လာမယ်...</p>
-    </div>
-
-    <div id="step" class="page">
-        <h1>Admin /step</h1>
-        <p>ပစ္စည်းအသစ် ထည့်ရန်ဖောင်...</p>
-        <input type="text" placeholder="ပစ္စည်းအမည်">
-        <button>သိမ်းမည်</button>
-    </div>
-
-    <script>
-        function showPage(pageId) {
-            // အားလုံးကို ဖျောက်မယ်
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            // ရွေးထားတဲ့ page ကို ပြမယ်
-            document.getElementById(pageId).classList.add('active');
-        }
-    </script>
+    <h1>Welcome to My Store</h1>
+    <p>ပစ္စည်းများ တင်ပြထားသော နေရာဖြစ်ပါသည်။</p>
+    
+    <a href="step.html">Admin Panel သို့ဝင်ရန်</a>
 </body>
 </html>
-
