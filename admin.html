@@ -4,17 +4,47 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
   <title>Admin Panel - Shop.com.mm</title>
+
+  <!-- Papa Parse (CSV) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js">
   </script>
+
+  <!-- ========================================================== -->
+  <!-- FIREBASE SDK (CDN)                                         -->
+  <!-- ========================================================== -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js">
+  </script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js">
+  </script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js">
+  </script>
+
+  <script>
+    // ============================================================
+    // FIREBASE CONFIG (Project: app-my-caee3)
+    // ============================================================
+    const firebaseConfig = {
+      apiKey: "AIzaSyDSu2XksfUZ6mAfktUpBqFtNxrgj96h1l4",
+      authDomain: "app-my-caee3.firebaseapp.com",
+      projectId: "app-my-caee3",
+      storageBucket: "app-my-caee3.firebasestorage.app",
+      messagingSenderId: "169669907659",
+      appId: "1:169669907659:web:8fba75e7aed449e3ffb74e",
+      measurementId: "G-RTM9J8L6R1"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    console.log("✅ Firebase connected!");
+  </script>
+
   <link rel="stylesheet" href="style.css">
   <style>
-    /* Admin-specific styles */
     .admin-panel {
       max-width: 1200px;
       margin: 0 auto;
       padding: 1rem;
     }
-
     .admin-section {
       background: #fff;
       padding: 1.2rem;
@@ -23,7 +53,6 @@
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
       border: 1px solid #eee;
     }
-
     .admin-section h3 {
       font-size: 1.1rem;
       margin-bottom: 0.8rem;
@@ -31,7 +60,6 @@
       border-bottom: 2px solid #e11b1b;
       padding-bottom: 0.4rem;
     }
-
     .admin-section label {
       display: block;
       font-weight: 600;
@@ -39,10 +67,8 @@
       margin-top: 0.5rem;
       color: #555;
     }
-
     .admin-section input,
-    .admin-section textarea,
-    .admin-section select {
+    .admin-section textarea {
       width: 100%;
       padding: 0.5rem 0.8rem;
       border: 1px solid #ddd;
@@ -50,76 +76,45 @@
       font-size: 0.9rem;
       margin-top: 0.2rem;
     }
-
     .admin-section textarea {
       height: 70px;
       resize: vertical;
     }
-
     .admin-section .btn-group {
       display: flex;
       flex-wrap: wrap;
       gap: 0.5rem;
       margin-top: 0.8rem;
     }
-
     .admin-table {
       width: 100%;
       border-collapse: collapse;
       font-size: 0.85rem;
       margin-top: 0.5rem;
     }
-
     .admin-table th {
       background: #f8f8f8;
       padding: 0.5rem 0.6rem;
       text-align: left;
       border-bottom: 2px solid #eee;
     }
-
     .admin-table td {
       padding: 0.4rem 0.6rem;
       border-bottom: 1px solid #eee;
       vertical-align: middle;
     }
-
-    .admin-table input[type="text"],
-    .admin-table input[type="number"] {
+    .admin-table input {
       width: 100%;
       padding: 0.2rem 0.4rem;
       border: 1px solid #ddd;
       border-radius: 4px;
       font-size: 0.8rem;
     }
-
     .admin-table .btn-sm {
       padding: 0.15rem 0.6rem;
       font-size: 0.7rem;
       border-radius: 20px;
     }
-
-    .status-msg {
-      padding: 0.5rem;
-      border-radius: 8px;
-      margin-top: 0.5rem;
-      font-weight: 500;
-    }
-
-    .status-msg.success {
-      background: #d4edda;
-      color: #155724;
-    }
-
-    .status-msg.error {
-      background: #f8d7da;
-      color: #721c24;
-    }
-
-    .status-msg.info {
-      background: #d1ecf1;
-      color: #0c5460;
-    }
-
     .admin-header {
       background: #e11b1b;
       color: #fff;
@@ -128,97 +123,73 @@
       justify-content: space-between;
       align-items: center;
       border-radius: 12px 12px 0 0;
-      margin: -1rem -1rem 1rem -1rem;
     }
-
     .admin-header h1 {
       font-size: 1.2rem;
       margin: 0;
     }
-
     .admin-header .admin-user {
       font-size: 0.85rem;
       opacity: 0.9;
     }
-
     .admin-grid-2 {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 1rem;
     }
-
+    .status-msg {
+      padding: 0.5rem;
+      border-radius: 8px;
+      margin-top: 0.5rem;
+      font-weight: 500;
+    }
+    .status-msg.success {
+      background: #d4edda;
+      color: #155724;
+    }
+    .status-msg.error {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    .status-msg.info {
+      background: #d1ecf1;
+      color: #0c5460;
+    }
     @media (max-width: 768px) {
       .admin-grid-2 {
         grid-template-columns: 1fr;
       }
     }
-
-    /* Broadcast section */
-    .broadcast-area {
-      background: #f8f9fa;
-      border-radius: 8px;
-      padding: 0.8rem;
-      margin-top: 0.5rem;
-    }
-
-    .broadcast-area textarea {
-      height: 80px;
-    }
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>Admin Panel - Shop.com.mm</title>
-
-  <!-- Papa Parse (CSV) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js">
-  </script>
-
-  <!-- ========================================================== -->
-  <!-- FIREBASE SDK (CDN) - ဒီနေရာမှာ ထည့်ပါ                    -->
-  <!-- ========================================================== -->
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js">
-  </script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js">
-  </script>
-
-  <script>
-    // ============================================================
-    // FIREBASE CONFIG - ခင်ဗျားရဲ့ Config ကို ဒီမှာထည့်ပါ
-    // ============================================================
-    const firebaseConfig = {
-      apiKey: "AIzaSyBZVwNtZ3EOAAtSJ69delNpKSRRkCjF2ak",
-      authDomain: "my-eshop-a5bd4.firebaseapp.com",
-      projectId: "my-eshop-a5bd4",
-      storageBucket: "my-eshop-a5bd4.firebasestorage.app",
-      messagingSenderId: "712113582989",
-      appId: "1:712113582989:web:5264518aa186925dac03c4",
-      measurementId: "G-9L6P8LVNLE"
-    };
-
-    // Initialize Firebase
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-    console.log("✅ Firebase connected!");
-  </script>
-
-  <!-- CSS -->
-  <link rel="stylesheet" href="style.css">
-  <!-- Admin Styles -->
-  <style>
-    /* ... your existing admin styles ... */
-  </style>
-</head>
   </style>
 </head>
 <body>
 
-  <div class="admin-panel" id="adminApp">
+  <div class="admin-panel">
     <div class="admin-header">
       <h1>🛠️ Admin Panel</h1>
       <div class="admin-user">
         <span id="adminStatus">🔐 Secured</span>
         <button class="btn btn-outline" id="adminLogoutBtn" style="background:rgba(255,255,255,0.2);color:#fff;margin-left:0.5rem;padding:0.2rem 0.8rem;font-size:0.7rem;">Logout</button>
       </div>
+    </div>
+
+    <!-- ===== ADMIN ROUTE SETTINGS ===== -->
+    <div class="admin-section">
+      <h3>🔗 Admin Route Settings</h3>
+      <div class="admin-grid-2">
+        <div>
+          <label>Admin Route (URL Hash)</label>
+          <input type="text" id="adminRouteInput" placeholder="#step" value="#step" />
+          <small style="color:#888;font-size:0.7rem;">ဥပမာ: #step, #admin, #dashboard</small>
+        </div>
+        <div>
+          <label>Admin Page Filename</label>
+          <input type="text" id="adminPageInput" placeholder="admin.html" value="admin.html" />
+          <small style="color:#888;font-size:0.7rem;">ဥပမာ: admin.html, dashboard.html</small>
+        </div>
+      </div>
+      <button class="btn btn-success" id="saveAdminRouteBtn">💾 Save Route Settings</button>
+      <div id="routeStatus" class="status-msg" style="display:none;"></div>
     </div>
 
     <!-- ===== STORE CUSTOMIZATION ===== -->
@@ -393,7 +364,6 @@
       <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.5rem;">
         <input type="text" id="adminUserSearch" placeholder="Search user..." style="flex:2;min-width:150px;" />
         <button class="btn btn-outline" id="adminUserSearchBtn">🔍 Search</button>
-        <button class="btn btn-danger" id="adminDeleteUserBtn" style="display:none;">🗑️ Delete Selected</button>
       </div>
       <div id="userListContainer" style="max-height:200px;overflow-y:auto;border:1px solid #ddd;border-radius:8px;padding:0.3rem;">
         <div style="color:#888;font-size:0.85rem;text-align:center;padding:0.5rem;">Loading users...</div>
