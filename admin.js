@@ -711,3 +711,66 @@ document.addEventListener("DOMContentLoaded", function() {
     if (target) target.appendChild(btn);
   }, 1000);
 });
+// ============================================================
+// SYNC TO FIRESTORE (Admin)
+// ============================================================
+async function syncProductsToFirestore() {
+  if (!db) {
+    alert("❌ Firebase not initialized!");
+    return;
+  }
+
+  if (allProducts.length === 0) {
+    alert("❌ No products to sync!");
+    return;
+  }
+
+  try {
+    console.log("⏳ Syncing to Firebase...");
+    const batch = db.batch();
+    const productsRef = db.collection('products');
+
+    // Clear old data
+    const snapshot = await productsRef.get();
+    snapshot.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+
+    // Add new data
+    allProducts.forEach((product) => {
+      const docRef = productsRef.doc(String(product.id));
+      batch.set(docRef, product);
+    });
+
+    await batch.commit();
+    alert(`✅ ${allProducts.length} products synced to Firebase!`);
+    console.log("✅ Sync complete!");
+  } catch (error) {
+    console.error("❌ Sync error:", error);
+    alert("❌ Sync failed! Check console.");
+  }
+}
+
+// ============================================================
+// ADD SYNC BUTTON TO ADMIN PANEL
+// ============================================================
+function addFirebaseSyncButton() {
+  const target = document.querySelector('.admin-section .btn-group');
+  if (target) {
+    // Check if button already exists
+    if (document.getElementById('firebaseSyncBtn')) return;
+    
+    const btn = document.createElement("button");
+    btn.id = "firebaseSyncBtn";
+    btn.className = "btn btn-success";
+    btn.innerHTML = "☁️ Sync to Firebase";
+    btn.onclick = syncProductsToFirestore;
+    target.appendChild(btn);
+    console.log("✅ Firebase sync button added!");
+  }
+}
+
+// Auto-add button when admin loads
+document.addEventListener("DOMContentLoaded", function() {
+  setTimeout(addFirebaseSyncButton, 1000);
+});
