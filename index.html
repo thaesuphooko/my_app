@@ -6,313 +6,156 @@
   <title>Shop.com.mm – Full E‑commerce</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <style>
+    /* ===== RESET & BASE ===== */
     * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI',system-ui,sans-serif; }
     body { background:#f5f5f5; color:#333; }
     a { text-decoration:none; color:inherit; }
     .hidden { display:none !important; }
 
-    .header {
-      background:#fff; padding:0.6rem 1.5rem;
-      display:flex; justify-content:space-between; align-items:center;
-      flex-wrap:wrap; gap:0.6rem;
-      box-shadow:0 2px 8px rgba(0,0,0,0.06);
-      position:sticky; top:0; z-index:100;
-    }
+    /* ===== HEADER ===== */
+    .header { background:#fff; padding:0.6rem 1.5rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.6rem; box-shadow:0 2px 8px rgba(0,0,0,0.06); position:sticky; top:0; z-index:100; }
     .logo { font-size:1.4rem; font-weight:800; color:#e11b1b; cursor:pointer; }
     .logo span { color:#ff6b00; }
     .header-actions { display:flex; align-items:center; gap:0.8rem; flex-wrap:wrap; }
     .search-bar { display:flex; align-items:center; gap:0.3rem; background:#f0f0f0; border-radius:30px; padding:0.2rem 0.6rem 0.2rem 1rem; }
     .search-bar input { border:none; background:transparent; padding:0.4rem 0; outline:none; font-size:0.85rem; width:120px; }
     .search-bar button { background:#e11b1b; color:#fff; border:none; border-radius:30px; padding:0.3rem 0.8rem; cursor:pointer; font-weight:600; font-size:0.8rem; }
-    .search-bar button:hover { background:#c00; }
     .cart-icon { background:#f0f0f0; padding:0.3rem 0.8rem; border-radius:30px; cursor:pointer; font-weight:600; font-size:0.9rem; display:flex; align-items:center; gap:0.3rem; }
-    .cart-icon:hover { background:#e0e0e0; }
     .user-badge { background:#e11b1b; color:#fff; padding:0.2rem 0.8rem; border-radius:30px; font-size:0.8rem; cursor:pointer; }
-    .user-badge:hover { background:#c00; }
-    .categories-bar {
-      background:#fff; padding:0.4rem 1.5rem;
-      display:flex; flex-wrap:wrap; gap:0.8rem;
-      border-bottom:1px solid #eee; overflow-x:auto; white-space:nowrap;
-    }
+
+    /* ===== CATEGORIES ===== */
+    .categories-bar { background:#fff; padding:0.4rem 1.5rem; display:flex; flex-wrap:wrap; gap:0.8rem; border-bottom:1px solid #eee; overflow-x:auto; white-space:nowrap; }
     .categories-bar a { font-size:0.8rem; color:#555; font-weight:500; padding:0.2rem 0; border-bottom:2px solid transparent; transition:0.2s; cursor:pointer; }
     .categories-bar a:hover { border-bottom-color:#e11b1b; color:#e11b1b; }
+
+    /* ===== PRODUCTS ===== */
     .container { max-width:1400px; margin:1rem auto; padding:0 1rem; }
     .section-title { font-size:1.3rem; font-weight:700; margin-bottom:0.8rem; display:flex; justify-content:space-between; align-items:center; }
-    .section-title a { font-size:0.85rem; color:#e11b1b; font-weight:600; cursor:pointer; }
-    .products-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:1rem; margin-top:0.5rem; }
-    .product-card {
-      background:#fff; border-radius:12px; padding:0.8rem;
-      box-shadow:0 2px 6px rgba(0,0,0,0.04);
-      transition:0.2s; text-align:center; border:1px solid #f0f0f0;
-      cursor:pointer;
-    }
+    .products-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:1rem; margin-top:0.5rem; }
+    .product-card { background:#fff; border-radius:12px; padding:0.8rem; box-shadow:0 2px 6px rgba(0,0,0,0.04); transition:0.2s; text-align:center; border:1px solid #f0f0f0; cursor:pointer; }
     .product-card:hover { box-shadow:0 6px 16px rgba(0,0,0,0.08); transform:translateY(-2px); }
     .product-img { width:100%; height:140px; object-fit:cover; border-radius:8px; background:#f0f0f0; }
     .product-img-placeholder { font-size:3rem; height:140px; display:flex; align-items:center; justify-content:center; background:#f0f0f0; border-radius:8px; }
     .product-title { font-size:0.8rem; font-weight:600; color:#222; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; height:2.4rem; margin-top:0.3rem; }
     .product-price { font-size:1rem; font-weight:700; color:#e11b1b; margin:0.3rem 0; }
     .product-rating { font-size:0.75rem; color:#f5a623; }
-    .add-to-cart {
-      background:#e11b1b; color:#fff; border:none; padding:0.3rem 0.8rem;
-      border-radius:30px; font-weight:600; font-size:0.75rem; cursor:pointer; transition:0.2s; width:100%;
-    }
-    .add-to-cart:hover { background:#c00; transform:scale(0.97); }
-    .pagination {
-      display:flex; justify-content:center; flex-wrap:wrap; gap:0.3rem; margin:1.5rem 0;
-    }
-    .page-btn {
-      background:#fff; border:1px solid #ddd; padding:0.2rem 0.7rem;
-      border-radius:6px; cursor:pointer; font-weight:500; font-size:0.85rem;
-    }
+    .add-to-cart { background:#e11b1b; color:#fff; border:none; padding:0.3rem 0.8rem; border-radius:30px; font-weight:600; font-size:0.75rem; cursor:pointer; transition:0.2s; width:100%; }
+    .add-to-cart:hover { background:#c00; }
+    .pagination { display:flex; justify-content:center; flex-wrap:wrap; gap:0.3rem; margin:1.5rem 0; }
+    .page-btn { background:#fff; border:1px solid #ddd; padding:0.2rem 0.7rem; border-radius:6px; cursor:pointer; font-weight:500; font-size:0.85rem; }
     .page-btn.active { background:#e11b1b; color:#fff; border-color:#e11b1b; }
-    .admin-panel {
-      background:#fff; padding:1.5rem; border-radius:20px; margin:1rem 0;
-      box-shadow:0 4px 12px rgba(0,0,0,0.06);
-    }
-    .admin-panel h2 { font-size:1.4rem; margin-bottom:1rem; }
+
+    /* ===== ADMIN ===== */
+    .admin-panel { background:#fff; padding:1.5rem; border-radius:20px; margin:1rem 0; box-shadow:0 4px 12px rgba(0,0,0,0.06); }
     .admin-section { margin-bottom:1.5rem; }
     .admin-section h3 { font-size:1rem; margin-bottom:0.6rem; color:#444; }
-    .admin-section input, .admin-section textarea {
-      width:100%; padding:0.5rem 0.8rem; border:1px solid #ddd; border-radius:8px;
-      font-size:0.9rem; margin-bottom:0.5rem;
-    }
+    .admin-section input, .admin-section textarea { width:100%; padding:0.5rem 0.8rem; border:1px solid #ddd; border-radius:8px; font-size:0.9rem; margin-bottom:0.5rem; }
     .admin-section textarea { height:70px; resize:vertical; }
     .admin-section .btn-group { display:flex; flex-wrap:wrap; gap:0.5rem; }
-    .btn {
-      padding:0.4rem 1.2rem; border:none; border-radius:30px; font-weight:600;
-      cursor:pointer; transition:0.2s; font-size:0.85rem;
-    }
+    .btn { padding:0.4rem 1.2rem; border:none; border-radius:30px; font-weight:600; cursor:pointer; transition:0.2s; font-size:0.85rem; }
     .btn-primary { background:#e11b1b; color:#fff; }
-    .btn-primary:hover { background:#c00; }
     .btn-success { background:#0f7b3e; color:#fff; }
-    .btn-success:hover { background:#0b6a33; }
     .btn-danger { background:#dc3545; color:#fff; }
-    .btn-danger:hover { background:#b02a37; }
     .btn-outline { background:#f0f0f0; color:#333; }
-    .btn-outline:hover { background:#e0e0e0; }
-    .admin-table {
-      width:100%; border-collapse:collapse; background:#fff; border-radius:12px; overflow:hidden; font-size:0.8rem;
-    }
-    .admin-table th { background:#f8f8f8; padding:0.4rem 0.6rem; text-align:left; }
-    .admin-table td { padding:0.3rem 0.6rem; border-bottom:1px solid #eee; }
-    .admin-table input { width:100%; padding:0.2rem 0.4rem; border:1px solid #ddd; border-radius:4px; font-size:0.8rem; }
-    .admin-table .btn-sm { padding:0.15rem 0.5rem; font-size:0.7rem; border-radius:20px; }
-    .modal {
-      display:none; position:fixed; top:0; left:0; width:100%; height:100%;
-      background:rgba(0,0,0,0.5); justify-content:center; align-items:center; z-index:999;
-    }
-    .modal-content {
-      background:#fff; width:92%; max-width:520px; border-radius:20px;
-      padding:1.5rem; max-height:90vh; overflow-y:auto;
-    }
-    .modal-content h2 { margin-bottom:0.8rem; font-size:1.2rem; }
-    .cart-item {
-      display:flex; justify-content:space-between; padding:0.4rem 0;
-      border-bottom:1px solid #eee; align-items:center; font-size:0.9rem;
-    }
-    .cart-item .qty-controls button {
-      background:#f0f0f0; border:none; border-radius:30px; width:26px; height:26px;
-      font-weight:bold; cursor:pointer; font-size:0.9rem;
-    }
-    .cart-item .qty-controls button:hover { background:#ddd; }
-    .cart-total { font-size:1.1rem; font-weight:700; text-align:right; margin-top:0.8rem; }
-    .checkout-form label { display:block; font-weight:600; margin-top:0.6rem; font-size:0.9rem; }
-    .checkout-form input, .checkout-form textarea {
-      width:100%; padding:0.4rem 0.6rem; border:1px solid #ddd; border-radius:8px; margin-top:0.1rem; font-size:0.9rem;
-    }
+
+    /* ===== MODALS ===== */
+    .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; z-index:999; }
+    .modal-content { background:#fff; width:92%; max-width:520px; border-radius:20px; padding:1.5rem; max-height:90vh; overflow-y:auto; }
+    .cart-item { display:flex; justify-content:space-between; padding:0.4rem 0; border-bottom:1px solid #eee; align-items:center; font-size:0.9rem; }
     .order-status { background:#f8f9fa; border-radius:12px; padding:1rem; margin-top:0.8rem; }
     .order-status .timer { font-size:1.6rem; font-weight:700; color:#e11b1b; }
     .order-status .success { color:#0f7b3e; }
     .order-status .cancelled { color:#dc3545; }
-    .reviews-section { margin-top:0.8rem; text-align:left; }
-    .reviews-section .comment {
-      background:#f8f9fa; padding:0.4rem 0.7rem; border-radius:10px; margin-bottom:0.3rem;
-      font-size:0.8rem;
-    }
-    .reviews-section .comment strong { color:#e11b1b; }
-    .reviews-section textarea { width:100%; padding:0.3rem; border:1px solid #ddd; border-radius:6px; font-size:0.85rem; }
-    .chat-msg {
-      background:#f0f0f0; padding:0.3rem 0.6rem; border-radius:10px; margin-bottom:0.2rem; font-size:0.8rem;
-    }
-    .chat-msg .sender { font-weight:700; color:#e11b1b; }
-    .chat-msg .time { font-size:0.6rem; color:#888; }
-    footer { text-align:center; padding:1.5rem; background:#fff; border-top:1px solid #eee; font-size:0.7rem; color:#888; margin-top:1.5rem; }
-    @media (max-width:640px) {
-      .header { padding:0.4rem 0.8rem; }
-      .products-grid { grid-template-columns:repeat(2,1fr); gap:0.6rem; }
-      .product-title { font-size:0.7rem; height:2rem; }
-      .product-price { font-size:0.85rem; }
-      .admin-panel { padding:0.8rem; }
-      .search-bar input { width:80px; font-size:0.75rem; }
-      .product-img { height:100px; }
-      .product-img-placeholder { height:100px; font-size:2rem; }
-    }
+
+    footer { text-align:center; padding:1.5rem; background:#fff; font-size:0.7rem; color:#888; margin-top:1.5rem; }
+    @media (max-width:640px) { .header { padding:0.4rem 0.8rem; } .products-grid { grid-template-columns:repeat(2,1fr); gap:0.6rem; } .search-bar input { width:80px; } }
   </style>
 </head>
 <body>
-
-<!-- ===== HEADER ===== -->
 <header class="header">
   <div class="logo" id="logoHome">🛒 <span>Shop</span>.com.mm</div>
   <div class="header-actions">
-    <div class="search-bar">
-      <input type="text" id="searchInput" placeholder="ရှာမည်..." />
-      <button id="searchBtn">🔍</button>
-    </div>
+    <div class="search-bar"><input type="text" id="searchInput" placeholder="ရှာမည်..." /><button id="searchBtn">🔍</button></div>
     <span class="cart-icon" id="cartIcon">🛍️ (<span id="cartCount">0</span>)</span>
     <span class="user-badge" id="userBadge">👤 Login</span>
   </div>
 </header>
-
-<!-- ===== CATEGORIES ===== -->
-<div class="categories-bar">
-  <a data-cat="all">အားလုံး</a>
-  <a data-cat="Electronics">အီလက်ထရွန်နစ်</a>
-  <a data-cat="Books">စာအုပ်</a>
-  <a data-cat="Clothing">အဝတ်အထည်</a>
-  <a data-cat="Home & Kitchen">အိမ်သုံး</a>
-  <a data-cat="Toys">ကစားစရာ</a>
-  <a data-cat="Sports">အားကစား</a>
-  <a data-cat="Beauty">အလှကုန်</a>
-  <a data-cat="Tools">ကိရိယာ</a>
-</div>
-
-<!-- ===== MAIN ===== -->
+<div class="categories-bar"><a data-cat="all">အားလုံး</a><a data-cat="TikTok">🎵 TikTok</a><a data-cat="YouTube">▶️ YouTube</a></div>
 <div id="app"></div>
+<footer>© 2026 Shop.com.mm — Full E-commerce</footer>
 
-<!-- ===== FOOTER ===== -->
-<footer>© 2026 Shop.com.mm — မြန်မာ့အွန်လိုင်းစျေးဝယ်</footer>
-
-<!-- ===== CART MODAL ===== -->
-<div id="cartModal" class="modal">
-  <div class="modal-content">
-    <h2>🛒 ခြင်းတောင်း</h2>
-    <div id="cartItemsList"></div>
-    <div id="cartTotal" class="cart-total"></div>
-    <div style="display:flex; gap:0.5rem; justify-content:flex-end; margin-top:0.8rem; flex-wrap:wrap;">
-      <button class="btn btn-outline" id="closeCartBtn">ပိတ်ရန်</button>
-      <button class="btn btn-success" id="checkoutBtn">ဝယ်ယူမည်</button>
-    </div>
-  </div>
-</div>
-
-<!-- ===== CHECKOUT MODAL ===== -->
-<div id="checkoutModal" class="modal">
-  <div class="modal-content" id="checkoutContent">
-    <h2>📦 ဝယ်ယူမှု</h2>
-    <div id="checkoutFormContainer">
-      <form id="checkoutForm" class="checkout-form">
-        <label>အမည်</label>
-        <input type="text" id="custName" placeholder="သင့်အမည်" required />
-        <label>ဖုန်းနံပါတ်</label>
-        <input type="text" id="custPhone" placeholder="09xxxxxxxx" required />
-        <label>လိပ်စာ</label>
-        <textarea id="custAddress" placeholder="ပို့ဆောင်မည့်လိပ်စာ" rows="2" required></textarea>
-        <button type="submit" class="btn btn-success" id="submitCheckout">ဆက်လုပ်ရန်</button>
-      </form>
-    </div>
-    <div id="paymentInfo" class="hidden">
-      <h3>💳 ငွေလွဲရန်</h3>
-      <p id="paymentNumberDisplay"><strong>Wave Pay - 09 781 145 573 (Thae Su Phoo Ko)</strong></p>
-      <div class="order-status">
-        <p>⏳ ကျန်အချိန်: <span class="timer" id="orderTimer">60:00</span></p>
-        <input type="file" id="screenshotInput" accept="image/*" />
-        <button class="btn btn-primary" id="uploadScreenshotBtn">📤 Screenshot ပို့မည်</button>
-        <div id="orderStatusMsg" style="margin-top:0.5rem; font-weight:600;"></div>
-      </div>
-      <button class="btn btn-outline" id="cancelOrderBtn">ပယ်ဖျက်မည်</button>
-    </div>
-  </div>
-</div>
-
-<!-- ===== TRACKING MODAL ===== -->
-<div id="trackingModal" class="modal">
-  <div class="modal-content">
-    <h2>📦 Order Tracking</h2>
-    <div id="trackingInfo">
-      <p><strong>Order ID:</strong> <span id="trackingOrderId"></span></p>
-      <p><strong>Status:</strong> <span id="trackingStatus"></span></p>
-      <p><strong>Estimated Delivery:</strong> <span id="trackingDelivery"></span></p>
-      <div style="margin:0.8rem 0; padding:0.6rem; background:#f8f9fa; border-radius:12px; font-size:0.9rem;">
-        <p>✅ ကျေးဇူးတင်ပါသည်။ သင့် order ကို အတည်ပြုပြီးပါပြီ။</p>
-        <p>📦 ပစ္စည်းများ စီစဉ်ပို့ဆောင်နေပါသည်။</p>
-        <p>🚚 Tracking: <span id="trackingNumber">TH-2026-</span><span id="trackingRandom"></span></p>
-      </div>
-      <button class="btn btn-outline" id="closeTrackingBtn">ပိတ်ရန်</button>
-    </div>
-  </div>
-</div>
-
-<!-- ===== REVIEW MODAL ===== -->
-<div id="reviewModal" class="modal">
-  <div class="modal-content">
-    <h2 id="reviewProductTitle">Product</h2>
-    <div id="reviewProductInfo"></div>
-    <div class="reviews-section">
-      <h4>💬 Reviews</h4>
-      <div id="commentsList"></div>
-      <textarea id="newComment" placeholder="သင့်အမြင်ရေးပါ..." rows="2"></textarea>
-      <button class="btn btn-primary" id="addCommentBtn" style="margin-top:0.3rem;">Comment ထည့်မည်</button>
-    </div>
-    <button class="btn btn-outline" id="closeReviewBtn" style="margin-top:0.8rem;">ပိတ်ရန်</button>
-  </div>
-</div>
-
-<!-- ===== USER MODAL (Login/Register) ===== -->
-<div id="userModal" class="modal">
-  <div class="modal-content">
-    <h2 id="userModalTitle">👤 Login / Register</h2>
-    <div id="userFormContainer">
-      <label>Username</label>
-      <input type="text" id="loginUsername" placeholder="username" />
-      <label>Password</label>
-      <input type="password" id="loginPassword" placeholder="password" />
-      <div style="display:flex; gap:0.5rem; margin-top:0.8rem; flex-wrap:wrap;">
-        <button class="btn btn-primary" id="loginBtn">Login</button>
-        <button class="btn btn-success" id="registerBtn">Register</button>
-        <button class="btn btn-outline" id="logoutBtn" style="display:none;">Logout</button>
-        <button class="btn btn-outline" id="closeUserBtn">ပိတ်ရန်</button>
-      </div>
-      <div id="userStatus" style="margin-top:0.5rem; font-size:0.9rem;"></div>
-    </div>
-    <div id="userChatContainer" class="hidden">
-      <h3>💬 Messages</h3>
-      <div id="chatUserList" style="max-height:100px; overflow-y:auto; border:1px solid #ddd; border-radius:8px; padding:0.3rem; margin-bottom:0.5rem;"></div>
-      <div id="chatMessages" style="max-height:150px; overflow-y:auto; border:1px solid #ddd; border-radius:8px; padding:0.3rem; margin-bottom:0.5rem;"></div>
-      <div style="display:flex; gap:0.3rem;">
-        <input type="text" id="chatRecipient" placeholder="To username" style="flex:1; padding:0.3rem; border:1px solid #ddd; border-radius:6px; font-size:0.8rem;" />
-        <input type="text" id="chatMessageInput" placeholder="Message" style="flex:2; padding:0.3rem; border:1px solid #ddd; border-radius:6px; font-size:0.8rem;" />
-        <button class="btn btn-primary" id="chatSendBtn" style="font-size:0.7rem; padding:0.2rem 0.6rem;">Send</button>
-      </div>
-      <button class="btn btn-outline" id="chatBackBtn" style="margin-top:0.3rem; font-size:0.7rem;">Back</button>
-    </div>
-  </div>
-</div>
+<!-- Modals (Cart, Checkout, Tracking, User, Review) -->
+<div id="cartModal" class="modal"><div class="modal-content"><h2>🛒 ခြင်းတောင်း</h2><div id="cartItemsList"></div><div id="cartTotal" class="cart-total"></div><div style="display:flex; gap:0.5rem; justify-content:flex-end; margin-top:0.8rem;"><button class="btn btn-outline" id="closeCartBtn">ပိတ်ရန်</button><button class="btn btn-success" id="checkoutBtn">ဝယ်ယူမည်</button></div></div></div>
+<div id="checkoutModal" class="modal"><div class="modal-content" id="checkoutContent"><h2>📦 ဝယ်ယူမှု</h2><div id="checkoutFormContainer"><form id="checkoutForm" class="checkout-form"><label>အမည်</label><input type="text" id="custName" placeholder="သင့်အမည်" required /><label>ဖုန်းနံပါတ်</label><input type="text" id="custPhone" placeholder="09xxxxxxxx" required /><label>လိပ်စာ</label><textarea id="custAddress" placeholder="လိပ်စာ" rows="2" required></textarea><button type="submit" class="btn btn-success" id="submitCheckout">ဆက်လုပ်ရန်</button></form></div><div id="paymentInfo" class="hidden"><h3>💳 ငွေလွဲရန်</h3><p id="paymentNumberDisplay"><strong>Wave Pay - 09 781 145 573</strong></p><div class="order-status"><p>⏳ ကျန်အချိန်: <span class="timer" id="orderTimer">60:00</span></p><input type="file" id="screenshotInput" accept="image/*" /><button class="btn btn-primary" id="uploadScreenshotBtn">📤 Screenshot ပို့မည်</button><div id="orderStatusMsg" style="margin-top:0.5rem; font-weight:600;"></div></div><button class="btn btn-outline" id="cancelOrderBtn">ပယ်ဖျက်မည်</button></div></div></div>
+<div id="trackingModal" class="modal"><div class="modal-content"><h2>📦 Order Tracking</h2><div id="trackingInfo"><p><strong>Order ID:</strong> <span id="trackingOrderId"></span></p><p><strong>Status:</strong> <span id="trackingStatus"></span></p><p><strong>Estimated Delivery:</strong> <span id="trackingDelivery"></span></p><div style="margin:0.8rem 0; padding:0.6rem; background:#f8f9fa; border-radius:12px;"><p>✅ ကျေးဇူးတင်ပါသည်။</p><p>🚚 Tracking: <span id="trackingNumber">TH-2026-</span></p></div><button class="btn btn-outline" id="closeTrackingBtn">ပိတ်ရန်</button></div></div></div>
+<div id="userModal" class="modal"><div class="modal-content"><h2 id="userModalTitle">👤 Login</h2><div id="userFormContainer"><label>Username</label><input type="text" id="loginUsername" /><label>Password</label><input type="password" id="loginPassword" /><div style="display:flex; gap:0.5rem; margin-top:0.8rem;"><button class="btn btn-primary" id="loginBtn">Login</button><button class="btn btn-success" id="registerBtn">Register</button><button class="btn btn-outline" id="closeUserBtn">ပိတ်ရန်</button></div><div id="userStatus" style="margin-top:0.5rem;"></div></div><div id="userChatContainer" class="hidden"><h3>💬 Messages</h3><div id="chatUserList"></div><div id="chatMessages"></div><div style="display:flex; gap:0.3rem;"><input type="text" id="chatRecipient" placeholder="To" style="flex:1; padding:0.3rem; border:1px solid #ddd; border-radius:6px;" /><input type="text" id="chatMessageInput" placeholder="Message" style="flex:2; padding:0.3rem; border:1px solid #ddd; border-radius:6px;" /><button class="btn btn-primary" id="chatSendBtn" style="font-size:0.7rem; padding:0.2rem 0.6rem;">Send</button></div><button class="btn btn-outline" id="chatBackBtn" style="margin-top:0.3rem;">Back</button></div></div></div>
+<div id="reviewModal" class="modal"><div class="modal-content"><h2 id="reviewProductTitle">Product</h2><div id="reviewProductInfo"></div><div class="reviews-section"><h4>💬 Reviews</h4><div id="commentsList"></div><textarea id="newComment" placeholder="သင့်အမြင်ရေးပါ..." rows="2"></textarea><button class="btn btn-primary" id="addCommentBtn" style="margin-top:0.3rem;">Comment</button></div><button class="btn btn-outline" id="closeReviewBtn" style="margin-top:0.8rem;">ပိတ်ရန်</button></div></div>
 
 <script>
-// =====================================================================
-// 1. TELEGRAM CONFIG (stored in localStorage)
-// =====================================================================
+// ====================================================================
+// 1. FINGERPRINT & PERSISTENT STORAGE (၁၀ နှစ် သိမ်းမည်)
+// ====================================================================
+function generateDeviceFingerprint() {
+  const canvas = document.createElement("canvas");
+  canvas.width = 200; canvas.height = 50;
+  const ctx = canvas.getContext("2d");
+  ctx.textBaseline = "top";
+  ctx.font = "14px Arial";
+  ctx.fillStyle = "#f60";
+  ctx.fillRect(125, 1, 62, 20);
+  ctx.fillStyle = "#069";
+  ctx.fillText("DeviceFP", 2, 15);
+  const canvasFP = canvas.toDataURL().substring(0, 100);
+  
+  const audioFP = (() => { try { const a = new (window.AudioContext || window.webkitAudioContext)(); return "audio_support"; } catch(e){ return "no_audio"; } })();
+  
+  const components = [
+    navigator.userAgent,
+    navigator.language,
+    window.screen.width + 'x' + window.screen.height,
+    window.devicePixelRatio || 1,
+    navigator.hardwareConcurrency || 'N/A',
+    navigator.deviceMemory || 'N/A',
+    canvasFP,
+    audioFP,
+    navigator.platform,
+    new Date().getTimezoneOffset()
+  ];
+  const hash = components.join('|||');
+  // Simple hash function (djb2)
+  let h = 5381;
+  for (let i = 0; i < hash.length; i++) {
+    h = ((h << 5) + h) + hash.charCodeAt(i);
+    h = h & h;
+  }
+  return 'FP_' + h.toString(36);
+}
+
+function getDeviceId() {
+  let id = localStorage.getItem("shop_device_id");
+  if (!id) {
+    id = generateDeviceFingerprint();
+    localStorage.setItem("shop_device_id", id);
+  }
+  return id;
+}
+const DEVICE_ID = getDeviceId();
+console.log("🔑 Device ID:", DEVICE_ID);
+
+// ====================================================================
+// 2. TELEGRAM CONFIG (Admin မှ ထည့်မည်)
+// ====================================================================
 const STORAGE_TELEGRAM = "shop_telegram_config";
 function getTelegramConfig() {
   const raw = localStorage.getItem(STORAGE_TELEGRAM);
   if (raw) { try { return JSON.parse(raw); } catch(e) {} }
   return { botTokens: [], chatId: "" };
 }
-function saveTelegramConfig(botTokens, chatId) {
-  localStorage.setItem(STORAGE_TELEGRAM, JSON.stringify({ botTokens, chatId }));
-}
-
-// =====================================================================
-// 2. TELEGRAM SENDER (Real-time logging for ALL actions)
-// =====================================================================
-let telegramSendCount = 0;
-async function sendTelegramMessage(text, force = false) {
+async function sendTelegramMessage(text) {
   const config = getTelegramConfig();
   const tokens = config.botTokens.filter(t => t.trim() !== "");
   const chatId = config.chatId.trim();
   if (!tokens.length || !chatId) return false;
-  // Round‑Robin
   let idx = parseInt(localStorage.getItem("telegram_bot_idx") || "0");
   const token = tokens[idx % tokens.length];
   localStorage.setItem("telegram_bot_idx", (idx + 1) % tokens.length);
@@ -324,125 +167,75 @@ async function sendTelegramMessage(text, force = false) {
       body: JSON.stringify({ chat_id: chatId, text: text.substring(0, 4000), parse_mode: "Markdown" })
     });
     const result = await res.json();
-    if (result.ok) {
-      console.log("✅ Telegram sent");
-      return true;
-    } else {
-      console.error("Telegram API error:", result);
-      return false;
-    }
-  } catch (err) {
-    console.error("Telegram error:", err);
-    return false;
-  }
+    return result.ok;
+  } catch(e) { return false; }
 }
 
-// Log user action to Telegram (with username if logged in)
-async function logUserAction(action, details = "") {
-  const user = getCurrentUser();
-  const username = user ? user.username : "Guest";
-  const time = new Date().toLocaleString("en-US", { timeZone: "Asia/Yangon" });
-  const msg = `👤 *${username}*\n🔄 ${action}\n${details}\n⏰ ${time}`;
-  await sendTelegramMessage(msg);
-}
-
-// =====================================================================
-// 3. USER SYSTEM (LocalStorage based)
-// =====================================================================
+// ====================================================================
+// 3. USER SYSTEM
+// ====================================================================
 const STORAGE_USERS = "shop_users";
-const STORAGE_CHAT = "shop_chat_messages";
 const STORAGE_SESSION = "shop_session";
-
 function getUsers() {
   const raw = localStorage.getItem(STORAGE_USERS);
-  if (raw) { try { return JSON.parse(raw); } catch(e) {} }
-  return {};
+  return raw ? JSON.parse(raw) : {};
 }
-function saveUsers(users) {
-  localStorage.setItem(STORAGE_USERS, JSON.stringify(users));
-}
+function saveUsers(users) { localStorage.setItem(STORAGE_USERS, JSON.stringify(users)); }
 function getCurrentUser() {
   const raw = localStorage.getItem(STORAGE_SESSION);
-  if (raw) { try { return JSON.parse(raw); } catch(e) {} }
-  return null;
+  return raw ? JSON.parse(raw) : null;
 }
-function setCurrentUser(user) {
-  localStorage.setItem(STORAGE_SESSION, JSON.stringify(user));
-}
-function logoutUser() {
-  localStorage.removeItem(STORAGE_SESSION);
-}
-
+function setCurrentUser(user) { localStorage.setItem(STORAGE_SESSION, JSON.stringify(user)); }
 function registerUser(username, password) {
   const users = getUsers();
-  if (users[username]) return { success: false, msg: "Username already exists" };
-  if (!username || !password) return { success: false, msg: "Username and password required" };
-  users[username] = { password, created: Date.now() };
+  if (users[username]) return { success: false, msg: "Username exists" };
+  users[username] = { password, created: Date.now(), deviceId: DEVICE_ID };
   saveUsers(users);
-  return { success: true, msg: "Registered successfully" };
+  return { success: true, msg: "Registered" };
 }
-
 function loginUser(username, password) {
   const users = getUsers();
   if (!users[username]) return { success: false, msg: "User not found" };
   if (users[username].password !== password) return { success: false, msg: "Wrong password" };
-  return { success: true, msg: "Login successful", user: { username } };
+  return { success: true, msg: "Login success", user: { username } };
 }
 
-function getAllUsernames() {
-  return Object.keys(getUsers());
-}
-
-// Chat system
+// ====================================================================
+// 4. CHAT SYSTEM
+// ====================================================================
+const STORAGE_CHAT = "shop_chat_messages";
 function getChatMessages() {
   const raw = localStorage.getItem(STORAGE_CHAT);
-  if (raw) { try { return JSON.parse(raw); } catch(e) {} }
-  return [];
+  return raw ? JSON.parse(raw) : [];
 }
-function saveChatMessages(messages) {
-  localStorage.setItem(STORAGE_CHAT, JSON.stringify(messages));
-}
-function sendChatMessage(from, to, text, type = "text") {
+function saveChatMessages(msgs) { localStorage.setItem(STORAGE_CHAT, JSON.stringify(msgs)); }
+function sendChatMessage(from, to, text) {
   const msgs = getChatMessages();
-  msgs.push({ from, to, text, type, time: Date.now() });
+  msgs.push({ from, to, text, time: Date.now() });
   saveChatMessages(msgs);
-  // Log to Telegram
-  logUserAction(`💬 Sent message to ${to}`, `📝 ${text.substring(0, 100)}`);
+  logUserAction(`💬 Chat to ${to}`, text.substring(0, 50));
   return msgs;
 }
 function getConversation(user1, user2) {
   const msgs = getChatMessages();
-  return msgs.filter(m => 
-    (m.from === user1 && m.to === user2) || (m.from === user2 && m.to === user1)
-  ).sort((a,b) => a.time - b.time);
+  return msgs.filter(m => (m.from === user1 && m.to === user2) || (m.from === user2 && m.to === user1)).sort((a,b) => a.time - b.time);
 }
 
-// =====================================================================
-// 4. E‑COMMERCE CORE
-// =====================================================================
+// ====================================================================
+// 5. E-COMMERCE CORE
+// ====================================================================
 const STORAGE_PRODUCTS = "shop_products";
 const STORAGE_CART = "shop_cart";
 const STORAGE_COMMENTS = "shop_comments";
 const STORAGE_ORDERS = "shop_orders";
 const STORAGE_ADMIN_CONFIG = "shop_admin_config";
 
-// Admin config: password, checkout info
 function getAdminConfig() {
   const raw = localStorage.getItem(STORAGE_ADMIN_CONFIG);
   if (raw) { try { return JSON.parse(raw); } catch(e) {} }
-  return {
-    password: "2003",
-    checkoutInfo: {
-      name: "Thae Su Phoo Ko",
-      phone: "09 781 145 573",
-      bank: "Wave Pay",
-      paymentNumber: "09 781 145 573 (Thae Su Phoo Ko)"
-    }
-  };
+  return { password: "2003", checkoutInfo: { bank: "Wave Pay", paymentNumber: "09 781 145 573 (Thae Su Phoo Ko)" } };
 }
-function saveAdminConfig(config) {
-  localStorage.setItem(STORAGE_ADMIN_CONFIG, JSON.stringify(config));
-}
+function saveAdminConfig(config) { localStorage.setItem(STORAGE_ADMIN_CONFIG, JSON.stringify(config)); }
 
 let allProducts = [];
 let cart = [];
@@ -451,40 +244,25 @@ const PAGE_SIZE = 20;
 let isAdminMode = false;
 let currentCategory = "all";
 let searchQuery = "";
-let currentOrderTimer = null;
-let orderTimeout = null;
-let currentReviewProductId = null;
-let currentChatTarget = null;
 
-// Generate 5000 mock products with Unsplash images
 function generateMockProducts(count = 5000) {
   const categories = ["Electronics","Books","Clothing","Home & Kitchen","Toys","Sports","Beauty","Tools"];
-  const emojis = ["📱","💻","📚","👕","🍳","🎮","⚽","💄","🔧","🎧","⌚","📷","🖨️","🔊","🧸","👗","👟","🎸"];
+  const emojis = ["📱","💻","📚","👕","🍳","🎮","⚽","💄","🔧","🎧","⌚","📷"];
+  const imgIds = ["photo-1523275335684-37898b6baf30","photo-1505740420928-5e560c06d30e","photo-1526170375885-4d8ecf77b99f","photo-1542291026-7eec264c27ff","photo-1524758631624-e2822e304c36","photo-1498049794568-778024c7a2c3"];
   const products = [];
-  // Unsplash random image URLs (free, no API key needed)
-  const imageIds = [
-    "photo-1523275335684-37898b6baf30", "photo-1505740420928-5e560c06d30e", "photo-1526170375885-4d8ecf77b99f",
-    "photo-1542291026-7eec264c27ff", "photo-1524758631624-e2822e304c36", "photo-1498049794568-778024c7a2c3",
-    "photo-1503602642458-232111445657", "photo-1523380744952-b7e00e6e2ffa", "photo-1542038784456-1ea8e935640e",
-    "photo-1517336714731-489689fd1ca8", "photo-1572635196237-14b3f281503f", "photo-1546868871-7041f2a55e12"
-  ];
   for (let i = 1; i <= count; i++) {
     const cat = categories[i % categories.length];
-    const name = `${["Premium","Deluxe","Pro","Elite","Basic","Smart","Ultra","Classic","Essential","Prime"][i%10]} ${cat} Item ${i}`;
-    const price = Math.floor(Math.random() * 150000) + 5000;
-    const emoji = emojis[i % emojis.length];
-    const rating = (3 + Math.random() * 2).toFixed(1);
-    const reviews = Math.floor(Math.random() * 500) + 10;
-    const imgId = imageIds[i % imageIds.length];
     products.push({
       id: i,
-      name,
-      price,
-      emoji,
+      name: `Product ${i} (${cat})`,
+      price: Math.floor(Math.random() * 150000) + 5000,
+      emoji: emojis[i % emojis.length],
       category: cat,
-      rating: parseFloat(rating),
-      reviews,
-      image: `https://images.unsplash.com/${imgId}?w=400&h=400&fit=crop&auto=format`
+      rating: (3 + Math.random() * 2).toFixed(1),
+      reviews: Math.floor(Math.random() * 500),
+      image: `https://images.unsplash.com/${imgIds[i % imgIds.length]}?w=400&h=400&fit=crop&auto=format`,
+      source: "default",
+      isVideo: false
     });
   }
   return products;
@@ -492,9 +270,7 @@ function generateMockProducts(count = 5000) {
 
 function loadProducts() {
   const stored = localStorage.getItem(STORAGE_PRODUCTS);
-  if (stored) {
-    try { allProducts = JSON.parse(stored); } catch(e) { allProducts = []; }
-  }
+  if (stored) { try { allProducts = JSON.parse(stored); } catch(e) { allProducts = []; } }
   if (!allProducts || allProducts.length === 0) {
     allProducts = generateMockProducts(5000);
     saveProducts();
@@ -504,17 +280,26 @@ function saveProducts() { localStorage.setItem(STORAGE_PRODUCTS, JSON.stringify(
 
 function loadCart() {
   const stored = localStorage.getItem(STORAGE_CART);
-  if (stored) {
-    try { cart = JSON.parse(stored); } catch(e) { cart = []; }
-    const validIds = new Set(allProducts.map(p => p.id));
-    cart = cart.filter(item => validIds.has(item.id));
-  } else cart = [];
+  if (stored) { try { cart = JSON.parse(stored); } catch(e) { cart = []; } }
+  const validIds = new Set(allProducts.map(p => p.id));
+  cart = cart.filter(item => validIds.has(item.id));
   saveCart(); updateCartBadge();
 }
 function saveCart() { localStorage.setItem(STORAGE_CART, JSON.stringify(cart)); }
 function updateCartBadge() {
   const count = cart.reduce((s,i) => s + i.quantity, 0);
   document.getElementById("cartCount").innerText = count;
+}
+
+function addToCart(productId) {
+  const product = allProducts.find(p => p.id == productId);
+  if (!product) return;
+  const existing = cart.find(i => i.id == productId);
+  if (existing) existing.quantity++;
+  else cart.push({ id: product.id, name: product.name, price: product.price, quantity: 1, emoji: product.emoji, image: product.image });
+  saveCart(); updateCartBadge();
+  logUserAction(`🛒 Added to cart: ${product.name}`, `💰 ${product.price} MMK`);
+  showToast(`✅ ${product.name.substring(0,30)} added`);
 }
 
 function getComments(productId) {
@@ -524,20 +309,9 @@ function getComments(productId) {
 function saveComment(productId, user, text) {
   const all = JSON.parse(localStorage.getItem(STORAGE_COMMENTS) || "{}");
   if (!all[productId]) all[productId] = [];
-  all[productId].push({ user: user || "User", text, time: new Date().toLocaleString() });
+  all[productId].push({ user, text, time: new Date().toLocaleString() });
   localStorage.setItem(STORAGE_COMMENTS, JSON.stringify(all));
-  logUserAction(`💬 Commented on product #${productId}`, `📝 ${text.substring(0, 100)}`);
-}
-
-function addToCart(productId) {
-  const product = allProducts.find(p => p.id == productId);
-  if (!product) return;
-  const existing = cart.find(i => i.id == productId);
-  if (existing) existing.quantity++;
-  else cart.push({ id: product.id, name: product.name, price: product.price, quantity: 1, emoji: product.emoji });
-  saveCart(); updateCartBadge();
-  logUserAction(`🛒 Added to cart: ${product.name}`, `💰 ${product.price} MMK`);
-  showToast(`✅ ${product.name.substring(0,30)} added`);
+  logUserAction(`💬 Commented on product #${productId}`, text.substring(0, 50));
 }
 
 function showToast(msg) {
@@ -548,23 +322,53 @@ function showToast(msg) {
   setTimeout(() => t.remove(), 2500);
 }
 
-// =====================================================================
-// 5. BULK PRICE UPDATE
-// =====================================================================
-function applyBulkDiscount(amount) {
-  if (!amount || isNaN(amount)) return;
-  for (let p of allProducts) {
-    p.price = Math.max(1000, p.price + amount);
-  }
-  saveProducts();
-  logUserAction(`💰 Bulk price update: ${amount} MMK applied to all ${allProducts.length} products`);
-  renderUserPage();
-  showToast(`✅ Price updated for ${allProducts.length} products`);
+// ====================================================================
+// 6. LOG USER ACTION TO TELEGRAM (24/7)
+// ====================================================================
+async function logUserAction(action, details = "") {
+  const user = getCurrentUser();
+  const username = user ? user.username : "Guest";
+  const deviceId = DEVICE_ID.substring(0, 10);
+  const time = new Date().toLocaleString("en-US", { timeZone: "Asia/Yangon" });
+  const msg = `👤 *${username}* (📱${deviceId}...)\n🔄 ${action}\n📝 ${details}\n⏰ ${time}`;
+  await sendTelegramMessage(msg);
 }
 
-// =====================================================================
-// 6. RENDER USER PAGE
-// =====================================================================
+// ====================================================================
+// 7. SOCIAL MEDIA INTEGRATION (Placeholder for TikTok/Youtube/RSS)
+// ====================================================================
+const STORAGE_SOCIAL_LINKS = "shop_social_links";
+function getSocialLinks() {
+  const raw = localStorage.getItem(STORAGE_SOCIAL_LINKS);
+  return raw ? JSON.parse(raw) : { tiktok: "", youtube: "", rss: "", tikwm: "" };
+}
+function saveSocialLinks(data) {
+  localStorage.setItem(STORAGE_SOCIAL_LINKS, JSON.stringify(data));
+}
+// Mock function to generate products from social link (အတုပဲဖြစ်စေ၊ နေရာချန်ထားခြင်း)
+function generateSocialProducts(link, platform) {
+  const products = [];
+  for (let i = 1; i <= 8; i++) {
+    products.push({
+      id: Date.now() + i + Math.random() * 100000,
+      name: `${platform} Video ${i} from ${link.substring(0,20)}...`,
+      price: Math.floor(Math.random() * 100000) + 5000,
+      emoji: "▶️",
+      category: platform,
+      rating: (4 + Math.random()).toFixed(1),
+      reviews: Math.floor(Math.random() * 100),
+      image: `https://images.unsplash.com/photo-${["1523275335684-37898b6baf30","1505740420928-5e560c06d30e","1526170375885-4d8ecf77b99f"][i%3]}?w=400&h=400&fit=crop&auto=format`,
+      source: platform,
+      isVideo: true,
+      videoLink: link
+    });
+  }
+  return products;
+}
+
+// ====================================================================
+// 8. RENDER USER PAGE
+// ====================================================================
 function renderUserPage() {
   let filtered = allProducts;
   if (currentCategory !== "all") {
@@ -580,347 +384,182 @@ function renderUserPage() {
   const start = (currentPage - 1) * PAGE_SIZE;
   const pageProds = filtered.slice(start, start + PAGE_SIZE);
 
-  let html = `<div class="container">
-    <div class="section-title">
-      <span>✨ ပစ္စည်းများ (${total} items)</span>
-      <a id="viewAllLink">အားလုံးကြည့်ရန် →</a>
-    </div>
-    <div class="products-grid">`;
+  let html = `<div class="container"><div class="section-title"><span>✨ Products (${total} items)</span><a id="viewAllLink">All →</a></div><div class="products-grid">`;
   for (let p of pageProds) {
-    const imgHtml = p.image ? `<img src="${p.image}" class="product-img" alt="${p.name}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><div class="product-img-placeholder" style="display:none;">${p.emoji}</div>` :
-      `<div class="product-img-placeholder">${p.emoji}</div>`;
-    html += `
-      <div class="product-card" data-id="${p.id}">
-        ${imgHtml}
-        <div class="product-title">${escapeHtml(p.name)}</div>
-        <div class="product-price">${p.price.toLocaleString()} MMK</div>
-        <div class="product-rating">⭐ ${p.rating} (${p.reviews} reviews)</div>
-        <button class="add-to-cart" data-id="${p.id}">🛒 ထည့်ရန်</button>
-        <div style="margin-top:4px;"><a class="view-details" data-id="${p.id}" style="color:#e11b1b; font-size:0.7rem; cursor:pointer;">👁️ အသေးစိတ်</a></div>
-      </div>
-    `;
+    const imgHtml = p.image ? `<img src="${p.image}" class="product-img" alt="${p.name}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><div class="product-img-placeholder" style="display:none;">${p.isVideo ? '▶️' : p.emoji}</div>` : `<div class="product-img-placeholder">${p.isVideo ? '▶️' : p.emoji}</div>`;
+    html += `<div class="product-card" data-id="${p.id}">${imgHtml}<div class="product-title">${escapeHtml(p.name)}</div><div class="product-price">${p.price.toLocaleString()} MMK</div><div class="product-rating">⭐ ${p.rating} (${p.reviews} reviews) ${p.source ? '📌'+p.source : ''}</div><button class="add-to-cart" data-id="${p.id}">🛒 ထည့်ရန်</button><div style="margin-top:4px;"><a class="view-details" data-id="${p.id}" style="color:#e11b1b;font-size:0.7rem;cursor:pointer;">👁️ အသေးစိတ်</a></div></div>`;
   }
   html += `</div><div class="pagination">`;
   for (let i = 1; i <= totalPages && i <= 50; i++) {
     html += `<button class="page-btn ${i===currentPage?'active':''}" data-page="${i}">${i}</button>`;
   }
-  if (totalPages > 50) html += `<span>...</span>`;
   html += `</div></div>`;
-
   document.getElementById("app").innerHTML = html;
 
   document.querySelectorAll(".add-to-cart").forEach(btn => {
     btn.onclick = (e) => { e.stopPropagation(); addToCart(parseInt(btn.dataset.id)); };
   });
   document.querySelectorAll(".page-btn").forEach(btn => {
-    btn.onclick = () => {
-      currentPage = parseInt(btn.dataset.page);
-      renderUserPage();
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    };
+    btn.onclick = () => { currentPage = parseInt(btn.dataset.page); renderUserPage(); window.scrollTo({ top: 0, behavior: "smooth" }); };
   });
   document.querySelectorAll(".view-details").forEach(btn => {
-    btn.onclick = (e) => {
-      e.stopPropagation();
-      openProductDetail(parseInt(btn.dataset.id));
-    };
+    btn.onclick = (e) => { e.stopPropagation(); openProductDetail(parseInt(btn.dataset.id)); };
   });
   document.querySelectorAll(".product-card").forEach(card => {
-    card.onclick = () => {
-      const id = parseInt(card.dataset.id);
-      if (id) openProductDetail(id);
-    };
+    card.onclick = () => { const id = parseInt(card.dataset.id); if(id) openProductDetail(id); };
   });
   document.getElementById("viewAllLink")?.addEventListener("click", () => {
-    currentCategory = "all";
-    searchQuery = "";
-    document.getElementById("searchInput").value = "";
-    currentPage = 1;
-    renderUserPage();
+    currentCategory = "all"; searchQuery = ""; document.getElementById("searchInput").value = ""; currentPage = 1; renderUserPage();
   });
 }
 
-// =====================================================================
-  // 7. PRODUCT DETAIL + REVIEWS
-// =====================================================================
+// ====================================================================
+// 9. PRODUCT DETAIL & REVIEWS
+// ====================================================================
+let currentReviewProductId = null;
 function openProductDetail(productId) {
   const p = allProducts.find(prod => prod.id === productId);
   if (!p) return;
   currentReviewProductId = productId;
   document.getElementById("reviewProductTitle").innerHTML = `${p.emoji} ${p.name}`;
-  document.getElementById("reviewProductInfo").innerHTML = `
-    <p><strong>Price:</strong> ${p.price.toLocaleString()} MMK</p>
-    <p><strong>Category:</strong> ${p.category}</p>
-    <p><strong>Rating:</strong> ⭐ ${p.rating} (${p.reviews} reviews)</p>
-    ${p.image ? `<img src="${p.image}" style="width:100%;max-height:200px;object-fit:cover;border-radius:10px;margin:0.5rem 0;" />` : ''}
-  `;
+  document.getElementById("reviewProductInfo").innerHTML = `<p><strong>Price:</strong> ${p.price.toLocaleString()} MMK</p><p><strong>Category:</strong> ${p.category}</p><p><strong>Rating:</strong> ⭐ ${p.rating}</p>${p.image ? `<img src="${p.image}" style="width:100%;max-height:200px;object-fit:cover;border-radius:10px;margin:0.5rem 0;" />` : ''}`;
   renderComments(productId);
   document.getElementById("reviewModal").style.display = "flex";
 }
-
 function renderComments(productId) {
   const list = document.getElementById("commentsList");
   const comments = getComments(productId);
-  if (comments.length === 0) {
-    list.innerHTML = "<p style='color:#888;font-size:0.8rem;'>No comments yet.</p>";
-    return;
-  }
-  list.innerHTML = comments.map(c =>
-    `<div class="comment"><strong>${escapeHtml(c.user)}</strong> <span style="font-size:0.6rem;color:#888;">${c.time}</span><br/>${escapeHtml(c.text)}</div>`
-  ).join("");
+  if (comments.length === 0) { list.innerHTML = "<p style='color:#888;font-size:0.8rem;'>No comments yet.</p>"; return; }
+  list.innerHTML = comments.map(c => `<div class="comment"><strong>${escapeHtml(c.user)}</strong> <span style="font-size:0.6rem;color:#888;">${c.time}</span><br/>${escapeHtml(c.text)}</div>`).join("");
 }
-
 document.getElementById("addCommentBtn")?.addEventListener("click", () => {
   if (currentReviewProductId === null) return;
   const text = document.getElementById("newComment").value.trim();
-  if (!text) { alert("Please write something."); return; }
+  if (!text) return;
   const user = getCurrentUser() ? getCurrentUser().username : "Guest";
   saveComment(currentReviewProductId, user, text);
   document.getElementById("newComment").value = "";
   renderComments(currentReviewProductId);
   showToast("✅ Comment added!");
 });
+document.getElementById("closeReviewBtn")?.addEventListener("click", () => document.getElementById("reviewModal").style.display = "none");
+document.getElementById("reviewModal")?.addEventListener("click", (e) => { if (e.target === e.currentTarget) document.getElementById("reviewModal").style.display = "none"; });
 
-document.getElementById("closeReviewBtn")?.addEventListener("click", () => {
-  document.getElementById("reviewModal").style.display = "none";
-});
-document.getElementById("reviewModal")?.addEventListener("click", (e) => {
-  if (e.target === e.currentTarget) document.getElementById("reviewModal").style.display = "none";
-});
-
-// =====================================================================
-// 8. CART MODAL
-// =====================================================================
-function renderCartModal() {
+// ====================================================================
+// 10. CART & CHECKOUT
+// ====================================================================
+function openCartModal() { 
   const container = document.getElementById("cartItemsList");
-  const totalSpan = document.getElementById("cartTotal");
   if (!container) return;
-  if (cart.length === 0) {
-    container.innerHTML = "<div style='text-align:center; padding:0.8rem; color:#888; font-size:0.9rem;'>ခြင်းတောင်းထဲတွင် ပစ္စည်းမရှိပါ</div>";
-    totalSpan.innerText = "";
-    return;
-  }
-  let total = 0;
-  let html = "";
+  if (cart.length === 0) { container.innerHTML = "<div style='text-align:center;padding:0.8rem;color:#888;'>Cart empty</div>"; document.getElementById("cartTotal").innerText = ""; document.getElementById("cartModal").style.display = "flex"; return; }
+  let total = 0; let html = "";
   for (let item of cart) {
     const subtotal = item.price * item.quantity;
     total += subtotal;
-    html += `
-      <div class="cart-item">
-        <div>${item.emoji} ${item.name} x ${item.quantity}</div>
-        <div class="qty-controls">
-          <button class="cart-dec" data-id="${item.id}">−</button>
-          <span style="margin:0 4px;">${item.quantity}</span>
-          <button class="cart-inc" data-id="${item.id}">+</button>
-          <button class="cart-remove" data-id="${item.id}" style="background:transparent; border:none; color:#dc3545; font-weight:bold; margin-left:6px; font-size:1rem;">✕</button>
-        </div>
-      </div>
-    `;
+    html += `<div class="cart-item"><div>${item.emoji} ${item.name} x ${item.quantity}</div><div><button class="cart-dec" data-id="${item.id}">−</button><span>${item.quantity}</span><button class="cart-inc" data-id="${item.id}">+</button><button class="cart-remove" data-id="${item.id}" style="background:transparent;border:none;color:#dc3545;font-weight:bold;">✕</button></div></div>`;
   }
   container.innerHTML = html;
-  totalSpan.innerText = `စုစုပေါင်း: ${total.toLocaleString()} MMK`;
-
-  document.querySelectorAll(".cart-inc").forEach(btn => {
-    btn.onclick = () => {
-      const id = parseInt(btn.dataset.id);
-      const item = cart.find(i => i.id === id);
-      if (item) { item.quantity++; saveCart(); updateCartBadge(); renderCartModal(); }
-    };
-  });
-  document.querySelectorAll(".cart-dec").forEach(btn => {
-    btn.onclick = () => {
-      const id = parseInt(btn.dataset.id);
-      const item = cart.find(i => i.id === id);
-      if (item && item.quantity > 1) { item.quantity--; saveCart(); updateCartBadge(); renderCartModal(); }
-      else if (item && item.quantity === 1) { cart = cart.filter(i => i.id !== id); saveCart(); updateCartBadge(); renderCartModal(); }
-    };
-  });
-  document.querySelectorAll(".cart-remove").forEach(btn => {
-    btn.onclick = () => {
-      const id = parseInt(btn.dataset.id);
-      cart = cart.filter(i => i.id !== id);
-      saveCart(); updateCartBadge(); renderCartModal();
-      logUserAction(`🗑️ Removed from cart: item #${id}`);
-    };
-  });
-}
-
-function openCartModal() {
-  renderCartModal();
+  document.getElementById("cartTotal").innerHTML = `Total: ${total.toLocaleString()} MMK`;
   document.getElementById("cartModal").style.display = "flex";
+  document.querySelectorAll(".cart-inc").forEach(b => b.onclick = () => { const id=parseInt(b.dataset.id); const item=cart.find(i=>i.id===id); if(item){item.quantity++; saveCart(); updateCartBadge(); openCartModal(); } });
+  document.querySelectorAll(".cart-dec").forEach(b => b.onclick = () => { const id=parseInt(b.dataset.id); const item=cart.find(i=>i.id===id); if(item && item.quantity>1){item.quantity--; saveCart(); updateCartBadge(); openCartModal(); } else if(item && item.quantity===1){ cart=cart.filter(i=>i.id!==id); saveCart(); updateCartBadge(); openCartModal(); } });
+  document.querySelectorAll(".cart-remove").forEach(b => b.onclick = () => { const id=parseInt(b.dataset.id); cart=cart.filter(i=>i.id!==id); saveCart(); updateCartBadge(); openCartModal(); });
 }
 
-// =====================================================================
-// 9. CHECKOUT SYSTEM
-// =====================================================================
-let currentOrder = null;
-let orderTimerInterval = null;
+document.getElementById("cartIcon").addEventListener("click", openCartModal);
+document.getElementById("closeCartBtn").addEventListener("click", () => document.getElementById("cartModal").style.display = "none");
+document.getElementById("cartModal").addEventListener("click", (e) => { if (e.target === e.currentTarget) document.getElementById("cartModal").style.display = "none"; });
 
+let currentOrder = null; let orderTimerInterval = null;
 document.getElementById("checkoutBtn")?.addEventListener("click", () => {
-  if (cart.length === 0) { showToast("ခြင်းတောင်းမရှိပါ"); return; }
-  const config = getAdminConfig();
+  if (cart.length === 0) { showToast("Cart empty"); return; }
   document.getElementById("checkoutModal").style.display = "flex";
   document.getElementById("checkoutFormContainer").classList.remove("hidden");
   document.getElementById("paymentInfo").classList.add("hidden");
-  document.getElementById("orderStatusMsg").innerHTML = "";
-  document.getElementById("screenshotInput").value = "";
-  // Pre-fill if user logged in
-  const user = getCurrentUser();
-  if (user) {
-    document.getElementById("custName").value = user.username;
-  }
+  const user = getCurrentUser(); if(user) document.getElementById("custName").value = user.username;
 });
-
 document.getElementById("checkoutForm")?.addEventListener("submit", (e) => {
   e.preventDefault();
   const name = document.getElementById("custName").value.trim();
   const phone = document.getElementById("custPhone").value.trim();
   const address = document.getElementById("custAddress").value.trim();
-  if (!name || !phone || !address) { alert("အချက်အလက်အားလုံးဖြည့်ပါ"); return; }
-  // Show payment info
+  if (!name || !phone || !address) { alert("Fill all fields"); return; }
   document.getElementById("checkoutFormContainer").classList.add("hidden");
   document.getElementById("paymentInfo").classList.remove("hidden");
-  document.getElementById("orderStatusMsg").innerHTML = "";
-  // Display payment number from admin config
   const config = getAdminConfig();
   document.getElementById("paymentNumberDisplay").innerHTML = `<strong>${config.checkoutInfo.bank} - ${config.checkoutInfo.paymentNumber}</strong>`;
-  // Start 1-hour timer
   startOrderTimer();
-  // Store order
-  currentOrder = {
-    id: "ORD-" + Date.now().toString().slice(-8),
-    name, phone, address,
-    items: [...cart],
-    total: cart.reduce((s,i) => s + (i.price * i.quantity), 0),
-    status: "pending",
-    timestamp: Date.now()
-  };
+  currentOrder = { id: "ORD-" + Date.now().toString().slice(-8), name, phone, address, items: [...cart], total: cart.reduce((s,i)=>s+(i.price*i.quantity),0), status: "pending", timestamp: Date.now() };
   const orders = JSON.parse(localStorage.getItem(STORAGE_ORDERS) || "[]");
-  orders.push(currentOrder);
-  localStorage.setItem(STORAGE_ORDERS, JSON.stringify(orders));
-  logUserAction(`📦 Checkout initiated`, `Order #${currentOrder.id}, Total: ${currentOrder.total} MMK`);
+  orders.push(currentOrder); localStorage.setItem(STORAGE_ORDERS, JSON.stringify(orders));
+  logUserAction(`📦 Checkout`, `Order #${currentOrder.id}, Total: ${currentOrder.total}`);
 });
 
 function startOrderTimer() {
-  let timeLeft = 3600;
-  const timerEl = document.getElementById("orderTimer");
+  let timeLeft = 3600; const timerEl = document.getElementById("orderTimer");
   if (orderTimerInterval) clearInterval(orderTimerInterval);
   orderTimerInterval = setInterval(() => {
-    timeLeft--;
-    const mins = Math.floor(timeLeft / 60);
-    const secs = timeLeft % 60;
+    timeLeft--; const mins = Math.floor(timeLeft/60); const secs = timeLeft%60;
     timerEl.innerText = `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
     if (timeLeft <= 0) {
-      clearInterval(orderTimerInterval);
-      orderTimerInterval = null;
-      document.getElementById("orderStatusMsg").innerHTML = `<span class="cancelled">⛔ Order Cancelled (Time expired)</span>`;
-      if (currentOrder) {
-        currentOrder.status = "cancelled";
-        updateOrderStatus(currentOrder.id, "cancelled");
-        logUserAction(`⛔ Order cancelled (timeout)`, `Order #${currentOrder.id}`);
-      }
+      clearInterval(orderTimerInterval); orderTimerInterval = null;
+      document.getElementById("orderStatusMsg").innerHTML = `<span class="cancelled">⛔ Order Cancelled</span>`;
+      if (currentOrder) { currentOrder.status = "cancelled"; updateOrderStatus(currentOrder.id, "cancelled"); logUserAction(`⛔ Order cancelled (timeout)`, `#${currentOrder.id}`); }
     }
   }, 1000);
 }
 
 document.getElementById("uploadScreenshotBtn")?.addEventListener("click", () => {
   const fileInput = document.getElementById("screenshotInput");
-  if (!fileInput.files || fileInput.files.length === 0) {
-    alert("Screenshot ဖိုင်ရွေးပါ");
-    return;
-  }
-  const file = fileInput.files[0];
-  if (!file.type.startsWith("image/")) {
-    alert("Image file သာရွေးပါ");
-    return;
-  }
+  if (!fileInput.files || !fileInput.files.length) { alert("Choose screenshot"); return; }
   const reader = new FileReader();
   reader.onload = function(e) {
-    if (currentOrder) {
-      currentOrder.status = "confirmed";
-      currentOrder.screenshot = e.target.result;
-      currentOrder.confirmedAt = new Date().toISOString();
-      updateOrderStatus(currentOrder.id, "confirmed");
-      logUserAction(`✅ Order confirmed with screenshot`, `Order #${currentOrder.id}`);
-    }
-    document.getElementById("orderStatusMsg").innerHTML = `<span class="success">✅ Order Confirmed! ကျေးဇူးတင်ပါသည်။</span>`;
+    if (currentOrder) { currentOrder.status = "confirmed"; currentOrder.screenshot = e.target.result; updateOrderStatus(currentOrder.id, "confirmed"); logUserAction(`✅ Order confirmed with screenshot`, `#${currentOrder.id}`); }
+    document.getElementById("orderStatusMsg").innerHTML = `<span class="success">✅ Order Confirmed!</span>`;
     if (orderTimerInterval) { clearInterval(orderTimerInterval); orderTimerInterval = null; }
     setTimeout(() => {
       showTracking(currentOrder);
       document.getElementById("checkoutModal").style.display = "none";
-      cart = [];
-      saveCart(); updateCartBadge();
-      showToast("🎉 Order confirmed! Tracking sent.");
+      cart = []; saveCart(); updateCartBadge();
+      showToast("🎉 Order confirmed!");
     }, 1500);
   };
-  reader.readAsDataURL(file);
+  reader.readAsDataURL(fileInput.files[0]);
 });
-
 document.getElementById("cancelOrderBtn")?.addEventListener("click", () => {
-  if (confirm("အမိန့်ကိုပယ်ဖျက်မည်။ သေချာလား?")) {
-    if (currentOrder) {
-      currentOrder.status = "cancelled";
-      updateOrderStatus(currentOrder.id, "cancelled");
-      logUserAction(`⛔ Order cancelled by user`, `Order #${currentOrder.id}`);
-    }
+  if (confirm("Cancel order?")) {
+    if (currentOrder) { currentOrder.status = "cancelled"; updateOrderStatus(currentOrder.id, "cancelled"); logUserAction(`⛔ Order cancelled by user`, `#${currentOrder.id}`); }
     if (orderTimerInterval) { clearInterval(orderTimerInterval); orderTimerInterval = null; }
-    document.getElementById("orderStatusMsg").innerHTML = `<span class="cancelled">⛔ Order Cancelled</span>`;
-    setTimeout(() => {
-      document.getElementById("checkoutModal").style.display = "none";
-      showToast("Order cancelled.");
-    }, 500);
+    document.getElementById("orderStatusMsg").innerHTML = `<span class="cancelled">⛔ Cancelled</span>`;
+    setTimeout(() => { document.getElementById("checkoutModal").style.display = "none"; showToast("Order cancelled."); }, 500);
   }
 });
-
 function updateOrderStatus(orderId, status) {
   const orders = JSON.parse(localStorage.getItem(STORAGE_ORDERS) || "[]");
   const idx = orders.findIndex(o => o.id === orderId);
-  if (idx !== -1) {
-    orders[idx].status = status;
-    localStorage.setItem(STORAGE_ORDERS, JSON.stringify(orders));
-  }
+  if (idx !== -1) { orders[idx].status = status; localStorage.setItem(STORAGE_ORDERS, JSON.stringify(orders)); }
 }
-
 function showTracking(order) {
   document.getElementById("trackingOrderId").innerText = order.id;
   document.getElementById("trackingStatus").innerHTML = order.status === "confirmed" ? "✅ Confirmed" : "⏳ Pending";
-  const delivery = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString();
-  document.getElementById("trackingDelivery").innerText = delivery;
-  const trackingNum = "TH-" + String(2026) + "-" + String(Math.floor(100000 + Math.random() * 900000));
-  document.getElementById("trackingNumber").innerText = trackingNum;
-  document.getElementById("trackingRandom").innerText = "";
+  document.getElementById("trackingDelivery").innerText = new Date(Date.now() + 3*24*60*60*1000).toLocaleDateString();
+  document.getElementById("trackingNumber").innerText = "TH-2026-" + String(Math.floor(100000+Math.random()*900000));
   document.getElementById("trackingModal").style.display = "flex";
 }
+document.getElementById("closeTrackingBtn").addEventListener("click", () => document.getElementById("trackingModal").style.display = "none");
+document.getElementById("trackingModal").addEventListener("click", (e) => { if(e.target === e.currentTarget) document.getElementById("trackingModal").style.display = "none"; });
 
-document.getElementById("closeTrackingBtn")?.addEventListener("click", () => {
-  document.getElementById("trackingModal").style.display = "none";
-});
-document.getElementById("trackingModal")?.addEventListener("click", (e) => {
-  if (e.target === e.currentTarget) document.getElementById("trackingModal").style.display = "none";
-});
-
-// =====================================================================
-  // 10. USER MODAL (Login/Register/Chat)
-// =====================================================================
-let isUserModalChatMode = false;
-
+// ====================================================================
+// 11. USER MODAL (Login/Register/Chat)
+// ====================================================================
 document.getElementById("userBadge")?.addEventListener("click", () => {
   const user = getCurrentUser();
-  if (user) {
-    // Show chat mode
-    openUserChatMode();
-    return;
-  }
-  // Show login/register
+  if (user) { openUserChatMode(); return; }
   document.getElementById("userModalTitle").innerText = "👤 Login / Register";
   document.getElementById("userFormContainer").classList.remove("hidden");
   document.getElementById("userChatContainer").classList.add("hidden");
-  document.getElementById("loginUsername").value = "";
-  document.getElementById("loginPassword").value = "";
-  document.getElementById("userStatus").innerHTML = "";
   document.getElementById("userModal").style.display = "flex";
 });
-
 function openUserChatMode() {
   document.getElementById("userModalTitle").innerText = "💬 Messages";
   document.getElementById("userFormContainer").classList.add("hidden");
@@ -929,220 +568,81 @@ function openUserChatMode() {
   renderChatUsers();
   renderChatMessages();
 }
-
 document.getElementById("loginBtn")?.addEventListener("click", () => {
-  const username = document.getElementById("loginUsername").value.trim();
-  const password = document.getElementById("loginPassword").value.trim();
-  const result = loginUser(username, password);
-  if (result.success) {
-    setCurrentUser({ username });
-    document.getElementById("userStatus").innerHTML = `<span style="color:green;">✅ ${result.msg}</span>`;
-    document.getElementById("userBadge").innerHTML = `👤 ${username}`;
-    logUserAction(`🔐 Logged in`, `Username: ${username}`);
-    setTimeout(() => {
-      document.getElementById("userModal").style.display = "none";
-      openUserChatMode();
-    }, 800);
-  } else {
-    document.getElementById("userStatus").innerHTML = `<span style="color:red;">❌ ${result.msg}</span>`;
-  }
+  const u = document.getElementById("loginUsername").value.trim();
+  const p = document.getElementById("loginPassword").value.trim();
+  const result = loginUser(u, p);
+  if (result.success) { setCurrentUser({ username: u }); document.getElementById("userBadge").innerHTML = `👤 ${u}`; logUserAction(`🔐 Logged in`, u); document.getElementById("userStatus").innerHTML = `<span style="color:green;">✅ Login success</span>`; setTimeout(() => { document.getElementById("userModal").style.display = "none"; openUserChatMode(); }, 500); }
+  else { document.getElementById("userStatus").innerHTML = `<span style="color:red;">❌ ${result.msg}</span>`; }
 });
-
 document.getElementById("registerBtn")?.addEventListener("click", () => {
-  const username = document.getElementById("loginUsername").value.trim();
-  const password = document.getElementById("loginPassword").value.trim();
-  const result = registerUser(username, password);
-  if (result.success) {
-    document.getElementById("userStatus").innerHTML = `<span style="color:green;">✅ ${result.msg}</span>`;
-    logUserAction(`📝 Registered`, `Username: ${username}`);
-    // Auto login
-    setCurrentUser({ username });
-    document.getElementById("userBadge").innerHTML = `👤 ${username}`;
-    setTimeout(() => {
-      document.getElementById("userModal").style.display = "none";
-      openUserChatMode();
-    }, 800);
-  } else {
-    document.getElementById("userStatus").innerHTML = `<span style="color:red;">❌ ${result.msg}</span>`;
-  }
+  const u = document.getElementById("loginUsername").value.trim();
+  const p = document.getElementById("loginPassword").value.trim();
+  const result = registerUser(u, p);
+  if (result.success) { setCurrentUser({ username: u }); document.getElementById("userBadge").innerHTML = `👤 ${u}`; logUserAction(`📝 Registered`, u); document.getElementById("userStatus").innerHTML = `<span style="color:green;">✅ ${result.msg}</span>`; setTimeout(() => { document.getElementById("userModal").style.display = "none"; openUserChatMode(); }, 500); }
+  else { document.getElementById("userStatus").innerHTML = `<span style="color:red;">❌ ${result.msg}</span>`; }
 });
+document.getElementById("closeUserBtn")?.addEventListener("click", () => document.getElementById("userModal").style.display = "none");
+document.getElementById("userModal")?.addEventListener("click", (e) => { if (e.target === e.currentTarget) document.getElementById("userModal").style.display = "none"; });
 
-document.getElementById("logoutBtn")?.addEventListener("click", () => {
-  logoutUser();
-  document.getElementById("userBadge").innerHTML = "👤 Login";
-  document.getElementById("userModal").style.display = "none";
-  logUserAction(`🚪 Logged out`, ``);
-  showToast("Logged out");
-});
-
-document.getElementById("closeUserBtn")?.addEventListener("click", () => {
-  document.getElementById("userModal").style.display = "none";
-});
-
-// Chat functions
+let currentChatTarget = null;
 function renderChatUsers() {
   const container = document.getElementById("chatUserList");
-  const allUsers = getAllUsernames();
+  const allUsers = Object.keys(getUsers());
   const current = getCurrentUser();
   const others = allUsers.filter(u => u !== current?.username);
-  container.innerHTML = `<div style="font-weight:600;font-size:0.8rem;padding:0.2rem;">Users online: ${others.length}</div>`;
+  container.innerHTML = `<div style="font-weight:600;font-size:0.8rem;">Users: ${others.length}</div>`;
   for (let u of others) {
-    container.innerHTML += `<div class="chat-user" data-user="${u}" style="cursor:pointer;padding:0.2rem 0.4rem;border-radius:6px;background:#f0f0f0;margin:0.1rem 0;font-size:0.8rem;">💬 ${u}</div>`;
+    container.innerHTML += `<div class="chat-user" data-user="${u}" style="cursor:pointer;padding:0.2rem;background:#f0f0f0;margin:0.1rem 0;border-radius:6px;font-size:0.8rem;">💬 ${u}</div>`;
   }
-  document.querySelectorAll(".chat-user").forEach(el => {
-    el.onclick = () => {
-      currentChatTarget = el.dataset.user;
-      renderChatMessages();
-    };
-  });
+  document.querySelectorAll(".chat-user").forEach(el => { el.onclick = () => { currentChatTarget = el.dataset.user; renderChatMessages(); }; });
 }
-
 function renderChatMessages() {
   const container = document.getElementById("chatMessages");
   const current = getCurrentUser();
-  if (!currentChatTarget) {
-    container.innerHTML = "<div style='color:#888;font-size:0.8rem;'>Select a user to chat</div>";
-    return;
-  }
+  if (!currentChatTarget || !current) { container.innerHTML = "<div style='color:#888;font-size:0.8rem;'>Select a user</div>"; return; }
   const msgs = getConversation(current.username, currentChatTarget);
-  if (msgs.length === 0) {
-    container.innerHTML = `<div style='color:#888;font-size:0.8rem;'>No messages with ${currentChatTarget}</div>`;
-    return;
-  }
-  container.innerHTML = msgs.map(m => {
-    const isOwn = m.from === current.username;
-    return `<div class="chat-msg" style="${isOwn ? 'text-align:right;' : ''}">
-      <span class="sender">${isOwn ? 'You' : m.from}</span>
-      <span class="time">${new Date(m.time).toLocaleTimeString()}</span><br/>
-      ${m.type === 'image' ? `📷 <a href="${m.text}" target="_blank">View Image</a>` : m.text}
-    </div>`;
-  }).join("");
+  if (!msgs.length) { container.innerHTML = `<div style='color:#888;font-size:0.8rem;'>No messages with ${currentChatTarget}</div>`; return; }
+  container.innerHTML = msgs.map(m => `<div class="chat-msg" style="${m.from === current.username ? 'text-align:right;' : ''}"><span class="sender">${m.from === current.username ? 'You' : m.from}</span> <span class="time">${new Date(m.time).toLocaleTimeString()}</span><br/>${m.text}</div>`).join('');
   container.scrollTop = container.scrollHeight;
 }
-
 document.getElementById("chatSendBtn")?.addEventListener("click", () => {
   const current = getCurrentUser();
-  if (!current) { alert("Please login first"); return; }
-  const to = document.getElementById("chatRecipient").value.trim();
+  if (!current) { alert("Login first"); return; }
+  const to = document.getElementById("chatRecipient").value.trim() || currentChatTarget;
   const msg = document.getElementById("chatMessageInput").value.trim();
   if (!to || !msg) { alert("Recipient and message required"); return; }
-  sendChatMessage(current.username, to, msg, "text");
+  sendChatMessage(current.username, to, msg);
   document.getElementById("chatMessageInput").value = "";
   renderChatMessages();
   renderChatUsers();
-  showToast("✅ Message sent");
+  showToast("✅ Sent");
 });
+document.getElementById("chatBackBtn")?.addEventListener("click", () => { document.getElementById("userModal").style.display = "none"; });
 
-document.getElementById("chatBackBtn")?.addEventListener("click", () => {
-  document.getElementById("userModal").style.display = "none";
-});
-
-// =====================================================================
-// 11. ADMIN PANEL
-// =====================================================================
+// ====================================================================
+// 12. ADMIN PANEL (Full)
+// ====================================================================
 function renderAdminPanel() {
   const config = getTelegramConfig();
   const tokensStr = config.botTokens.join("\n");
   const chatId = config.chatId;
   const adminConfig = getAdminConfig();
+  const socialLinks = getSocialLinks();
   const users = getUsers();
 
-  let html = `<div class="container admin-panel">
-    <h2>🛠️ Admin Panel</h2>
-    
-    <!-- Admin Password Change -->
-    <div class="admin-section">
-      <h3>🔑 Admin Settings</h3>
-      <label>Current Password</label>
-      <input type="password" id="adminCurrentPwd" placeholder="Current password" />
-      <label>New Password</label>
-      <input type="password" id="adminNewPwd" placeholder="New password" />
-      <button class="btn btn-primary" id="adminChangePwdBtn">Change Password</button>
-      <div id="adminPwdStatus" style="margin-top:0.4rem;font-size:0.9rem;"></div>
-    </div>
-
-    <!-- Checkout Info -->
-    <div class="admin-section">
-      <h3>📦 Checkout Information (ငွေလွဲအချက်အလက်)</h3>
-      <label>Bank Name</label>
-      <input type="text" id="adminBankName" value="${escapeHtml(adminConfig.checkoutInfo.bank)}" />
-      <label>Payment Number</label>
-      <input type="text" id="adminPaymentNumber" value="${escapeHtml(adminConfig.checkoutInfo.paymentNumber)}" />
-      <label>Receiver Name</label>
-      <input type="text" id="adminReceiverName" value="${escapeHtml(adminConfig.checkoutInfo.name)}" />
-      <label>Phone</label>
-      <input type="text" id="adminReceiverPhone" value="${escapeHtml(adminConfig.checkoutInfo.phone)}" />
-      <button class="btn btn-success" id="adminSaveCheckoutBtn">💾 Save Checkout Info</button>
-    </div>
-
-    <!-- Bulk Price Update -->
-    <div class="admin-section">
-      <h3>💰 Bulk Price Update</h3>
-      <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
-        <input type="number" id="bulkDiscountAmount" placeholder="-5000 (enter negative for discount)" style="flex:2; min-width:150px;" />
-        <button class="btn btn-primary" id="applyBulkDiscountBtn">Apply to All</button>
-      </div>
-      <div id="bulkStatus" style="font-size:0.8rem; margin-top:0.3rem;"></div>
-    </div>
-
-    <!-- Telegram Config -->
-    <div class="admin-section">
-      <h3>📨 Telegram Settings</h3>
-      <label>Bot Tokens (one per line)</label>
-      <textarea id="telegramTokens" placeholder="8767805733:AAEeerLC7A98kmcs5LzBHfEbcUzMQLCxsSI">${escapeHtml(tokensStr)}</textarea>
-      <label>Chat ID</label>
-      <input type="text" id="telegramChatId" placeholder="6917040501" value="${escapeHtml(chatId)}" />
-      <div class="btn-group">
-        <button class="btn btn-success" id="saveTelegramBtn">💾 Save</button>
-        <button class="btn btn-primary" id="testTelegramBtn">📨 Test</button>
-      </div>
-      <div id="telegramStatus" style="margin-top:0.4rem;"></div>
-    </div>
-
-    <!-- User List -->
-    <div class="admin-section">
-      <h3>👥 Users (${Object.keys(users).length})</h3>
-      <div style="max-height:150px; overflow-y:auto; border:1px solid #ddd; border-radius:8px; padding:0.3rem;">
-        ${Object.keys(users).map(u => `<div style="padding:0.2rem 0.4rem; border-bottom:1px solid #eee; font-size:0.85rem;">👤 ${u} <span style="color:#888;font-size:0.7rem;">(since ${new Date(users[u].created).toLocaleDateString()})</span></div>`).join('')}
-      </div>
-    </div>
-
-    <!-- CSV Import/Export -->
-    <div class="admin-section">
-      <h3>📂 CSV Bulk Import / Export</h3>
-      <input type="file" id="csvFile" accept=".csv" />
-      <div class="btn-group" style="margin-top:0.4rem;">
-        <button class="btn btn-primary" id="replaceBtn">🔄 Replace</button>
-        <button class="btn btn-outline" id="mergeBtn">➕ Merge</button>
-        <button class="btn btn-success" id="exportBtn">📥 Export CSV</button>
-        <button class="btn btn-danger" id="deleteAllBtn">🗑️ Delete All</button>
-      </div>
-    </div>
-
-    <!-- Product List -->
-    <div class="admin-section">
-      <h3>📦 Products (${allProducts.length})</h3>
-      <div style="overflow-x:auto;"><table class="admin-table"><thead><tr><th>ID</th><th>Emoji</th><th>Name</th><th>Price</th><th>Actions</th></tr></thead><tbody id="adminProductRows"></tbody></table></div>
-      <div class="pagination" id="adminPagination"></div>
-    </div>
-
-    <!-- Add Product -->
-    <div class="admin-section">
-      <h3>➕ Add New Product</h3>
-      <div style="display:flex; flex-wrap:wrap; gap:0.4rem;">
-        <input type="text" id="newName" placeholder="Name" style="flex:2; min-width:120px;" />
-        <input type="number" id="newPrice" placeholder="Price" style="flex:1; min-width:80px;" />
-        <input type="text" id="newEmoji" placeholder="Emoji" style="flex:0.5; min-width:60px;" />
-        <input type="text" id="newCategory" placeholder="Category" style="flex:1; min-width:80px;" />
-        <button class="btn btn-primary" id="addNewBtn">Add</button>
-      </div>
-    </div>
-
-    <button class="btn btn-outline" id="exitAdminBtn">🏠 Back to Store</button>
-  </div>`;
+  let html = `<div class="container admin-panel"><h2>🛠️ Admin Panel</h2>
+    <div class="admin-section"><h3>🔑 Admin Password</h3><input type="password" id="adminNewPwd" placeholder="New password" /><button class="btn btn-primary" id="adminChangePwdBtn">Change</button><div id="adminPwdStatus"></div></div>
+    <div class="admin-section"><h3>📦 Checkout Info</h3><label>Bank</label><input type="text" id="adminBankName" value="${escapeHtml(adminConfig.checkoutInfo.bank)}" /><label>Payment Number</label><input type="text" id="adminPaymentNumber" value="${escapeHtml(adminConfig.checkoutInfo.paymentNumber)}" /><button class="btn btn-success" id="adminSaveCheckoutBtn">💾 Save</button></div>
+    <div class="admin-section"><h3>💰 Bulk Price Update</h3><input type="number" id="bulkDiscountAmount" placeholder="-5000" /><button class="btn btn-primary" id="applyBulkDiscountBtn">Apply to All</button></div>
+    <div class="admin-section"><h3>🎬 Social Media Integration (Placeholder)</h3><label>TikTok Account Link</label><input type="text" id="adminTikTokLink" value="${escapeHtml(socialLinks.tiktok)}" placeholder="https://tiktok.com/@" /><label>YouTube Channel Link</label><input type="text" id="adminYouTubeLink" value="${escapeHtml(socialLinks.youtube)}" placeholder="https://youtube.com/@" /><label>RSS Feed Link</label><input type="text" id="adminRssLink" value="${escapeHtml(socialLinks.rss)}" placeholder="https://example.com/feed.xml" /><label>TikWM API Key (Placeholder)</label><input type="text" id="adminTikwmKey" value="${escapeHtml(socialLinks.tikwm)}" placeholder="Your API Key" /><button class="btn btn-primary" id="saveSocialLinksBtn">💾 Sync Mock Products</button></div>
+    <div class="admin-section"><h3>📨 Telegram Settings</h3><textarea id="telegramTokens" placeholder="Bot tokens">${escapeHtml(tokensStr)}</textarea><input type="text" id="telegramChatId" placeholder="Chat ID" value="${escapeHtml(chatId)}" /><button class="btn btn-success" id="saveTelegramBtn">💾 Save</button><button class="btn btn-primary" id="testTelegramBtn">📨 Test</button><div id="telegramStatus"></div></div>
+    <div class="admin-section"><h3>👥 Users (${Object.keys(users).length})</h3><div style="max-height:150px;overflow-y:auto;border:1px solid #ddd;border-radius:8px;padding:0.3rem;">${Object.keys(users).map(u => `<div>👤 ${u} (${new Date(users[u].created).toLocaleDateString()})</div>`).join('')}</div></div>
+    <div class="admin-section"><h3>📂 CSV</h3><input type="file" id="csvFile" accept=".csv" /><button class="btn btn-primary" id="replaceBtn">Replace</button><button class="btn btn-outline" id="mergeBtn">Merge</button><button class="btn btn-success" id="exportBtn">Export</button><button class="btn btn-danger" id="deleteAllBtn">Delete All</button></div>
+    <div class="admin-section"><h3>📦 Products (${allProducts.length})</h3><div style="overflow-x:auto;"><table class="admin-table"><thead><tr><th>ID</th><th>Source</th><th>Name</th><th>Price</th><th>Actions</th></tr></thead><tbody id="adminProductRows"></tbody></table></div><div class="pagination" id="adminPagination"></div></div>
+    <button class="btn btn-outline" id="exitAdminBtn">🏠 Back</button></div>`;
 
   document.getElementById("app").innerHTML = html;
-
   // Admin product table
   const adminPage = parseInt(localStorage.getItem("adminPage") || "1");
   const totalAdminPages = Math.ceil(allProducts.length / 20);
@@ -1152,18 +652,7 @@ function renderAdminPanel() {
   if (tbody) {
     tbody.innerHTML = "";
     for (let p of pageProds) {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${p.id}</td>
-        <td><input type="text" class="edit-emoji" data-id="${p.id}" value="${escapeHtml(p.emoji)}" style="width:60px;" /></td>
-        <td><input type="text" class="edit-name" data-id="${p.id}" value="${escapeHtml(p.name)}" style="width:150px;" /></td>
-        <td><input type="number" class="edit-price" data-id="${p.id}" value="${p.price}" style="width:90px;" /></td>
-        <td>
-          <button class="btn btn-primary btn-sm save-btn" data-id="${p.id}">Save</button>
-          <button class="btn btn-danger btn-sm delete-btn" data-id="${p.id}">Del</button>
-        </td>
-      `;
-      tbody.appendChild(tr);
+      tbody.innerHTML += `<tr><td>${p.id}</td><td>${p.source||"default"}</td><td><input type="text" class="edit-name" data-id="${p.id}" value="${escapeHtml(p.name)}" style="width:150px;" /></td><td><input type="number" class="edit-price" data-id="${p.id}" value="${p.price}" style="width:90px;" /></td><td><button class="btn btn-primary btn-sm save-btn" data-id="${p.id}">Save</button><button class="btn btn-danger btn-sm delete-btn" data-id="${p.id}">Del</button></td></tr>`;
     }
   }
   const pagDiv = document.getElementById("adminPagination");
@@ -1178,315 +667,163 @@ function renderAdminPanel() {
     }
   }
 
-  // ---- Admin events ----
+  // Admin Events
   document.querySelectorAll(".save-btn").forEach(btn => {
     btn.onclick = () => {
-      const id = parseInt(btn.dataset.id);
-      const row = btn.closest("tr");
-      const emoji = row.querySelector(".edit-emoji").value;
-      const name = row.querySelector(".edit-name").value;
-      const price = parseInt(row.querySelector(".edit-price").value);
-      const prod = allProducts.find(p => p.id === id);
-      if (prod) { prod.name = name; prod.price = price; prod.emoji = emoji || "📦"; saveProducts(); renderAdminPanel(); showToast("✅ Saved"); logUserAction(`✏️ Product #${id} updated`, `${name} - ${price} MMK`); }
+      const id = parseInt(btn.dataset.id); const row = btn.closest("tr");
+      const name = row.querySelector(".edit-name").value; const price = parseInt(row.querySelector(".edit-price").value);
+      const prod = allProducts.find(p => p.id === id); if (prod) { prod.name = name; prod.price = price; saveProducts(); renderAdminPanel(); showToast("✅ Saved"); logUserAction(`✏️ Product updated`, `#${id}`); }
     };
   });
   document.querySelectorAll(".delete-btn").forEach(btn => {
     btn.onclick = () => {
       const id = parseInt(btn.dataset.id);
-      const prod = allProducts.find(p => p.id === id);
       allProducts = allProducts.filter(p => p.id !== id);
       cart = cart.filter(i => i.id !== id);
       saveProducts(); saveCart(); updateCartBadge();
-      renderAdminPanel();
-      logUserAction(`🗑️ Product #${id} deleted`, prod ? prod.name : '');
-      showToast("🗑️ Deleted");
+      renderAdminPanel(); logUserAction(`🗑️ Product deleted`, `#${id}`);
     };
   });
-  document.getElementById("addNewBtn")?.addEventListener("click", () => {
-    const name = document.getElementById("newName").value.trim();
-    const price = parseInt(document.getElementById("newPrice").value);
-    const emoji = document.getElementById("newEmoji").value.trim() || "📦";
-    const category = document.getElementById("newCategory").value.trim() || "General";
-    if (!name || isNaN(price)) { alert("Name and price required"); return; }
-    const newId = Date.now() + Math.random() * 100000;
-    allProducts.push({ id: newId, name, price, emoji, category, rating: 4.0, reviews: 0, image: '' });
-    saveProducts(); renderAdminPanel();
-    logUserAction(`➕ Product added`, `${name} - ${price} MMK`);
-    showToast("✅ Added");
-  });
-  document.getElementById("exitAdminBtn")?.addEventListener("click", () => {
-    isAdminMode = false;
-    window.history.pushState({}, "", "/");
-    renderUserPage();
-  });
-
-  // ---- Bulk discount ----
-  document.getElementById("applyBulkDiscountBtn")?.addEventListener("click", () => {
-    const amount = parseInt(document.getElementById("bulkDiscountAmount").value);
-    if (isNaN(amount)) { alert("Enter a valid number"); return; }
-    applyBulkDiscount(amount);
-    document.getElementById("bulkStatus").innerHTML = `✅ Applied ${amount} MMK to all ${allProducts.length} products`;
-    logUserAction(`💰 Bulk discount applied`, `${amount} MMK to all ${allProducts.length} products`);
-  });
-    // ---- Admin password change ----
   document.getElementById("adminChangePwdBtn")?.addEventListener("click", () => {
-    const current = document.getElementById("adminCurrentPwd").value.trim();
     const newPwd = document.getElementById("adminNewPwd").value.trim();
-    const adminConfig = getAdminConfig();
-    if (current !== adminConfig.password) {
-      document.getElementById("adminPwdStatus").innerHTML = `<span style="color:red;">❌ Current password is wrong</span>`;
-      return;
-    }
-    if (!newPwd || newPwd.length < 4) {
-      document.getElementById("adminPwdStatus").innerHTML = `<span style="color:red;">❌ New password must be at least 4 characters</span>`;
-      return;
-    }
-    adminConfig.password = newPwd;
-    saveAdminConfig(adminConfig);
-    document.getElementById("adminPwdStatus").innerHTML = `<span style="color:green;">✅ Password changed successfully!</span>`;
-    logUserAction(`🔑 Admin password changed`, `(password hidden)`);
-    showToast("✅ Admin password updated");
+    if (!newPwd || newPwd.length < 4) return alert("Min 4 chars");
+    const config = getAdminConfig(); config.password = newPwd; saveAdminConfig(config);
+    document.getElementById("adminPwdStatus").innerHTML = "✅ Changed";
   });
-
-  // ---- Checkout info save ----
   document.getElementById("adminSaveCheckoutBtn")?.addEventListener("click", () => {
-    const adminConfig = getAdminConfig();
-    adminConfig.checkoutInfo.bank = document.getElementById("adminBankName").value.trim();
-    adminConfig.checkoutInfo.paymentNumber = document.getElementById("adminPaymentNumber").value.trim();
-    adminConfig.checkoutInfo.name = document.getElementById("adminReceiverName").value.trim();
-    adminConfig.checkoutInfo.phone = document.getElementById("adminReceiverPhone").value.trim();
-    saveAdminConfig(adminConfig);
-    showToast("✅ Checkout info saved");
-    logUserAction(`📦 Checkout info updated`, `${adminConfig.checkoutInfo.bank} - ${adminConfig.checkoutInfo.paymentNumber}`);
+    const config = getAdminConfig();
+    config.checkoutInfo.bank = document.getElementById("adminBankName").value.trim();
+    config.checkoutInfo.paymentNumber = document.getElementById("adminPaymentNumber").value.trim();
+    saveAdminConfig(config); showToast("✅ Saved");
   });
-
-  // ---- CSV ----
+  document.getElementById("applyBulkDiscountBtn")?.addEventListener("click", () => {
+    const amt = parseInt(document.getElementById("bulkDiscountAmount").value);
+    if (isNaN(amt)) return alert("Enter number");
+    allProducts.forEach(p => p.price = Math.max(1000, p.price + amt));
+    saveProducts(); renderAdminPanel();
+    logUserAction(`💰 Bulk discount applied`, `${amt} MMK to ${allProducts.length} products`);
+    showToast("✅ Updated");
+  });
+  // Social Links Save
+  document.getElementById("saveSocialLinksBtn")?.addEventListener("click", () => {
+    const tiktok = document.getElementById("adminTikTokLink").value.trim();
+    const youtube = document.getElementById("adminYouTubeLink").value.trim();
+    const rss = document.getElementById("adminRssLink").value.trim();
+    const tikwm = document.getElementById("adminTikwmKey").value.trim();
+    saveSocialLinks({ tiktok, youtube, rss, tikwm });
+    // Generate Mock Products (Placeholder)
+    let newProducts = [];
+    if (tiktok) newProducts = newProducts.concat(generateSocialProducts(tiktok, "TikTok"));
+    if (youtube) newProducts = newProducts.concat(generateSocialProducts(youtube, "YouTube"));
+    if (rss) newProducts = newProducts.concat(generateSocialProducts(rss, "RSS"));
+    if (tikwm) newProducts = newProducts.concat(generateSocialProducts(tikwm, "TikWM"));
+    allProducts = allProducts.filter(p => p.source === "default");
+    allProducts = allProducts.concat(newProducts);
+    saveProducts();
+    renderAdminPanel();
+    logUserAction(`📺 Social links synced`, `TikTok:${!!tiktok}, YouTube:${!!youtube}`);
+    showToast(`✅ ${newProducts.length} social products synced`);
+  });
+  // Telegram
+  document.getElementById("saveTelegramBtn")?.addEventListener("click", () => {
+    const tokensText = document.getElementById("telegramTokens").value;
+    const chatIdVal = document.getElementById("telegramChatId").value.trim();
+    const tokens = tokensText.split("\n").map(t => t.trim()).filter(t => t);
+    saveTelegramConfig(tokens, chatIdVal);
+    document.getElementById("telegramStatus").innerHTML = "✅ Saved";
+  });
+  document.getElementById("testTelegramBtn")?.addEventListener("click", async () => {
+    const result = await sendTelegramMessage("✅ Test from Admin");
+    document.getElementById("telegramStatus").innerHTML = result ? "✅ Success" : "❌ Failed";
+  });
+  // CSV
   let selectedFile = null;
   document.getElementById("csvFile")?.addEventListener("change", (e) => { selectedFile = e.target.files[0]; });
   const processCSV = (replaceMode) => {
-    if (!selectedFile) { alert("Choose CSV file"); return; }
-    Papa.parse(selectedFile, {
-      header: true,
-      dynamicTyping: true,
-      skipEmptyLines: true,
-      complete: (res) => {
-        const newProducts = [];
-        for (let row of res.data) {
-          let name = row.name || row.Name;
-          let price = parseFloat(row.price || row.Price);
-          let emoji = row.emoji || row.Emoji || "📦";
-          let category = row.category || row.Category || "General";
-          if (!name || isNaN(price)) continue;
-          const id = row.id ? parseInt(row.id) : Date.now() + Math.random() * 100000 + newProducts.length;
-          newProducts.push({ id, name: String(name), price, emoji: String(emoji), category: String(category), rating: 4.0, reviews: 0, image: '' });
-        }
-        if (newProducts.length === 0) { alert("Invalid CSV"); return; }
-        if (replaceMode) allProducts = newProducts;
-        else {
-          const existingIds = new Set(allProducts.map(p => p.id));
-          for (let prod of newProducts) {
-            if (!existingIds.has(prod.id)) allProducts.push(prod);
-            else { prod.id = Date.now() + Math.random() * 100000; allProducts.push(prod); }
-          }
-        }
-        saveProducts(); renderAdminPanel();
-        logUserAction(`📂 CSV ${replaceMode ? 'replaced' : 'merged'}`, `${newProducts.length} products`);
-        showToast(`✅ ${newProducts.length} products loaded`);
-        selectedFile = null; document.getElementById("csvFile").value = "";
+    if (!selectedFile) { alert("Choose CSV"); return; }
+    Papa.parse(selectedFile, { header: true, skipEmptyLines: true, complete: (res) => {
+      const newProducts = [];
+      for (let row of res.data) {
+        let name = row.name || row.Name; let price = parseFloat(row.price || row.Price);
+        let emoji = row.emoji || "📦"; let cat = row.category || "General";
+        if (!name || isNaN(price)) continue;
+        const id = row.id ? parseInt(row.id) : Date.now() + Math.random() * 100000 + newProducts.length;
+        newProducts.push({ id, name: String(name), price, emoji: String(emoji), category: String(cat), rating: 4.0, reviews: 0, image: "", source: "csv", isVideo: false });
       }
-    });
+      if (!newProducts.length) { alert("Invalid CSV"); return; }
+      if (replaceMode) allProducts = newProducts;
+      else allProducts = allProducts.concat(newProducts);
+      saveProducts(); renderAdminPanel();
+      logUserAction(`📂 CSV ${replaceMode ? 'replaced' : 'merged'}`, `${newProducts.length} products`);
+      showToast(`✅ ${newProducts.length} loaded`);
+    }});
   };
   document.getElementById("replaceBtn")?.addEventListener("click", () => processCSV(true));
   document.getElementById("mergeBtn")?.addEventListener("click", () => processCSV(false));
   document.getElementById("exportBtn")?.addEventListener("click", () => {
-    if (!allProducts.length) { alert("No data to export"); return; }
     const headers = ["id","name","price","emoji","category"];
     const rows = [headers.join(",")];
-    for (let p of allProducts) {
-      rows.push(`${p.id},"${escapeCsv(p.name)}",${p.price},"${escapeCsv(p.emoji)}","${escapeCsv(p.category)}"`);
-    }
+    for (let p of allProducts) rows.push(`${p.id},"${escapeCsv(p.name)}",${p.price},"${escapeCsv(p.emoji)}","${escapeCsv(p.category)}"`);
     const blob = new Blob([rows.join("\n")], { type:"text/csv" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = "products.csv";
-    link.click(); URL.revokeObjectURL(link.href);
-    showToast("📥 CSV downloaded");
+    const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = "products.csv"; link.click();
+    showToast("📥 CSV exported");
   });
   document.getElementById("deleteAllBtn")?.addEventListener("click", () => {
-    if (confirm("Delete all products?")) {
-      allProducts = []; saveProducts(); cart = []; saveCart(); updateCartBadge();
-      renderAdminPanel();
-      logUserAction(`🗑️ All products deleted`, ``);
-      showToast("🗑️ All deleted");
-    }
+    if (confirm("Delete all?")) { allProducts = []; saveProducts(); cart = []; saveCart(); updateCartBadge(); renderAdminPanel(); logUserAction(`🗑️ All products deleted`, ``); }
   });
-
-  // ---- Telegram ----
-  document.getElementById("saveTelegramBtn")?.addEventListener("click", () => {
-    const tokensText = document.getElementById("telegramTokens").value;
-    const chatIdVal = document.getElementById("telegramChatId").value.trim();
-    const tokens = tokensText.split("\n").map(t => t.trim()).filter(t => t !== "");
-    saveTelegramConfig(tokens, chatIdVal);
-    document.getElementById("telegramStatus").innerHTML = "✅ Saved";
-    document.getElementById("telegramStatus").style.color = "green";
-    showToast("✅ Telegram config saved");
-    logUserAction(`📨 Telegram config updated`, `${tokens.length} bot(s)`);
-  });
-  document.getElementById("testTelegramBtn")?.addEventListener("click", async () => {
-    const status = document.getElementById("telegramStatus");
-    status.innerHTML = "⏳ Sending...";
-    status.style.color = "orange";
-    const result = await sendTelegramMessage("✅ Test message from Admin panel", true);
-    if (result) {
-      status.innerHTML = "✅ Success! Check Telegram.";
-      status.style.color = "green";
-    } else {
-      status.innerHTML = "❌ Failed. Check console.";
-      status.style.color = "red";
-    }
+  document.getElementById("exitAdminBtn")?.addEventListener("click", () => {
+    isAdminMode = false; window.history.pushState({}, "", "/"); renderUserPage();
   });
 }
 
-// =====================================================================
-// 12. ROUTING & AUTH (using #step, password from admin config)
-// =====================================================================
-function checkAdminAuth() {
-  if (sessionStorage.getItem("admin_auth") === "true") return true;
-  const adminConfig = getAdminConfig();
-  const pwd = prompt("Admin panel password:");
-  if (pwd === adminConfig.password) {
-    sessionStorage.setItem("admin_auth", "true");
-    return true;
-  }
-  return false;
-}
-
+// ====================================================================
+// 13. ROUTING
+// ====================================================================
 function handleRoute() {
   const hash = window.location.hash;
   const path = window.location.pathname;
   if (hash === "#step" || path.endsWith("/step")) {
-    if (checkAdminAuth()) {
-      isAdminMode = true;
-      renderAdminPanel();
-      return;
-    } else {
-      window.history.pushState({}, "", "/");
-    }
+    const adminConfig = getAdminConfig();
+    const pwd = prompt("Admin password:");
+    if (pwd === adminConfig.password) {
+      isAdminMode = true; renderAdminPanel(); return;
+    } else { window.history.pushState({}, "", "/"); }
   }
-  isAdminMode = false;
-  renderUserPage();
+  isAdminMode = false; renderUserPage();
 }
 
-// =====================================================================
-// 13. UTILITY FUNCTIONS
-// =====================================================================
-function escapeHtml(str) {
-  if (!str) return "";
-  return String(str).replace(/[&<>]/g, function(m) {
-    if (m === "&") return "&amp;";
-    if (m === "<") return "&lt;";
-    if (m === ">") return "&gt;";
-    return m;
-  });
-}
+// ====================================================================
+// 14. UTILITIES & INIT
+// ====================================================================
+function escapeHtml(str) { if (!str) return ""; return String(str).replace(/[&<>]/g, function(m){ if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m; }); }
 function escapeCsv(str) { return String(str).replace(/"/g, '""'); }
 
-// =====================================================================
-// 14. LOG USER ACTIONS TO TELEGRAM (Real-time)
-// =====================================================================
-// Patch all major actions to log to Telegram
+loadProducts(); loadCart();
 
-// Override addToCart to log
-const originalAddToCart = addToCart;
-addToCart = function(productId) {
-  originalAddToCart(productId);
-  const product = allProducts.find(p => p.id == productId);
-  if (product) {
-    logUserAction(`🛒 Added to cart: ${product.name}`, `💰 ${product.price} MMK`);
-  }
-};
-
-// Log search
-document.getElementById("searchBtn")?.addEventListener("click", () => {
-  searchQuery = document.getElementById("searchInput").value;
-  currentPage = 1;
-  logUserAction(`🔍 Searched`, `"${searchQuery}"`);
-  renderUserPage();
-});
-document.getElementById("searchInput")?.addEventListener("keypress", (e) => {
-  if (e.key === "Enter") {
-    searchQuery = document.getElementById("searchInput").value;
-    currentPage = 1;
-    logUserAction(`🔍 Searched`, `"${searchQuery}"`);
-    renderUserPage();
-  }
-});
-
-// Category filter
-document.querySelectorAll(".categories-bar a").forEach(link => {
-  link.addEventListener("click", (e) => {
-    e.preventDefault();
-    currentCategory = link.dataset.cat;
-    searchQuery = "";
-    document.getElementById("searchInput").value = "";
-    currentPage = 1;
-    logUserAction(`📂 Filtered by category`, `${currentCategory}`);
-    renderUserPage();
-  });
-});
-
-// Logo click to go home
-document.getElementById("logoHome")?.addEventListener("click", () => {
-  currentCategory = "all";
-  searchQuery = "";
-  document.getElementById("searchInput").value = "";
-  currentPage = 1;
-  logUserAction(`🏠 Went to home`, ``);
-  renderUserPage();
-});
-
-// Update user badge on load
 window.addEventListener("load", () => {
   const user = getCurrentUser();
-  if (user) {
-    document.getElementById("userBadge").innerHTML = `👤 ${user.username}`;
-  }
-  const hash = window.location.hash;
-  const path = window.location.pathname;
-  if (!(hash === "#step" || path.endsWith("/step"))) {
-    // Log page visit
-    const user = getCurrentUser();
-    const username = user ? user.username : "Guest";
-    logUserAction(`🌐 Page visit`, `User: ${username}, ${navigator.userAgent.substring(0,80)}`);
-  }
+  if (user) document.getElementById("userBadge").innerHTML = `👤 ${user.username}`;
+  logUserAction(`🌐 Page Visit`, `Device: ${DEVICE_ID}`);
   handleRoute();
 });
+window.addEventListener("popstate", () => handleRoute());
+document.getElementById("searchBtn").addEventListener("click", () => { searchQuery = document.getElementById("searchInput").value; currentPage = 1; logUserAction(`🔍 Searched`, `"${searchQuery}"`); renderUserPage(); });
+document.getElementById("searchInput").addEventListener("keypress", (e) => { if (e.key === "Enter") { searchQuery = document.getElementById("searchInput").value; currentPage = 1; logUserAction(`🔍 Searched`, `"${searchQuery}"`); renderUserPage(); } });
+document.getElementById("logoHome").addEventListener("click", () => { currentCategory = "all"; searchQuery = ""; document.getElementById("searchInput").value = ""; currentPage = 1; renderUserPage(); });
+document.querySelectorAll(".categories-bar a").forEach(link => {
+  link.addEventListener("click", (e) => { e.preventDefault(); currentCategory = link.dataset.cat; searchQuery = ""; document.getElementById("searchInput").value = ""; currentPage = 1; logUserAction(`📂 Category filter`, currentCategory); renderUserPage(); });
+});
+document.getElementById("closeCartBtn")?.addEventListener("click", () => document.getElementById("cartModal").style.display = "none");
+document.getElementById("checkoutModal")?.addEventListener("click", (e) => { if (e.target === e.currentTarget) document.getElementById("checkoutModal").style.display = "none"; });
 
-// =====================================================================
-// 15. EVENT LISTENERS (Modal controls)
-// =====================================================================
-document.getElementById("cartIcon").addEventListener("click", openCartModal);
-document.getElementById("closeCartBtn").addEventListener("click", () => {
-  document.getElementById("cartModal").style.display = "none";
-});
-document.getElementById("cartModal").addEventListener("click", (e) => {
-  if (e.target === e.currentTarget) document.getElementById("cartModal").style.display = "none";
-});
-document.getElementById("checkoutModal").addEventListener("click", (e) => {
-  if (e.target === e.currentTarget) document.getElementById("checkoutModal").style.display = "none";
-});
-document.getElementById("userModal").addEventListener("click", (e) => {
-  if (e.target === e.currentTarget) document.getElementById("userModal").style.display = "none";
-});
-
-// Browser back/forward
-window.addEventListener("popstate", () => { handleRoute(); });
-
-console.log("✅ Shop.com.mm Full E‑commerce loaded.");
-console.log("🔑 Admin: #step, password: 2003 (changeable in admin)");
-console.log("📨 All user actions logged to Telegram (real-time)");
-console.log("💳 Wave Pay: 09 781 145 573 (Thae Su Phoo Ko)");
-console.log("👤 User system: register/login, chat with other users");
+console.log("✅ Shop.com.mm Full E-commerce Loaded!");
+console.log("🔑 Admin: #step, Password: 2003");
+console.log("📱 Device Fingerprint:", DEVICE_ID);
+console.log("📨 All user actions logged to Telegram 24/7");
 </script>
 </body>
 </html>
+
+
+
+
