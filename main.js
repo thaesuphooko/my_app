@@ -1,5 +1,5 @@
 // ============================================================
-// main.js - Shared JavaScript for both User & Admin
+// main.js - Shared Functions (User + Admin)
 // ============================================================
 
 // ========================================================================
@@ -85,11 +85,7 @@ async function sendTelegramMessage(text) {
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text: text.substring(0, 4000),
-        parse_mode: "Markdown"
-      })
+      body: JSON.stringify({ chat_id: chatId, text: text.substring(0, 4000), parse_mode: "Markdown" })
     });
     const result = await res.json();
     return result.ok;
@@ -222,7 +218,6 @@ function loginUser(username, password) {
 function forgotPassword(username) {
   const users = getUsers();
   if (!users[username]) return { success: false, msg: "User not found" };
-  // Generate random temp password
   const tempPassword = Math.random().toString(36).slice(-8);
   users[username].password = tempPassword;
   saveUsers(users);
@@ -278,6 +273,8 @@ function getAdminConfig() {
   if (raw) { try { return JSON.parse(raw); } catch (e) {} }
   return {
     password: "2003",
+    adminRoute: "#step",
+    adminPage: "admin.html",
     checkoutInfo: {
       bank: "Wave Pay",
       paymentNumber: "09 781 145 573 (Thae Su Phoo Ko)"
@@ -287,10 +284,6 @@ function getAdminConfig() {
       phone: "ဖုန်းနံပါတ်",
       address: "လိပ်စာ",
       submit: "ဆက်လုပ်ရန်"
-    },
-    telegramBroadcast: {
-      enabled: true,
-      defaultMessage: "Welcome to Shop.com.mm!"
     }
   };
 }
@@ -434,7 +427,7 @@ async function fetchAmazonProducts(query, country = "US", page = 1) {
 async function syncAmazonProducts(searchTerm, maxPages = 10) {
   if (!searchTerm || searchTerm.trim() === "") {
     alert("Please enter a search term");
-    return;
+    return 0;
   }
 
   let allFetched = [];
@@ -475,7 +468,6 @@ async function syncAmazonProducts(searchTerm, maxPages = 10) {
     allProducts = allProducts.concat(allFetched);
     saveProducts();
     logUserAction(`📦 Synced ${allFetched.length} Amazon products`, `Search: "${searchTerm}"`);
-    if (typeof renderUserPage === 'function') renderUserPage();
     return allFetched.length;
   }
   return 0;
@@ -524,7 +516,6 @@ async function syncGoogleSheet(csvUrl) {
         allProducts = allProducts.concat(newProducts);
         saveProducts();
         logUserAction(`📊 Synced ${newProducts.length} products from Google Sheet`, ``);
-        if (typeof renderUserPage === 'function') renderUserPage();
         return newProducts.length;
       }
     }
@@ -550,10 +541,6 @@ function escapeHtml(str) {
 
 function escapeCsv(str) {
   return String(str).replace(/"/g, '""');
-}
-
-function formatDate(timestamp) {
-  return new Date(timestamp).toLocaleString();
 }
 
 function generateOrderId() {
