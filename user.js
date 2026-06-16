@@ -722,3 +722,27 @@ document.addEventListener("DOMContentLoaded", function() {
 
   console.log("✅ All user.js functions loaded successfully!");
 });
+// ============================================================
+// LOAD FROM FIREBASE (User)
+// ============================================================
+async function loadProductsFromFirestore() {
+  if (!db) return false;
+
+  try {
+    const snapshot = await db.collection('products').get();
+    const products = [];
+    snapshot.forEach(doc => products.push(doc.data()));
+
+    if (products.length > 0) {
+      allProducts = products;
+      saveProducts();
+      renderUserPage();
+      console.log("✅ Loaded from Firebase:", products.length);
+      return true;
+    }
+    return false;
+  } catch (e) {
+    console.warn("Firebase load error:", e);
+    return false;
+  }
+}
