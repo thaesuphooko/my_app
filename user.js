@@ -1,5 +1,5 @@
 // ============================================================
-// user.js - User-Specific JavaScript (FULLY FIXED)
+// user.js - အပိုင်း (၁/၃) - Render & Add to Cart
 // ============================================================
 
 // ========================================================================
@@ -55,7 +55,6 @@ function renderUserPage() {
 
   document.getElementById("app").innerHTML = html;
 
-  // Attach events
   document.querySelectorAll(".add-to-cart").forEach(btn => {
     btn.onclick = (e) => {
       e.stopPropagation();
@@ -95,7 +94,7 @@ function renderUserPage() {
 }
 
 // ========================================================================
-// 2. ADD TO CART (FIXED - String ID)
+// 2. ADD TO CART (String ID)
 // ========================================================================
 function addToCart(productId) {
   const product = allProducts.find(p => String(p.id) === String(productId));
@@ -157,7 +156,6 @@ function openCartModal() {
   document.getElementById("cartTotal").innerHTML = `Total: ${total.toLocaleString()} ${getStoreConfig().currency}`;
   document.getElementById("cartModal").style.display = "flex";
 
-  // Cart control events
   document.querySelectorAll(".cart-inc").forEach(b => {
     b.onclick = () => {
       const id = b.dataset.id;
@@ -200,8 +198,12 @@ function openCartModal() {
   });
 }
 
+// ============================================================
+// user.js - အပိုင်း (၂/၃) - Checkout, Order, Screenshot
+// ============================================================
+
 // ========================================================================
-// 4. CHECKOUT BUTTON (FIXED - WORKS!)
+// 4. CHECKOUT BUTTON (FIXED)
 // ========================================================================
 function setupCheckoutButton() {
   const checkoutBtn = document.getElementById("checkoutBtn");
@@ -211,21 +213,18 @@ function setupCheckoutButton() {
     return;
   }
 
-  // Remove old listeners by cloning
   const newBtn = checkoutBtn.cloneNode(true);
   checkoutBtn.parentNode.replaceChild(newBtn, checkoutBtn);
 
   newBtn.addEventListener("click", function(e) {
     e.preventDefault();
     e.stopPropagation();
-    console.log("🛒 Checkout button clicked!");
 
     if (cart.length === 0) {
       showToast("🛒 ခြင်းတောင်းထဲမှာ ပစ္စည်းမရှိပါ");
       return;
     }
 
-    // Open checkout modal
     const modal = document.getElementById("checkoutModal");
     if (modal) {
       modal.style.display = "flex";
@@ -238,12 +237,10 @@ function setupCheckoutButton() {
       }
     }
   });
-
-  console.log("✅ Checkout button fixed!");
 }
 
 // ========================================================================
-// 5. CHECKOUT FORM SUBMIT
+// 5. CHECKOUT FORM SUBMIT (with 2s delay for chat)
 // ========================================================================
 function setupCheckoutForm() {
   const form = document.getElementById("checkoutForm");
@@ -255,7 +252,6 @@ function setupCheckoutForm() {
 
   form.addEventListener("submit", function(e) {
     e.preventDefault();
-    console.log("📦 Checkout form submitted!");
 
     const name = document.getElementById("custName").value.trim();
     const phone = document.getElementById("custPhone").value.trim();
@@ -292,14 +288,15 @@ function setupCheckoutForm() {
 
     logUserAction(`📦 Checkout`, `Order #${window.currentOrder.id}, Total: ${window.currentOrder.total}`);
 
-    const orderSummary = `📦 Order #${window.currentOrder.id}\n👤 ${name}\n📞 ${phone}\n📍 ${address}\n🛒 ${window.currentOrder.items.map(i => `${i.name} x ${i.quantity}`).join(', ')}\n💰 ${window.currentOrder.total.toLocaleString()} MMK`;
-
-    openChatWidget();
-    addChatMessage("bot", `✅ ဟုတ်ကဲ့ခင်ဗျာ၊ သင့်အော်ဒါကို လက်ခံရရှိပါပြီ။\n${orderSummary}\n\n💬 မေးမြန်းစုံစမ်းလိုပါက ဤနေရာတွင် ရေးသားနိုင်ပါသည်။`);
-    addChatMessage("bot", "🙏 ကျေးဇူးတင်ပါသည်။ ငွေလွဲပြီးပါက Screenshot ကို ဤနေရာတွင် တင်ပေးပါ။");
+    // 🔥 CHAT ကို ၂ စက္ကန့် နှောင့်နှေးပြီးမှ ဖွင့်မယ်
+    setTimeout(() => {
+      const orderSummary = `📦 Order #${window.currentOrder.id}\n👤 ${name}\n📞 ${phone}\n📍 ${address}\n🛒 ${window.currentOrder.items.map(i => `${i.name} x ${i.quantity}`).join(', ')}\n💰 ${window.currentOrder.total.toLocaleString()} MMK`;
+      
+      openChatWidget();
+      addChatMessage("bot", `✅ ဟုတ်ကဲ့ခင်ဗျာ၊ သင့်အော်ဒါကို လက်ခံရရှိပါပြီ။\n${orderSummary}\n\n💬 မေးမြန်းစုံစမ်းလိုပါက ဤနေရာတွင် ရေးသားနိုင်ပါသည်။`);
+      addChatMessage("bot", "🙏 ကျေးဇူးတင်ပါသည်။ ငွေလွဲပြီးပါက Screenshot ကို ဤနေရာတွင် တင်ပေးပါ။");
+    }, 2000); // 2 seconds delay
   });
-
-  console.log("✅ Checkout form fixed!");
 }
 
 // ========================================================================
@@ -342,7 +339,113 @@ function updateOrderStatus(orderId, status) {
 }
 
 // ========================================================================
-// 7. PRODUCT DETAIL
+// 7. SCREENSHOT UPLOAD (FIXED)
+// ========================================================================
+function setupScreenshotUpload() {
+  const uploadBtn = document.getElementById("uploadScreenshotBtn");
+  if (!uploadBtn) {
+    console.warn("Screenshot button not found, retrying...");
+    setTimeout(setupScreenshotUpload, 500);
+    return;
+  }
+
+  const newBtn = uploadBtn.cloneNode(true);
+  uploadBtn.parentNode.replaceChild(newBtn, uploadBtn);
+
+  newBtn.addEventListener("click", function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const fileInput = document.getElementById("screenshotInput");
+    if (!fileInput.files || !fileInput.files.length) {
+      showToast("❌ Screenshot ဖိုင်ရွေးပါ");
+      return;
+    }
+
+    const file = fileInput.files[0];
+    if (!file.type.startsWith("image/")) {
+      showToast("❌ Image file သာရွေးပါ");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      if (window.currentOrder) {
+        window.currentOrder.status = "confirmed";
+        window.currentOrder.screenshot = e.target.result;
+        updateOrderStatus(window.currentOrder.id, "confirmed");
+        logUserAction(`✅ Order confirmed with screenshot`, `#${window.currentOrder.id}`);
+      }
+
+      document.getElementById("orderStatusMsg").innerHTML = `<span class="success">✅ Order Confirmed!</span>`;
+
+      if (orderTimerInterval) {
+        clearInterval(orderTimerInterval);
+        orderTimerInterval = null;
+      }
+
+      setTimeout(() => {
+        showTracking(window.currentOrder);
+        document.getElementById("checkoutModal").style.display = "none";
+        cart = [];
+        saveCart();
+        updateCartBadge();
+        showToast("🎉 Order confirmed!");
+        addChatMessage("bot", `🎉 ဟုတ်ကဲ့ခင်ဗျာ၊ သင့်အော်ဒါ #${window.currentOrder.id} အတည်ပြုပြီးပါပြီ။ ကျွန်ုပ်တို့ ပို့ဆောင်ပေးပါမည်။ ကျေးဇူးပါ။`);
+      }, 1500);
+    };
+    reader.readAsDataURL(fileInput.files[0]);
+  });
+}
+
+// ========================================================================
+// 8. SHOW TRACKING
+// ========================================================================
+function showTracking(order) {
+  document.getElementById("trackingOrderId").innerText = order.id;
+  document.getElementById("trackingStatus").innerHTML =
+    order.status === "confirmed" ? "✅ Confirmed" : "⏳ Pending";
+  document.getElementById("trackingDelivery").innerText =
+    new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString();
+  document.getElementById("trackingNumber").innerHTML = "TH-2026-" + String(Math.floor(100000 + Math.random() * 900000));
+  document.getElementById("trackingModal").style.display = "flex";
+}
+
+// ========================================================================
+// 9. CANCEL ORDER
+// ========================================================================
+function setupCancelOrder() {
+  const cancelBtn = document.getElementById("cancelOrderBtn");
+  if (!cancelBtn) return;
+
+  cancelBtn.addEventListener("click", function() {
+    if (confirm("Cancel order?")) {
+      if (window.currentOrder) {
+        window.currentOrder.status = "cancelled";
+        updateOrderStatus(window.currentOrder.id, "cancelled");
+        logUserAction(`⛔ Order cancelled by user`, `#${window.currentOrder.id}`);
+      }
+
+      if (orderTimerInterval) {
+        clearInterval(orderTimerInterval);
+        orderTimerInterval = null;
+      }
+
+      document.getElementById("orderStatusMsg").innerHTML = `<span class="cancelled">⛔ Cancelled</span>`;
+      setTimeout(() => {
+        document.getElementById("checkoutModal").style.display = "none";
+        showToast("Order cancelled.");
+      }, 500);
+    }
+  });
+}
+
+// ============================================================
+// user.js - အပိုင်း (၃/၃) - Chat, Product Detail, User Modal, Init
+// ============================================================
+
+// ========================================================================
+// 10. PRODUCT DETAIL
 // ========================================================================
 let currentReviewProductId = null;
 
@@ -394,7 +497,7 @@ function renderComments(productId) {
 }
 
 // ========================================================================
-// 8. CHAT WIDGET
+// 11. CHAT WIDGET
 // ========================================================================
 let chatOpen = false;
 
@@ -482,12 +585,14 @@ function getAdminReply(text) {
 }
 
 // ========================================================================
-// 9. USER MODAL EVENTS
+// 12. INIT (DOM Ready)
 // ========================================================================
 document.addEventListener("DOMContentLoaded", function() {
-  // Setup checkout button and form
+  // Setup functions
   setupCheckoutButton();
   setupCheckoutForm();
+  setupScreenshotUpload();
+  setupCancelOrder();
 
   // Cart icon
   document.getElementById("cartIcon")?.addEventListener("click", openCartModal);
@@ -530,65 +635,6 @@ document.addEventListener("DOMContentLoaded", function() {
     document.getElementById("newComment").value = "";
     renderComments(currentReviewProductId);
     showToast("✅ Comment added!");
-  });
-
-   // Upload screenshot
-  document.getElementById("uploadScreenshotBtn")?.addEventListener("click", () => {
-    const fileInput = document.getElementById("screenshotInput");
-    if (!fileInput.files || !fileInput.files.length) {
-      alert("Choose screenshot");
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      if (window.currentOrder) {
-        window.currentOrder.status = "confirmed";
-        window.currentOrder.screenshot = e.target.result;
-        updateOrderStatus(window.currentOrder.id, "confirmed");
-        logUserAction(`✅ Order confirmed with screenshot`, `#${window.currentOrder.id}`);
-      }
-
-      document.getElementById("orderStatusMsg").innerHTML = `<span class="success">✅ Order Confirmed!</span>`;
-
-      if (orderTimerInterval) {
-        clearInterval(orderTimerInterval);
-        orderTimerInterval = null;
-      }
-
-      setTimeout(() => {
-        showTracking(window.currentOrder);
-        document.getElementById("checkoutModal").style.display = "none";
-        cart = [];
-        saveCart();
-        updateCartBadge();
-        showToast("🎉 Order confirmed!");
-        addChatMessage("bot", `🎉 ဟုတ်ကဲ့ခင်ဗျာ၊ သင့်အော်ဒါ #${window.currentOrder.id} အတည်ပြုပြီးပါပြီ။ ကျွန်ုပ်တို့ ပို့ဆောင်ပေးပါမည်။ ကျေးဇူးပါ။`);
-      }, 1500);
-    };
-    reader.readAsDataURL(fileInput.files[0]);
-  });
-
-  // Cancel order
-  document.getElementById("cancelOrderBtn")?.addEventListener("click", () => {
-    if (confirm("Cancel order?")) {
-      if (window.currentOrder) {
-        window.currentOrder.status = "cancelled";
-        updateOrderStatus(window.currentOrder.id, "cancelled");
-        logUserAction(`⛔ Order cancelled by user`, `#${window.currentOrder.id}`);
-      }
-
-      if (orderTimerInterval) {
-        clearInterval(orderTimerInterval);
-        orderTimerInterval = null;
-      }
-
-      document.getElementById("orderStatusMsg").innerHTML = `<span class="cancelled">⛔ Cancelled</span>`;
-      setTimeout(() => {
-        document.getElementById("checkoutModal").style.display = "none";
-        showToast("Order cancelled.");
-      }, 500);
-    }
   });
 
   // Chat widget
@@ -654,266 +700,11 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   });
 
-  // User badge
-  document.getElementById("userBadge")?.addEventListener("click", () => {
-    const user = getCurrentUser();
-
-    if (user) {
-      document.getElementById("userModalTitle").innerText = `👤 ${user.username}`;
-      document.getElementById("userFormContainer").classList.remove("hidden");
-      document.getElementById("userChatContainer").classList.add("hidden");
-      document.getElementById("loginUsername").value = user.username;
-      document.getElementById("loginPassword").value = "";
-      document.getElementById("logoutBtn").style.display = "inline-block";
-      document.getElementById("loginBtn").style.display = "none";
-      document.getElementById("registerBtn").style.display = "none";
-      document.getElementById("forgotPwdBtn").style.display = "none";
-
-      const pic = user.profilePic || "";
-      if (pic) {
-        document.getElementById("profilePicPreview").src = pic;
-        document.getElementById("profilePicPreview").style.display = "block";
-        document.getElementById("profilePicPlaceholder").style.display = "none";
-      } else {
-        document.getElementById("profilePicPreview").style.display = "none";
-        document.getElementById("profilePicPlaceholder").style.display = "flex";
-      }
-      document.getElementById("userModal").style.display = "flex";
-      return;
-    }
-
-    document.getElementById("userModalTitle").innerText = "👤 Login / Register";
-    document.getElementById("userFormContainer").classList.remove("hidden");
-    document.getElementById("userChatContainer").classList.add("hidden");
-    document.getElementById("logoutBtn").style.display = "none";
-    document.getElementById("loginBtn").style.display = "inline-block";
-    document.getElementById("registerBtn").style.display = "inline-block";
-    document.getElementById("forgotPwdBtn").style.display = "inline-block";
-    document.getElementById("profilePicPreview").style.display = "none";
-    document.getElementById("profilePicPlaceholder").style.display = "flex";
-    document.getElementById("userModal").style.display = "flex";
-  });
-
-  // Login
-  document.getElementById("loginBtn")?.addEventListener("click", () => {
-    const u = document.getElementById("loginUsername").value.trim();
-    const p = document.getElementById("loginPassword").value.trim();
-    const result = loginUser(u, p);
-
-    if (result.success) {
-      setCurrentUser({ username: u, profilePic: result.user.profilePic });
-      document.getElementById("userBadge").innerHTML = `👤 ${u}`;
-      logUserAction(`🔐 Logged in`, u);
-      document.getElementById("userStatus").innerHTML = `<span style="color:green;">✅ ${result.msg}</span>`;
-      setTimeout(() => {
-        document.getElementById("userModal").style.display = "none";
-        renderUserPage();
-      }, 500);
-    } else {
-      document.getElementById("userStatus").innerHTML = `<span style="color:red;">❌ ${result.msg}</span>`;
-    }
-  });
-
-  // Register
-  document.getElementById("registerBtn")?.addEventListener("click", () => {
-    const u = document.getElementById("loginUsername").value.trim();
-    const p = document.getElementById("loginPassword").value.trim();
-    const result = registerUser(u, p);
-
-    if (result.success) {
-      setCurrentUser({ username: u, profilePic: "" });
-      document.getElementById("userBadge").innerHTML = `👤 ${u}`;
-      logUserAction(`📝 Registered`, u);
-      document.getElementById("userStatus").innerHTML = `<span style="color:green;">✅ ${result.msg}</span>`;
-      setTimeout(() => {
-        document.getElementById("userModal").style.display = "none";
-        renderUserPage();
-      }, 500);
-    } else {
-      document.getElementById("userStatus").innerHTML = `<span style="color:red;">❌ ${result.msg}</span>`;
-    }
-  });
-
-  // Forgot password
-  document.getElementById("forgotPwdBtn")?.addEventListener("click", () => {
-    const u = document.getElementById("loginUsername").value.trim();
-    if (!u) {
-      document.getElementById("userStatus").innerHTML = `<span style="color:red;">❌ Please enter your username</span>`;
-      return;
-    }
-
-    const result = forgotPassword(u);
-    if (result.success) {
-      document.getElementById("userStatus").innerHTML =
-        `<span style="color:green;">✅ Temporary password sent to Telegram! <br/>New password: <strong>${result.tempPassword}</strong></span>`;
-      logUserAction(`🔑 Forgot password for ${u}`, `Temp password sent via Telegram`);
-      sendTelegramMessage(`🔑 *Password Reset*\nUsername: ${u}\nNew Password: ${result.tempPassword}\nPlease login and change your password.`);
-      showToast("✅ Temporary password sent to Telegram!");
-    } else {
-      document.getElementById("userStatus").innerHTML = `<span style="color:red;">❌ ${result.msg}</span>`;
-    }
-  });
-
-  // Logout
-  document.getElementById("logoutBtn")?.addEventListener("click", () => {
-    logoutUser();
-    document.getElementById("userBadge").innerHTML = "👤 Login";
-    document.getElementById("userModal").style.display = "none";
-    logUserAction(`🚪 Logged out`, ``);
-    showToast("Logged out");
-    renderUserPage();
-  });
-
-  // Close user modal
-  document.getElementById("closeUserBtn")?.addEventListener("click", () => {
-    document.getElementById("userModal").style.display = "none";
-  });
-  document.getElementById("userModal")?.addEventListener("click", (e) => {
-    if (e.target === e.currentTarget) document.getElementById("userModal").style.display = "none";
-  });
-
-  // Profile picture upload
-  document.getElementById("uploadProfilePicBtn")?.addEventListener("click", () => {
-    const fileInput = document.getElementById("profilePicInput");
-    if (!fileInput.files || !fileInput.files.length) {
-      alert("Choose an image");
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      const user = getCurrentUser();
-      if (user) {
-        const users = getUsers();
-        if (users[user.username]) {
-          users[user.username].profilePic = e.target.result;
-          saveUsers(users);
-          setCurrentUser({ username: user.username, profilePic: e.target.result });
-
-          document.getElementById("profilePicPreview").src = e.target.result;
-          document.getElementById("profilePicPreview").style.display = "block";
-          document.getElementById("profilePicPlaceholder").style.display = "none";
-
-          showToast("✅ Profile picture updated!");
-          logUserAction(`🖼️ Profile picture updated`, ``);
-        }
-      }
-    };
-    reader.readAsDataURL(fileInput.files[0]);
-  });
-
-  // User chat
-  let currentChatTarget = null;
-
-  function renderChatUsers() {
-    const container = document.getElementById("chatUserList");
-    const allUsers = Object.keys(getUsers());
-    const current = getCurrentUser();
-    const others = allUsers.filter(u => u !== current?.username);
-
-    container.innerHTML = `<div style="font-weight:600;font-size:0.8rem;">Users: ${others.length}</div>`;
-
-    for (let u of others) {
-      container.innerHTML +=
-        `<div class="chat-user" data-user="${u}" style="cursor:pointer;padding:0.2rem;background:#f0f0f0;margin:0.1rem 0;border-radius:6px;font-size:0.8rem;">💬 ${u}</div>`;
-    }
-
-    document.querySelectorAll(".chat-user").forEach(el => {
-      el.onclick = () => {
-        currentChatTarget = el.dataset.user;
-        renderChatMessages();
-      };
-    });
-  }
-
-  function renderChatMessages() {
-    const container = document.getElementById("chatMessages");
-    const current = getCurrentUser();
-
-    if (!currentChatTarget || !current) {
-      container.innerHTML = "<div style='color:#888;font-size:0.8rem;'>Select a user</div>";
-      return;
-    }
-
-    const msgs = getConversation(current.username, currentChatTarget);
-
-    if (!msgs.length) {
-      container.innerHTML = `<div style='color:#888;font-size:0.8rem;'>No messages with ${currentChatTarget}</div>`;
-      return;
-    }
-
-    container.innerHTML = msgs.map(m =>
-      `<div class="chat-msg" style="${m.from === current.username ? 'text-align:right;' : ''}">
-        <span class="sender">${m.from === current.username ? 'You' : m.from}</span>
-        <span class="time">${new Date(m.time).toLocaleTimeString()}</span><br/>
-        ${m.text}
-      </div>`
-    ).join('');
-
-    container.scrollTop = container.scrollHeight;
-  }
-
-  document.getElementById("chatSendBtn")?.addEventListener("click", () => {
-    const current = getCurrentUser();
-    if (!current) { alert("Login first"); return; }
-
-    const to = document.getElementById("chatRecipient").value.trim() || currentChatTarget;
-    const msg = document.getElementById("chatMessageInput").value.trim();
-
-    if (!to || !msg) { alert("Recipient and message required"); return; }
-
-    sendChatMessage(current.username, to, msg);
-    document.getElementById("chatMessageInput").value = "";
-    renderChatMessages();
-    renderChatUsers();
-    showToast("✅ Sent");
-  });
-
-  document.getElementById("chatBackBtn")?.addEventListener("click", () => {
-    document.getElementById("userModal").style.display = "none";
-  });
-
-  // Override openUserChatMode for chat
-  window.openUserChatMode = function() {
-    document.getElementById("userModalTitle").innerText = "💬 Messages";
-    document.getElementById("userFormContainer").classList.add("hidden");
-    document.getElementById("userChatContainer").classList.remove("hidden");
-    document.getElementById("userModal").style.display = "flex";
-    renderChatUsers();
-    renderChatMessages();
-  };
-
-  console.log("✅ All user.js functions loaded successfully!");
-});
-
-// ========================================================================
-// 10. SHOW TRACKING
-// ========================================================================
-function showTracking(order) {
-  document.getElementById("trackingOrderId").innerText = order.id;
-  document.getElementById("trackingStatus").innerHTML =
-    order.status === "confirmed" ? "✅ Confirmed" : "⏳ Pending";
-  document.getElementById("trackingDelivery").innerText =
-    new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString();
-  document.getElementById("trackingNumber").innerHTML = "TH-2026-" + String(Math.floor(100000 + Math.random() * 900000));
-  document.getElementById("trackingModal").style.display = "flex";
-}
-
-// ========================================================================
-// 11. INIT
-// ========================================================================
-document.addEventListener("DOMContentLoaded", function() {
-  console.log("🚀 User page initializing...");
-
-  // Apply store config
-  applyStoreConfig();
-
   // Load data
   loadProducts();
   loadCart();
-
-  // Render page
   renderUserPage();
+  applyStoreConfig();
 
   // Update user badge
   const user = getCurrentUser();
@@ -927,8 +718,7 @@ document.addEventListener("DOMContentLoaded", function() {
     document.getElementById("chatBadge").innerText = chatMsgs.filter(m => m.sender === "bot" && !m.read).length;
   }
 
-  // Log visit
   logUserAction(`🌐 Page Visit`, `Device: ${getDeviceId()}`);
 
-  console.log("✅ User page ready!");
+  console.log("✅ All user.js functions loaded successfully!");
 });
