@@ -3,201 +3,46 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title id="pageTitle">Shop.com.mm – Real E‑commerce</title>
+  <title id="pageTitle">Shop.com.mm</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js">
   </script>
+  <link rel="stylesheet" href="style.css">
   <style>
-    /* ===== RESET & BASE ===== */
-    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
-    body { background: #f5f5f5; color: #333; }
-    a { text-decoration: none; color: inherit; }
-    .hidden { display: none !important; }
-
-    /* ===== HEADER ===== */
-    .header {
-      background: #fff;
-      padding: 0.6rem 1.5rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 0.6rem;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-    .logo { font-size: 1.4rem; font-weight: 800; color: #e11b1b; cursor: pointer; }
-    .logo span { color: #ff6b00; }
-    .header-actions { display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap; }
-    .search-bar {
-      display: flex;
-      align-items: center;
-      gap: 0.3rem;
-      background: #f0f0f0;
-      border-radius: 30px;
-      padding: 0.2rem 0.6rem 0.2rem 1rem;
-    }
-    .search-bar input { border: none; background: transparent; padding: 0.4rem 0; outline: none; font-size: 0.85rem; width: 140px; }
-    .search-bar button { background: #e11b1b; color: #fff; border: none; border-radius: 30px; padding: 0.3rem 0.8rem; cursor: pointer; font-weight: 600; font-size: 0.8rem; }
-    .search-bar button:hover { background: #c00; }
-    .cart-icon {
-      background: #f0f0f0;
-      padding: 0.3rem 0.8rem;
-      border-radius: 30px;
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 0.9rem;
-      display: flex;
-      align-items: center;
-      gap: 0.3rem;
-    }
-    .cart-icon:hover { background: #e0e0e0; }
-    .user-badge {
-      background: #e11b1b;
-      color: #fff;
-      padding: 0.2rem 0.8rem;
-      border-radius: 30px;
+    /* Additional user-specific styles */
+    .reviews-section .comment {
+      background: #f8f9fa;
+      padding: 0.4rem 0.7rem;
+      border-radius: 10px;
+      margin-bottom: 0.3rem;
       font-size: 0.8rem;
-      cursor: pointer;
     }
-    .user-badge:hover { background: #c00; }
 
-    /* ===== CATEGORIES ===== */
-    .categories-bar {
-      background: #fff;
-      padding: 0.4rem 1.5rem;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.8rem;
-      border-bottom: 1px solid #eee;
-      overflow-x: auto;
-      white-space: nowrap;
+    .reviews-section .comment strong {
+      color: #e11b1b;
     }
-    .categories-bar a {
-      font-size: 0.8rem;
-      color: #555;
-      font-weight: 500;
-      padding: 0.2rem 0;
-      border-bottom: 2px solid transparent;
-      transition: 0.2s;
-      cursor: pointer;
-    }
-    .categories-bar a:hover { border-bottom-color: #e11b1b; color: #e11b1b; }
-    .categories-bar .cat-source { color: #888; font-size: 0.6rem; background: #f0f0f0; padding: 0.1rem 0.4rem; border-radius: 20px; }
 
-    /* ===== PRODUCTS ===== */
-    .container { max-width: 1400px; margin: 1rem auto; padding: 0 1rem; }
-    .section-title { font-size: 1.3rem; font-weight: 700; margin-bottom: 0.8rem; display: flex; justify-content: space-between; align-items: center; }
-    .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 1rem; margin-top: 0.5rem; }
-    .product-card {
-      background: #fff;
-      border-radius: 12px;
-      padding: 0.8rem;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
-      transition: 0.2s;
-      text-align: center;
-      border: 1px solid #f0f0f0;
-      cursor: pointer;
-    }
-    .product-card:hover { box-shadow: 0 6px 16px rgba(0,0,0,0.08); transform: translateY(-2px); }
-    .product-img { width: 100%; height: 140px; object-fit: contain; border-radius: 8px; background: #fafafa; }
-    .product-img-placeholder { font-size: 3rem; height: 140px; display: flex; align-items: center; justify-content: center; background: #f0f0f0; border-radius: 8px; }
-    .product-title { font-size: 0.8rem; font-weight: 600; color: #222; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; height: 2.4rem; margin-top: 0.3rem; }
-    .product-price { font-size: 1rem; font-weight: 700; color: #e11b1b; margin: 0.3rem 0; }
-    .product-rating { font-size: 0.75rem; color: #f5a623; }
-    .product-source { font-size: 0.6rem; color: #888; background: #f0f0f0; padding: 0.1rem 0.4rem; border-radius: 20px; display: inline-block; margin-top: 0.2rem; }
-    .add-to-cart {
-      background: #e11b1b;
-      color: #fff;
-      border: none;
-      padding: 0.3rem 0.8rem;
-      border-radius: 30px;
-      font-weight: 600;
-      font-size: 0.75rem;
-      cursor: pointer;
-      transition: 0.2s;
+    .reviews-section textarea {
       width: 100%;
+      padding: 0.3rem;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 0.85rem;
     }
-    .add-to-cart:hover { background: #c00; }
-    .pagination { display: flex; justify-content: center; flex-wrap: wrap; gap: 0.3rem; margin: 1.5rem 0; }
-    .page-btn { background: #fff; border: 1px solid #ddd; padding: 0.2rem 0.7rem; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 0.85rem; }
-    .page-btn.active { background: #e11b1b; color: #fff; border-color: #e11b1b; }
 
-    /* ===== MODALS & OTHER ===== */
-    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 999; }
-    .modal-content { background: #fff; width: 92%; max-width: 520px; border-radius: 20px; padding: 1.5rem; max-height: 90vh; overflow-y: auto; }
-    .modal-content h2 { margin-bottom: 0.8rem; font-size: 1.2rem; }
-    .cart-item { display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px solid #eee; align-items: center; font-size: 0.9rem; }
-    .cart-item .qty-controls button { background: #f0f0f0; border: none; border-radius: 30px; width: 26px; height: 26px; font-weight: bold; cursor: pointer; font-size: 0.9rem; }
-    .cart-total { font-size: 1.1rem; font-weight: 700; text-align: right; margin-top: 0.8rem; }
-    .checkout-form label { display: block; font-weight: 600; margin-top: 0.6rem; font-size: 0.9rem; }
-    .checkout-form input, .checkout-form textarea { width: 100%; padding: 0.4rem 0.6rem; border: 1px solid #ddd; border-radius: 8px; margin-top: 0.1rem; font-size: 0.9rem; }
-    .order-status { background: #f8f9fa; border-radius: 12px; padding: 1rem; margin-top: 0.8rem; }
-    .order-status .timer { font-size: 1.6rem; font-weight: 700; color: #e11b1b; }
-    .order-status .success { color: #0f7b3e; }
-    .order-status .cancelled { color: #dc3545; }
-
-    /* ===== CHAT WIDGET ===== */
-    #chatWidget {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      z-index: 1000;
-      width: 380px;
-      max-width: 90vw;
-      background: #fff;
-      border-radius: 24px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-      display: none;
-      flex-direction: column;
-      max-height: 520px;
-      border: 1px solid #eee;
+    .chat-msg .sender {
+      font-weight: 700;
+      color: #e11b1b;
     }
-    #chatWidget.active { display: flex; }
-    #chatWidget .chat-header { background: #e11b1b; color: #fff; padding: 0.8rem 1.2rem; border-radius: 24px 24px 0 0; font-weight: 700; display: flex; justify-content: space-between; align-items: center; cursor: pointer; flex-shrink: 0; }
-    #chatWidget .chat-header button { background: transparent; border: none; color: #fff; font-size: 1.2rem; cursor: pointer; }
-    #chatWidget .chat-messages { flex: 1; padding: 0.8rem; overflow-y: auto; max-height: 340px; background: #fafafa; min-height: 100px; }
-    #chatWidget .chat-msg { margin-bottom: 0.5rem; font-size: 0.85rem; display: flex; flex-direction: column; }
-    #chatWidget .chat-msg.user { align-items: flex-end; }
-    #chatWidget .chat-msg.user .bubble { background: #e11b1b; color: #fff; border-radius: 18px 18px 0 18px; padding: 0.5rem 0.8rem; max-width: 85%; word-wrap: break-word; }
-    #chatWidget .chat-msg.bot .bubble { background: #f0f0f0; color: #333; border-radius: 18px 18px 18px 0; padding: 0.5rem 0.8rem; max-width: 85%; word-wrap: break-word; }
-    #chatWidget .chat-msg .time { font-size: 0.6rem; color: #888; margin: 0.2rem 0.4rem; }
-    #chatWidget .chat-input { display: flex; border-top: 1px solid #eee; padding: 0.4rem; gap: 0.4rem; background: #fff; border-radius: 0 0 24px 24px; flex-shrink: 0; }
-    #chatWidget .chat-input input { flex: 1; border: none; padding: 0.4rem 0.8rem; border-radius: 30px; background: #f0f0f0; outline: none; font-size: 0.85rem; }
-    #chatWidget .chat-input button { background: #e11b1b; color: #fff; border: none; padding: 0.3rem 1rem; border-radius: 30px; font-weight: 600; cursor: pointer; }
-    #chatWidget .chat-input button:hover { background: #c00; }
-    #chatToggle {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      z-index: 999;
-      background: #e11b1b;
-      color: #fff;
-      border: none;
-      border-radius: 50%;
-      width: 60px;
-      height: 60px;
-      font-size: 1.8rem;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    #chatToggle:hover { background: #c00; }
-    #chatToggle .badge { position: absolute; top: -4px; right: -4px; background: #ff6b00; color: #fff; border-radius: 50%; width: 22px; height: 22px; font-size: 0.7rem; display: flex; align-items: center; justify-content: center; font-weight: 700; }
 
-    footer { text-align: center; padding: 1.5rem; background: #fff; font-size: 0.7rem; color: #888; margin-top: 1.5rem; }
-    @media (max-width:640px) {
-      .header { padding: 0.4rem 0.8rem; }
-      .products-grid { grid-template-columns: repeat(2, 1fr); gap: 0.6rem; }
-      .search-bar input { width: 80px; }
-      #chatWidget { width: 95vw; right: 2.5vw; bottom: 10px; max-height: 80vh; }
+    .chat-msg .time {
+      font-size: 0.6rem;
+      color: #888;
     }
   </style>
 </head>
 <body>
+
+  <!-- ===== HEADER ===== -->
   <header class="header" id="mainHeader">
     <div class="logo" id="logoHome">🛒 <span id="storeNameDisplay">Shop</span>.com.mm</div>
     <div class="header-actions">
@@ -209,6 +54,8 @@
       <span class="user-badge" id="userBadge">👤 Login</span>
     </div>
   </header>
+
+  <!-- ===== CATEGORIES ===== -->
   <div class="categories-bar" id="categoriesBar">
     <a data-cat="all">အားလုံး</a>
     <a data-cat="Amazon">🛒 Amazon</a>
@@ -216,1202 +63,141 @@
     <a data-cat="TikTok">🎵 TikTok</a>
     <a data-cat="YouTube">▶️ YouTube</a>
   </div>
+
+  <!-- ===== MAIN CONTENT ===== -->
   <div id="app"></div>
+
+  <!-- ===== FOOTER ===== -->
   <footer id="mainFooter">© 2026 Shop.com.mm — Real Amazon API Integration</footer>
+
   <!-- ===== CART MODAL ===== -->
-<div id="cartModal" class="modal">
-  <div class="modal-content">
-    <h2>🛒 ခြင်းတောင်း</h2>
-    <div id="cartItemsList"></div>
-    <div id="cartTotal" class="cart-total"></div>
-    <div style="display:flex; gap:0.5rem; justify-content:flex-end; margin-top:0.8rem; flex-wrap:wrap;">
-      <button class="btn btn-outline" id="closeCartBtn">ပိတ်ရန်</button>
-      <button class="btn btn-success" id="checkoutBtn">ဝယ်ယူမည်</button>
+  <div id="cartModal" class="modal">
+    <div class="modal-content">
+      <h2>🛒 ခြင်းတောင်း</h2>
+      <div id="cartItemsList"></div>
+      <div id="cartTotal" class="cart-total"></div>
+      <div style="display:flex; gap:0.5rem; justify-content:flex-end; margin-top:0.8rem; flex-wrap:wrap;">
+        <button class="btn btn-outline" id="closeCartBtn">ပိတ်ရန်</button>
+        <button class="btn btn-success" id="checkoutBtn">ဝယ်ယူမည်</button>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- ===== CHECKOUT MODAL ===== -->
-<div id="checkoutModal" class="modal">
-  <div class="modal-content" id="checkoutContent">
-    <h2>📦 ဝယ်ယူမှု</h2>
-    <div id="checkoutFormContainer">
-      <form id="checkoutForm" class="checkout-form">
-        <label id="labelName">အမည်</label>
-        <input type="text" id="custName" placeholder="သင့်အမည်" required />
-        <label id="labelPhone">ဖုန်းနံပါတ်</label>
-        <input type="text" id="custPhone" placeholder="09xxxxxxxx" required />
-        <label id="labelAddress">လိပ်စာ</label>
-        <textarea id="custAddress" placeholder="ပို့ဆောင်မည့်လိပ်စာ" rows="2" required></textarea>
-        <button type="submit" class="btn btn-success" id="submitCheckout">ဆက်လုပ်ရန်</button>
-      </form>
-    </div>
-    <div id="paymentInfo" class="hidden">
-      <h3>💳 ငွေလွဲရန်</h3>
-      <p id="paymentNumberDisplay"><strong>Wave Pay - 09 781 145 573</strong></p>
-      <div class="order-status">
-        <p>⏳ ကျန်အချိန်: <span class="timer" id="orderTimer">60:00</span></p>
-        <input type="file" id="screenshotInput" accept="image/*" />
-        <button class="btn btn-primary" id="uploadScreenshotBtn">📤 Screenshot ပို့မည်</button>
-        <div id="orderStatusMsg" style="margin-top:0.5rem; font-weight:600;"></div>
+  <!-- ===== CHECKOUT MODAL ===== -->
+  <div id="checkoutModal" class="modal">
+    <div class="modal-content" id="checkoutContent">
+      <h2>📦 ဝယ်ယူမှု</h2>
+      <div id="checkoutFormContainer">
+        <form id="checkoutForm" class="checkout-form">
+          <label id="labelName">အမည်</label>
+          <input type="text" id="custName" placeholder="သင့်အမည်" required />
+          <label id="labelPhone">ဖုန်းနံပါတ်</label>
+          <input type="text" id="custPhone" placeholder="09xxxxxxxx" required />
+          <label id="labelAddress">လိပ်စာ</label>
+          <textarea id="custAddress" placeholder="ပို့ဆောင်မည့်လိပ်စာ" rows="2" required></textarea>
+          <button type="submit" class="btn btn-success" id="submitCheckout">ဆက်လုပ်ရန်</button>
+        </form>
       </div>
-      <button class="btn btn-outline" id="cancelOrderBtn">ပယ်ဖျက်မည်</button>
-    </div>
-  </div>
-</div>
-
-<!-- ===== TRACKING MODAL ===== -->
-<div id="trackingModal" class="modal">
-  <div class="modal-content">
-    <h2>📦 Order Tracking</h2>
-    <div id="trackingInfo">
-      <p><strong>Order ID:</strong> <span id="trackingOrderId"></span></p>
-      <p><strong>Status:</strong> <span id="trackingStatus"></span></p>
-      <p><strong>Estimated Delivery:</strong> <span id="trackingDelivery"></span></p>
-      <div style="margin:0.8rem 0; padding:0.6rem; background:#f8f9fa; border-radius:12px;">
-        <p>✅ ကျေးဇူးတင်ပါသည်။</p>
-        <p>🚚 Tracking: <span id="trackingNumber">TH-2026-</span></p>
+      <div id="paymentInfo" class="hidden">
+        <h3>💳 ငွေလွဲရန်</h3>
+        <p id="paymentNumberDisplay"><strong>Wave Pay - 09 781 145 573</strong></p>
+        <div class="order-status">
+          <p>⏳ ကျန်အချိန်: <span class="timer" id="orderTimer">60:00</span></p>
+          <input type="file" id="screenshotInput" accept="image/*" />
+          <button class="btn btn-primary" id="uploadScreenshotBtn">📤 Screenshot ပို့မည်</button>
+          <div id="orderStatusMsg" style="margin-top:0.5rem; font-weight:600;"></div>
+        </div>
+        <button class="btn btn-outline" id="cancelOrderBtn">ပယ်ဖျက်မည်</button>
       </div>
-      <button class="btn btn-outline" id="closeTrackingBtn">ပိတ်ရန်</button>
     </div>
   </div>
-</div>
 
-<!-- ===== USER MODAL ===== -->
-<div id="userModal" class="modal">
-  <div class="modal-content">
-    <h2 id="userModalTitle">👤 Profile</h2>
-    <div id="userFormContainer">
-      <div style="text-align:center; margin-bottom:1rem;">
-        <img id="profilePicPreview" src="" alt="Profile" style="width:80px; height:80px; border-radius:50%; object-fit:cover; border:2px solid #e11b1b; display:none;" />
-        <div id="profilePicPlaceholder" style="width:80px; height:80px; border-radius:50%; background:#f0f0f0; display:flex; align-items:center; justify-content:center; margin:0 auto; font-size:2rem; border:2px solid #ddd;">👤</div>
-        <input type="file" id="profilePicInput" accept="image/*" style="margin-top:0.5rem;" />
-        <button class="btn btn-outline" id="uploadProfilePicBtn" style="font-size:0.7rem; padding:0.2rem 0.8rem;">ပုံတင်မည်</button>
+  <!-- ===== TRACKING MODAL ===== -->
+  <div id="trackingModal" class="modal">
+    <div class="modal-content">
+      <h2>📦 Order Tracking</h2>
+      <div id="trackingInfo">
+        <p><strong>Order ID:</strong> <span id="trackingOrderId"></span></p>
+        <p><strong>Status:</strong> <span id="trackingStatus"></span></p>
+        <p><strong>Estimated Delivery:</strong> <span id="trackingDelivery"></span></p>
+        <div style="margin:0.8rem 0; padding:0.6rem; background:#f8f9fa; border-radius:12px;">
+          <p>✅ ကျေးဇူးတင်ပါသည်။</p>
+          <p>🚚 Tracking: <span id="trackingNumber">TH-2026-</span></p>
+        </div>
+        <button class="btn btn-outline" id="closeTrackingBtn">ပိတ်ရန်</button>
       </div>
-      <label>Username</label>
-      <input type="text" id="loginUsername" />
-      <label>Password</label>
-      <input type="password" id="loginPassword" />
-      <div style="display:flex; gap:0.5rem; margin-top:0.8rem; flex-wrap:wrap;">
-        <button class="btn btn-primary" id="loginBtn">Login</button>
-        <button class="btn btn-success" id="registerBtn">Register</button>
-        <button class="btn btn-outline" id="logoutBtn" style="display:none;">Logout</button>
-        <button class="btn btn-outline" id="closeUserBtn">ပိတ်ရန်</button>
-      </div>
-      <div id="userStatus" style="margin-top:0.5rem;"></div>
-    </div>
-    <div id="userChatContainer" class="hidden">
-      <h3>💬 Messages</h3>
-      <div id="chatUserList"></div>
-      <div id="chatMessages"></div>
-      <div style="display:flex; gap:0.3rem;">
-        <input type="text" id="chatRecipient" placeholder="To" style="flex:1; padding:0.3rem; border:1px solid #ddd; border-radius:6px;" />
-        <input type="text" id="chatMessageInput" placeholder="Message" style="flex:2; padding:0.3rem; border:1px solid #ddd; border-radius:6px;" />
-        <button class="btn btn-primary" id="chatSendBtn" style="font-size:0.7rem; padding:0.2rem 0.6rem;">Send</button>
-      </div>
-      <button class="btn btn-outline" id="chatBackBtn" style="margin-top:0.3rem;">Back</button>
     </div>
   </div>
-</div>
 
-<!-- ===== REVIEW MODAL ===== -->
-<div id="reviewModal" class="modal">
-  <div class="modal-content">
-    <h2 id="reviewProductTitle">Product</h2>
-    <div id="reviewProductInfo"></div>
-    <div id="reviewProductImages" style="display:flex; flex-wrap:wrap; gap:0.5rem; margin:0.5rem 0;"></div>
-    <div class="reviews-section">
-      <h4>💬 Reviews</h4>
-      <div id="commentsList"></div>
-      <textarea id="newComment" placeholder="သင့်အမြင်ရေးပါ..." rows="2"></textarea>
-      <button class="btn btn-primary" id="addCommentBtn" style="margin-top:0.3rem;">Comment</button>
+  <!-- ===== USER MODAL ===== -->
+  <div id="userModal" class="modal">
+    <div class="modal-content">
+      <h2 id="userModalTitle">👤 Profile</h2>
+      <div id="userFormContainer">
+        <div style="text-align:center; margin-bottom:1rem;">
+          <img id="profilePicPreview" src="" alt="Profile" style="width:80px; height:80px; border-radius:50%; object-fit:cover; border:2px solid #e11b1b; display:none;" />
+          <div id="profilePicPlaceholder" style="width:80px; height:80px; border-radius:50%; background:#f0f0f0; display:flex; align-items:center; justify-content:center; margin:0 auto; font-size:2rem; border:2px solid #ddd;">👤</div>
+          <input type="file" id="profilePicInput" accept="image/*" style="margin-top:0.5rem;" />
+          <button class="btn btn-outline" id="uploadProfilePicBtn" style="font-size:0.7rem; padding:0.2rem 0.8rem;">ပုံတင်မည်</button>
+        </div>
+        <label>Username</label>
+        <input type="text" id="loginUsername" />
+        <label>Password</label>
+        <input type="password" id="loginPassword" />
+        <div style="display:flex; gap:0.5rem; margin-top:0.8rem; flex-wrap:wrap;">
+          <button class="btn btn-primary" id="loginBtn">Login</button>
+          <button class="btn btn-success" id="registerBtn">Register</button>
+          <button class="btn btn-outline" id="forgotPwdBtn">Forgot Password</button>
+          <button class="btn btn-outline" id="logoutBtn" style="display:none;">Logout</button>
+          <button class="btn btn-outline" id="closeUserBtn">ပိတ်ရန်</button>
+        </div>
+        <div id="userStatus" style="margin-top:0.5rem;"></div>
+      </div>
+      <div id="userChatContainer" class="hidden">
+        <h3>💬 Messages</h3>
+        <div id="chatUserList"></div>
+        <div id="chatMessages"></div>
+        <div style="display:flex; gap:0.3rem;">
+          <input type="text" id="chatRecipient" placeholder="To" style="flex:1; padding:0.3rem; border:1px solid #ddd; border-radius:6px;" />
+          <input type="text" id="chatMessageInput" placeholder="Message" style="flex:2; padding:0.3rem; border:1px solid #ddd; border-radius:6px;" />
+          <button class="btn btn-primary" id="chatSendBtn" style="font-size:0.7rem; padding:0.2rem 0.6rem;">Send</button>
+        </div>
+        <button class="btn btn-outline" id="chatBackBtn" style="margin-top:0.3rem;">Back</button>
+      </div>
     </div>
-    <button class="btn btn-outline" id="closeReviewBtn" style="margin-top:0.8rem;">ပိတ်ရန်</button>
   </div>
-</div>
 
-<!-- ===== CHAT WIDGET ===== -->
-<button id="chatToggle">💬 <span class="badge" id="chatBadge">0</span></button>
-<div id="chatWidget">
-  <div class="chat-header">
-    <span id="chatHeaderTitle">💬 Support & Order Chat</span>
-    <button id="closeChatBtn">✕</button>
+  <!-- ===== REVIEW MODAL ===== -->
+  <div id="reviewModal" class="modal">
+    <div class="modal-content">
+      <h2 id="reviewProductTitle">Product</h2>
+      <div id="reviewProductInfo"></div>
+      <div id="reviewProductImages" style="display:flex; flex-wrap:wrap; gap:0.5rem; margin:0.5rem 0;"></div>
+      <div class="reviews-section">
+        <h4>💬 Reviews</h4>
+        <div id="commentsList"></div>
+        <textarea id="newComment" placeholder="သင့်အမြင်ရေးပါ..." rows="2"></textarea>
+        <button class="btn btn-primary" id="addCommentBtn" style="margin-top:0.3rem;">Comment</button>
+      </div>
+      <button class="btn btn-outline" id="closeReviewBtn" style="margin-top:0.8rem;">ပိတ်ရန်</button>
+    </div>
   </div>
-  <div class="chat-messages" id="chatMessagesWidget"></div>
-  <div class="chat-input">
-    <input type="text" id="chatInputWidget" placeholder="စာရိုက်ပါ..." />
-    <button id="chatSendWidgetBtn">ပို့မည်</button>
+
+  <!-- ===== CHAT WIDGET ===== -->
+  <button id="chatToggle">💬 <span class="badge" id="chatBadge">0</span></button>
+  <div id="chatWidget">
+    <div class="chat-header">
+      <span id="chatHeaderTitle">💬 Support & Order Chat</span>
+      <button id="closeChatBtn">✕</button>
+    </div>
+    <div class="chat-messages" id="chatMessagesWidget"></div>
+    <div class="chat-input">
+      <input type="text" id="chatInputWidget" placeholder="စာရိုက်ပါ..." />
+      <button id="chatSendWidgetBtn">ပို့မည်</button>
+    </div>
   </div>
-</div>
-<script>
-  // ========================================================================
-  // 1. STORE BRANDING & CUSTOMIZATION (Admin editable)
-  // ========================================================================
-  const STORAGE_STORE_CONFIG = "shop_store_config";
-  function getStoreConfig() {
-    const raw = localStorage.getItem(STORAGE_STORE_CONFIG);
-    if (raw) { try { return JSON.parse(raw); } catch(e) {} }
-    return { storeName: "Shop", headerTitle: "🛒 Shop.com.mm", footerText: "© 2026 Shop.com.mm — Real Amazon API Integration", currency: "MMK", chatTitle: "💬 Support & Order Chat" };
-  }
-  function saveStoreConfig(config) { localStorage.setItem(STORAGE_STORE_CONFIG, JSON.stringify(config)); applyStoreConfig(); }
-  function applyStoreConfig() {
-    const config = getStoreConfig();
-    document.getElementById("storeNameDisplay").innerText = config.storeName;
-    document.getElementById("logoHome").innerHTML = `🛒 <span id="storeNameDisplay">${config.storeName}</span>.com.mm`;
-    document.getElementById("mainFooter").innerHTML = config.footerText;
-    document.getElementById("chatHeaderTitle").innerHTML = config.chatTitle;
-    document.title = config.headerTitle;
-  }
 
-  // ========================================================================
-  // 2. CONFIG & API SETUP (RapidAPI Amazon)
-  // ========================================================================
-  const STORAGE_AMAZON_API = "shop_amazon_api_config";
-  const DEFAULT_API_KEY = "1852a28efamsh993c0fa32ed6003p1072dbjsnd07318e9d120";
-  const DEFAULT_API_HOST = "real-time-amazon-data.p.rapidapi.com";
-  function getAmazonApiConfig() {
-    const raw = localStorage.getItem(STORAGE_AMAZON_API);
-    if (raw) { try { return JSON.parse(raw); } catch(e) {} }
-    return { apiKey: DEFAULT_API_KEY, host: DEFAULT_API_HOST };
-  }
-  function saveAmazonApiConfig(apiKey, host) { localStorage.setItem(STORAGE_AMAZON_API, JSON.stringify({ apiKey, host })); }
-
-  // ========================================================================
-  // 3. TELEGRAM CONFIG
-  // ========================================================================
-  const STORAGE_TELEGRAM = "shop_telegram_config";
-  function getTelegramConfig() {
-    const raw = localStorage.getItem(STORAGE_TELEGRAM);
-    if (raw) { try { return JSON.parse(raw); } catch(e) {} }
-    return { botTokens: [], chatId: "" };
-  }
-  function saveTelegramConfig(botTokens, chatId) { localStorage.setItem(STORAGE_TELEGRAM, JSON.stringify({ botTokens, chatId })); }
-
-  async function sendTelegramMessage(text) {
-    const config = getTelegramConfig();
-    const tokens = config.botTokens.filter(t => t.trim() !== "");
-    const chatId = config.chatId.trim();
-    if (!tokens.length || !chatId) return false;
-    let idx = parseInt(localStorage.getItem("telegram_bot_idx") || "0");
-    const token = tokens[idx % tokens.length];
-    localStorage.setItem("telegram_bot_idx", (idx + 1) % tokens.length);
-    try {
-      const url = `https://api.telegram.org/bot${token}/sendMessage`;
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chat_id: chatId, text: text.substring(0, 4000), parse_mode: "Markdown" })
-      });
-      const result = await res.json();
-      return result.ok;
-    } catch(e) { return false; }
-  }
-
-  async function logUserAction(action, details = "") {
-    const user = getCurrentUser();
-    const username = user ? user.username : "Guest";
-    const deviceId = getDeviceId().substring(0, 10);
-    const time = new Date().toLocaleString("en-US", { timeZone: "Asia/Yangon" });
-    const msg = `👤 *${username}* (📱${deviceId}...)\n🔄 ${action}\n📝 ${details}\n⏰ ${time}`;
-    await sendTelegramMessage(msg);
-  }
-
-  // ========================================================================
-  // 4. DEVICE FINGERPRINT (Persistent)
-  // ========================================================================
-  function generateDeviceFingerprint() {
-    const canvas = document.createElement("canvas");
-    canvas.width = 200; canvas.height = 50;
-    const ctx = canvas.getContext("2d");
-    ctx.textBaseline = "top";
-    ctx.font = "14px Arial";
-    ctx.fillStyle = "#f60";
-    ctx.fillRect(125, 1, 62, 20);
-    ctx.fillStyle = "#069";
-    ctx.fillText("DeviceFP", 2, 15);
-    const canvasFP = canvas.toDataURL().substring(0, 100);
-    const audioFP = (() => { try { const a = new(window.AudioContext || window.webkitAudioContext)(); return "audio_support"; } catch(e) { return "no_audio"; } })();
-    const components = [
-      navigator.userAgent, navigator.language,
-      window.screen.width + 'x' + window.screen.height,
-      window.devicePixelRatio || 1,
-      navigator.hardwareConcurrency || 'N/A',
-      navigator.deviceMemory || 'N/A',
-      canvasFP, audioFP,
-      navigator.platform,
-      new Date().getTimezoneOffset()
-    ];
-    const hash = components.join('|||');
-    let h = 5381;
-    for (let i = 0; i < hash.length; i++) {
-      h = ((h << 5) + h) + hash.charCodeAt(i);
-      h = h & h;
-    }
-    return 'FP_' + h.toString(36);
-  }
-  function getDeviceId() {
-    let id = localStorage.getItem("shop_device_id");
-    if (!id) { id = generateDeviceFingerprint(); localStorage.setItem("shop_device_id", id); }
-    return id;
-  }
-  const DEVICE_ID = getDeviceId();
-
-  // ========================================================================
-  // 5. USER SYSTEM (with Profile Picture)
-  // ========================================================================
-  const STORAGE_USERS = "shop_users";
-  const STORAGE_SESSION = "shop_session";
-  function getUsers() {
-    const raw = localStorage.getItem(STORAGE_USERS);
-    return raw ? JSON.parse(raw) : {};
-  }
-  function saveUsers(users) { localStorage.setItem(STORAGE_USERS, JSON.stringify(users)); }
-  function getCurrentUser() {
-    const raw = localStorage.getItem(STORAGE_SESSION);
-    return raw ? JSON.parse(raw) : null;
-  }
-  function setCurrentUser(user) { localStorage.setItem(STORAGE_SESSION, JSON.stringify(user)); }
-  function registerUser(username, password) {
-    const users = getUsers();
-    if (users[username]) return { success: false, msg: "Username exists" };
-    users[username] = { password, created: Date.now(), deviceId: DEVICE_ID, profilePic: "" };
-    saveUsers(users);
-    return { success: true, msg: "Registered" };
-  }
-  function loginUser(username, password) {
-    const users = getUsers();
-    if (!users[username]) return { success: false, msg: "User not found" };
-    if (users[username].password !== password) return { success: false, msg: "Wrong password" };
-    return { success: true, msg: "Login success", user: { username, profilePic: users[username].profilePic || "" } };
-  }
-
-  // ========================================================================
-  // 6. CHAT SYSTEM
-  // ========================================================================
-  const STORAGE_CHAT = "shop_chat_messages";
-  function getChatMessages() {
-    const raw = localStorage.getItem(STORAGE_CHAT);
-    return raw ? JSON.parse(raw) : [];
-  }
-  function saveChatMessages(msgs) { localStorage.setItem(STORAGE_CHAT, JSON.stringify(msgs)); }
-  function sendChatMessage(from, to, text) {
-    const msgs = getChatMessages();
-    msgs.push({ from, to, text, time: Date.now() });
-    saveChatMessages(msgs);
-    logUserAction(`💬 Chat to ${to}`, text.substring(0, 50));
-    return msgs;
-  }
-  function getConversation(user1, user2) {
-    const msgs = getChatMessages();
-    return msgs.filter(m => (m.from === user1 && m.to === user2) || (m.from === user2 && m.to === user1)).sort((a,b) => a.time - b.time);
-  }
-  // ========================================================================
-// 7. E-COMMERCE CORE
-// ========================================================================
-const STORAGE_PRODUCTS = "shop_products";
-const STORAGE_CART = "shop_cart";
-const STORAGE_COMMENTS = "shop_comments";
-const STORAGE_ORDERS = "shop_orders";
-const STORAGE_ADMIN_CONFIG = "shop_admin_config";
-
-function getAdminConfig() {
-  const raw = localStorage.getItem(STORAGE_ADMIN_CONFIG);
-  if (raw) { try { return JSON.parse(raw); } catch(e) {} }
-  return { password: "2003", checkoutInfo: { bank: "Wave Pay", paymentNumber: "09 781 145 573 (Thae Su Phoo Ko)" },
-    checkoutLabels: { name: "အမည်", phone: "ဖုန်းနံပါတ်", address: "လိပ်စာ", submit: "ဆက်လုပ်ရန်" } };
-}
-function saveAdminConfig(config) { localStorage.setItem(STORAGE_ADMIN_CONFIG, JSON.stringify(config)); }
-
-let allProducts = [];
-let cart = [];
-let currentPage = 1;
-const PAGE_SIZE = 20;
-let isAdminMode = false;
-let currentCategory = "all";
-let searchQuery = "";
-
-function loadProducts() {
-  const stored = localStorage.getItem(STORAGE_PRODUCTS);
-  if (stored) { try { allProducts = JSON.parse(stored); } catch(e) { allProducts = []; } }
-  if (!allProducts || allProducts.length === 0) {
-    allProducts = generateMockProducts(20);
-    saveProducts();
-  }
-}
-function saveProducts() { localStorage.setItem(STORAGE_PRODUCTS, JSON.stringify(allProducts)); }
-function generateMockProducts(count = 20) {
-  const products = [];
-  for (let i = 1; i <= count; i++) {
-    products.push({ id: i, name: `Sample Product ${i}`, price: Math.floor(Math.random() * 100000) + 5000, emoji: "📦", category: "General", rating: "4.0", reviews: 10, image: "", source: "default", isVideo: false });
-  }
-  return products;
-}
-
-function loadCart() {
-  const stored = localStorage.getItem(STORAGE_CART);
-  if (stored) { try { cart = JSON.parse(stored); } catch(e) { cart = []; } }
-  const validIds = new Set(allProducts.map(p => p.id));
-  cart = cart.filter(item => validIds.has(item.id));
-  saveCart(); updateCartBadge();
-}
-function saveCart() { localStorage.setItem(STORAGE_CART, JSON.stringify(cart)); }
-function updateCartBadge() {
-  const count = cart.reduce((s, i) => s + i.quantity, 0);
-  document.getElementById("cartCount").innerText = count;
-}
-
-function addToCart(productId) {
-  const product = allProducts.find(p => p.id == productId);
-  if (!product) return;
-  const existing = cart.find(i => i.id == productId);
-  if (existing) existing.quantity++;
-  else cart.push({ id: product.id, name: product.name, price: product.price, quantity: 1, emoji: product.emoji || "📦", image: product.image });
-  saveCart(); updateCartBadge();
-  logUserAction(`🛒 Added to cart: ${product.name}`, `💰 ${product.price} MMK`);
-  showToast(`✅ ${product.name.substring(0, 30)} added`);
-}
-
-function getComments(productId) {
-  const all = JSON.parse(localStorage.getItem(STORAGE_COMMENTS) || "{}");
-  return all[productId] || [];
-}
-function saveComment(productId, user, text) {
-  const all = JSON.parse(localStorage.getItem(STORAGE_COMMENTS) || "{}");
-  if (!all[productId]) all[productId] = [];
-  all[productId].push({ user, text, time: new Date().toLocaleString() });
-  localStorage.setItem(STORAGE_COMMENTS, JSON.stringify(all));
-  logUserAction(`💬 Commented on product #${productId}`, text.substring(0, 50));
-}
-
-function showToast(msg) {
-  const t = document.createElement("div");
-  t.innerText = msg;
-  t.style.cssText = "position:fixed; bottom:80px; left:50%; transform:translateX(-50%); background:#222; color:#fff; padding:8px 20px; border-radius:40px; z-index:9999; font-weight:500; max-width:90%; font-size:0.9rem;";
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), 2500);
-}
-
-// ========================================================================
-// 8. AMAZON API INTEGRATION (Fixed ID, Add to Cart, Reviews, Images)
-// ========================================================================
-async function fetchAmazonProducts(query, country = "US", page = 1) {
-  const config = getAmazonApiConfig();
-  const url = `https://${config.host}/search?query=${encodeURIComponent(query)}&country=${country}&page=${page}`;
-  try {
-    const res = await fetch(url, {
-      headers: { "x-rapidapi-key": config.apiKey, "x-rapidapi-host": config.host, "Content-Type": "application/json" }
-    });
-    const data = await res.json();
-    return data;
-  } catch(e) { console.error("Amazon Product fetch error:", e); return null; }
-}
-
-async function syncAmazonProducts(searchTerm, maxPages = 10) {
-  if (!searchTerm || searchTerm.trim() === "") { alert("Please enter a search term"); return; }
-  let allFetched = [];
-  let totalPages = Math.min(maxPages, 50);
-  document.getElementById("syncStatus").innerHTML = `⏳ Fetching up to ${totalPages} pages...`;
-  for (let p = 1; p <= totalPages; p++) {
-    try {
-      const result = await fetchAmazonProducts(searchTerm, "US", p);
-      if (result && result.data && result.data.products && result.data.products.length > 0) {
-        const products = result.data.products;
-        const newProducts = products.map((item, idx) => ({
-          id: item.asin ? item.asin : (Date.now() + idx + p * 1000 + Math.random() * 100000),
-          name: item.product_title || item.title || "Unknown Product",
-          price: item.price || item.unit_price || Math.floor(Math.random() * 100000) + 5000,
-          emoji: "📦",
-          category: "Amazon",
-          rating: item.rating || "4.0",
-          reviews: item.reviews_count || Math.floor(Math.random() * 200),
-          image: item.product_photo || item.main_image || item.thumbnail || "",
-          source: "Amazon",
-          isVideo: false,
-          originalPrice: item.original_price || null,
-          asin: item.asin || null
-        }));
-        allFetched = allFetched.concat(newProducts);
-        document.getElementById("syncStatus").innerHTML = `⏳ Fetched ${allFetched.length} products from ${p} pages...`;
-      } else { break; }
-    } catch(e) { console.error("Page fetch error:", e); break; }
-    await new Promise(r => setTimeout(r, 200));
-  }
-  if (allFetched.length > 0) {
-    allProducts = allProducts.filter(p => p.source !== "Amazon");
-    allProducts = allProducts.concat(allFetched);
-    saveProducts();
-    logUserAction(`📦 Synced ${allFetched.length} Amazon products`, `Search: "${searchTerm}"`);
-    renderUserPage();
-    document.getElementById("syncStatus").innerHTML = `✅ Synced ${allFetched.length} products!`;
-    showToast(`✅ ${allFetched.length} Amazon products synced!`);
-  } else {
-    document.getElementById("syncStatus").innerHTML = `❌ No products found. Check search term or API key.`;
-    alert("No products found. Check console.");
-  }
-}
-
-// ========================================================================
-// 9. GOOGLE SHEETS SYNC
-// ========================================================================
-async function syncGoogleSheet(csvUrl) {
-  if (!csvUrl || csvUrl.trim() === "") { alert("Please enter a valid Google Sheets Published CSV URL"); return; }
-  try {
-    const res = await fetch(csvUrl);
-    const csvText = await res.text();
-    const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true });
-    if (parsed.data && parsed.data.length > 0) {
-      const newProducts = [];
-      parsed.data.forEach((row, idx) => {
-        const name = row.name || row.Name || row.title || row.Title;
-        const price = parseFloat(row.price || row.Price || row.unit_price);
-        const image = row.image || row.Image || row.photo || row.thumbnail || "";
-        const category = row.category || row.Category || "GoogleSheet";
-        if (name && !isNaN(price)) {
-          newProducts.push({ id: Date.now() + idx + Math.random() * 100000, name: String(name), price, emoji: "📊", category, rating: "4.5", reviews: Math.floor(Math.random() * 100), image: String(image), source: "GoogleSheet", isVideo: false });
-        }
-      });
-      if (newProducts.length > 0) {
-        allProducts = allProducts.filter(p => p.source !== "GoogleSheet");
-        allProducts = allProducts.concat(newProducts);
-        saveProducts();
-        logUserAction(`📊 Synced ${newProducts.length} products from Google Sheet`, ``);
-        renderUserPage();
-        document.getElementById("sheetSyncStatus").innerHTML = `✅ Synced ${newProducts.length} products!`;
-        showToast(`✅ ${newProducts.length} Google Sheet products synced!`);
-      } else {
-        document.getElementById("sheetSyncStatus").innerHTML = `❌ No valid products found. Columns: name, price (required)`;
-        alert("No valid products found. Make sure columns are 'name' and 'price'.");
-      }
-    } else {
-      document.getElementById("sheetSyncStatus").innerHTML = `❌ Failed to parse CSV. Check URL.`;
-      alert("Failed to parse CSV.");
-    }
-  } catch(e) {
-    console.error("Google Sheet sync error:", e);
-    document.getElementById("sheetSyncStatus").innerHTML = `❌ Error: ${e.message}`;
-    alert("Error fetching sheet.");
-  }
-      }
-  // ========================================================================
-// 10. RENDER USER PAGE
-// ========================================================================
-function renderUserPage() {
-  let filtered = allProducts;
-  if (currentCategory !== "all") {
-    filtered = filtered.filter(p => p.category === currentCategory || p.source === currentCategory);
-  }
-  if (searchQuery.trim() !== "") {
-    const q = searchQuery.toLowerCase().trim();
-    filtered = filtered.filter(p => p.name.toLowerCase().includes(q));
-  }
-  const total = filtered.length;
-  const totalPages = Math.ceil(total / PAGE_SIZE);
-  if (currentPage > totalPages) currentPage = Math.max(1, totalPages);
-  const start = (currentPage - 1) * PAGE_SIZE;
-  const pageProds = filtered.slice(start, start + PAGE_SIZE);
-
-  let html = `<div class="container"><div class="section-title"><span>✨ Products (${total} items)</span><a id="viewAllLink">All →</a></div><div class="products-grid">`;
-  for (let p of pageProds) {
-    const imgHtml = p.image ?
-      `<img src="${p.image}" class="product-img" alt="${p.name}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><div class="product-img-placeholder" style="display:none;">${p.emoji || '📦'}</div>` :
-      `<div class="product-img-placeholder">${p.emoji || '📦'}</div>`;
-    html += `<div class="product-card" data-id="${p.id}">${imgHtml}<div class="product-title">${escapeHtml(p.name)}</div><div class="product-price">${p.price.toLocaleString()} ${getStoreConfig().currency}</div><div class="product-rating">⭐ ${p.rating} (${p.reviews} reviews) <span class="product-source">${p.source || 'default'}</span></div><button class="add-to-cart" data-id="${p.id}">🛒 ထည့်ရန်</button><div style="margin-top:4px;"><a class="view-details" data-id="${p.id}" style="color:#e11b1b;font-size:0.7rem;cursor:pointer;">👁️ အသေးစိတ်</a></div></div>`;
-  }
-  html += `</div><div class="pagination">`;
-  for (let i = 1; i <= totalPages && i <= 50; i++) {
-    html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
-  }
-  html += `</div></div>`;
-  document.getElementById("app").innerHTML = html;
-
-  document.querySelectorAll(".add-to-cart").forEach(btn => {
-    btn.onclick = (e) => { e.stopPropagation(); addToCart(parseInt(btn.dataset.id)); };
-  });
-  document.querySelectorAll(".page-btn").forEach(btn => {
-    btn.onclick = () => { currentPage = parseInt(btn.dataset.page); renderUserPage(); window.scrollTo({ top: 0, behavior: "smooth" }); };
-  });
-  document.querySelectorAll(".view-details").forEach(btn => {
-    btn.onclick = (e) => { e.stopPropagation(); openProductDetail(parseInt(btn.dataset.id)); };
-  });
-  document.querySelectorAll(".product-card").forEach(card => {
-    card.onclick = () => { const id = parseInt(card.dataset.id); if (id) openProductDetail(id); };
-  });
-  document.getElementById("viewAllLink")?.addEventListener("click", () => {
-    currentCategory = "all"; searchQuery = ""; document.getElementById("searchInput").value = ""; currentPage = 1; renderUserPage();
-  });
-}
-
-// ========================================================================
-// 11. PRODUCT DETAIL WITH IMAGES & REVIEWS
-// ========================================================================
-let currentReviewProductId = null;
-function openProductDetail(productId) {
-  const p = allProducts.find(prod => prod.id === productId);
-  if (!p) return;
-  currentReviewProductId = productId;
-  document.getElementById("reviewProductTitle").innerHTML = `${p.emoji || '📦'} ${p.name}`;
-  let imagesHtml = '';
-  if (p.image) {
-    imagesHtml += `<img src="${p.image}" style="width:100%; max-height:200px; object-fit:contain; border-radius:10px; margin:0.5rem 0;" />`;
-  }
-  // If ASIN exists, we can show more images (mock)
-  if (p.asin) {
-    imagesHtml += `<div style="display:flex; gap:0.3rem; flex-wrap:wrap;">`;
-    for (let i = 1; i <= 3; i++) {
-      imagesHtml += `<img src="https://ws-na.amazon-adsystem.com/widgets/q?_encoding=UTF8&ASIN=${p.asin}&Format=_SL250_&ID=AsinImage&MarketPlace=US&ServiceVersion=20070822&WS=1&tag=your-tag" style="width:60px; height:60px; object-fit:cover; border-radius:8px; border:1px solid #eee;" onerror="this.style.display='none';" />`;
-    }
-    imagesHtml += `</div>`;
-  }
-  document.getElementById("reviewProductImages").innerHTML = imagesHtml;
-  document.getElementById("reviewProductInfo").innerHTML =
-    `<p><strong>Price:</strong> ${p.price.toLocaleString()} ${getStoreConfig().currency}</p><p><strong>Category:</strong> ${p.category || p.source || 'General'}</p><p><strong>Rating:</strong> ⭐ ${p.rating} (${p.reviews} reviews)</p>`;
-  renderComments(productId);
-  document.getElementById("reviewModal").style.display = "flex";
-}
-
-function renderComments(productId) {
-  const list = document.getElementById("commentsList");
-  const comments = getComments(productId);
-  if (comments.length === 0) { list.innerHTML = "<p style='color:#888;font-size:0.8rem;'>No comments yet.</p>"; return; }
-  list.innerHTML = comments.map(c => `<div class="comment"><strong>${escapeHtml(c.user)}</strong> <span style="font-size:0.6rem;color:#888;">${c.time}</span><br/>${escapeHtml(c.text)}</div>`).join("");
-}
-
-document.getElementById("addCommentBtn")?.addEventListener("click", () => {
-  if (currentReviewProductId === null) return;
-  const text = document.getElementById("newComment").value.trim();
-  if (!text) return;
-  const user = getCurrentUser() ? getCurrentUser().username : "Guest";
-  saveComment(currentReviewProductId, user, text);
-  document.getElementById("newComment").value = "";
-  renderComments(currentReviewProductId);
-  showToast("✅ Comment added!");
-});
-document.getElementById("closeReviewBtn")?.addEventListener("click", () => document.getElementById("reviewModal").style.display = "none");
-document.getElementById("reviewModal")?.addEventListener("click", (e) => { if (e.target === e.currentTarget) document.getElementById("reviewModal").style.display = "none"; });
-  // ========================================================================
-// 12. CART & CHECKOUT (with Admin-editable labels & design)
-// ========================================================================
-function openCartModal() {
-  const container = document.getElementById("cartItemsList");
-  if (!container) return;
-  if (cart.length === 0) { container.innerHTML = "<div style='text-align:center;padding:0.8rem;color:#888;'>Cart empty</div>"; document.getElementById("cartTotal").innerHTML = ""; document.getElementById("cartModal").style.display = "flex"; return; }
-  let total = 0; let html = "";
-  for (let item of cart) {
-    const subtotal = item.price * item.quantity;
-    total += subtotal;
-    html += `<div class="cart-item"><div>${item.emoji || '📦'} ${item.name} x ${item.quantity}</div><div><button class="cart-dec" data-id="${item.id}">−</button><span>${item.quantity}</span><button class="cart-inc" data-id="${item.id}">+</button><button class="cart-remove" data-id="${item.id}" style="background:transparent;border:none;color:#dc3545;font-weight:bold;">✕</button></div></div>`;
-  }
-  container.innerHTML = html;
-  document.getElementById("cartTotal").innerHTML = `Total: ${total.toLocaleString()} ${getStoreConfig().currency}`;
-  document.getElementById("cartModal").style.display = "flex";
-
-  document.querySelectorAll(".cart-inc").forEach(b => b.onclick = () => { const id = parseInt(b.dataset.id); const item = cart.find(i => i.id === id); if (item) { item.quantity++; saveCart(); updateCartBadge(); openCartModal(); } });
-  document.querySelectorAll(".cart-dec").forEach(b => b.onclick = () => { const id = parseInt(b.dataset.id); const item = cart.find(i => i.id === id); if (item && item.quantity > 1) { item.quantity--; saveCart(); updateCartBadge(); openCartModal(); } else if (item && item.quantity === 1) { cart = cart.filter(i => i.id !== id); saveCart(); updateCartBadge(); openCartModal(); } });
-  document.querySelectorAll(".cart-remove").forEach(b => b.onclick = () => { const id = parseInt(b.dataset.id); cart = cart.filter(i => i.id !== id); saveCart(); updateCartBadge(); openCartModal(); });
-}
-
-document.getElementById("cartIcon").addEventListener("click", openCartModal);
-document.getElementById("closeCartBtn").addEventListener("click", () => document.getElementById("cartModal").style.display = "none");
-document.getElementById("cartModal").addEventListener("click", (e) => { if (e.target === e.currentTarget) document.getElementById("cartModal").style.display = "none"; });
-
-let currentOrder = null;
-let orderTimerInterval = null;
-
-document.getElementById("checkoutBtn")?.addEventListener("click", () => {
-  if (cart.length === 0) { showToast("Cart empty"); return; }
-  const config = getAdminConfig();
-  document.getElementById("labelName").innerText = config.checkoutLabels.name || "အမည်";
-  document.getElementById("labelPhone").innerText = config.checkoutLabels.phone || "ဖုန်းနံပါတ်";
-  document.getElementById("labelAddress").innerText = config.checkoutLabels.address || "လိပ်စာ";
-  document.getElementById("submitCheckout").innerText = config.checkoutLabels.submit || "ဆက်လုပ်ရန်";
-  document.getElementById("checkoutModal").style.display = "flex";
-  document.getElementById("checkoutFormContainer").classList.remove("hidden");
-  document.getElementById("paymentInfo").classList.add("hidden");
-  const user = getCurrentUser();
-  if (user) document.getElementById("custName").value = user.username;
-});
-
-document.getElementById("checkoutForm")?.addEventListener("submit", (e) => {
-  e.preventDefault();
-  const name = document.getElementById("custName").value.trim();
-  const phone = document.getElementById("custPhone").value.trim();
-  const address = document.getElementById("custAddress").value.trim();
-  if (!name || !phone || !address) { alert("Fill all fields"); return; }
-  document.getElementById("checkoutFormContainer").classList.add("hidden");
-  document.getElementById("paymentInfo").classList.remove("hidden");
-  const config = getAdminConfig();
-  document.getElementById("paymentNumberDisplay").innerHTML = `<strong>${config.checkoutInfo.bank} - ${config.checkoutInfo.paymentNumber}</strong>`;
-  startOrderTimer();
-  currentOrder = {
-    id: "ORD-" + Date.now().toString().slice(-8),
-    name, phone, address,
-    items: [...cart],
-    total: cart.reduce((s, i) => s + (i.price * i.quantity), 0),
-    status: "pending",
-    timestamp: Date.now()
-  };
-  const orders = JSON.parse(localStorage.getItem(STORAGE_ORDERS) || "[]");
-  orders.push(currentOrder);
-  localStorage.setItem(STORAGE_ORDERS, JSON.stringify(orders));
-  logUserAction(`📦 Checkout`, `Order #${currentOrder.id}, Total: ${currentOrder.total}`);
-  const orderSummary = `📦 Order #${currentOrder.id}\n👤 ${name}\n📞 ${phone}\n📍 ${address}\n🛒 ${currentOrder.items.map(i => `${i.name} x ${i.quantity}`).join(', ')}\n💰 ${currentOrder.total.toLocaleString()} MMK`;
-  openChatWidget();
-  addChatMessage("bot", `✅ ဟုတ်ကဲ့ခင်ဗျာ၊ သင့်အော်ဒါကို လက်ခံရရှိပါပြီ။\n${orderSummary}\n\n💬 မေးမြန်းစုံစမ်းလိုပါက ဤနေရာတွင် ရေးသားနိုင်ပါသည်။`);
-  addChatMessage("bot", "🙏 ကျေးဇူးတင်ပါသည်။ ငွေလွဲပြီးပါက Screenshot ကို ဤနေရာတွင် တင်ပေးပါ။ (သို့) အောက်ပါခလုတ်ကို နှိပ်ပါ။");
-});
-
-function startOrderTimer() {
-  let timeLeft = 3600;
-  const timerEl = document.getElementById("orderTimer");
-  if (orderTimerInterval) clearInterval(orderTimerInterval);
-  orderTimerInterval = setInterval(() => {
-    timeLeft--;
-    const mins = Math.floor(timeLeft / 60);
-    const secs = timeLeft % 60;
-    timerEl.innerText = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-    if (timeLeft <= 0) {
-      clearInterval(orderTimerInterval);
-      orderTimerInterval = null;
-      document.getElementById("orderStatusMsg").innerHTML = `<span class="cancelled">⛔ Order Cancelled</span>`;
-      if (currentOrder) { currentOrder.status = "cancelled"; updateOrderStatus(currentOrder.id, "cancelled"); logUserAction(`⛔ Order cancelled (timeout)`, `#${currentOrder.id}`); }
-    }
-  }, 1000);
-}
-
-document.getElementById("uploadScreenshotBtn")?.addEventListener("click", () => {
-  const fileInput = document.getElementById("screenshotInput");
-  if (!fileInput.files || !fileInput.files.length) { alert("Choose screenshot"); return; }
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    if (currentOrder) { currentOrder.status = "confirmed"; currentOrder.screenshot = e.target.result; updateOrderStatus(currentOrder.id, "confirmed"); logUserAction(`✅ Order confirmed with screenshot`, `#${currentOrder.id}`); }
-    document.getElementById("orderStatusMsg").innerHTML = `<span class="success">✅ Order Confirmed!</span>`;
-    if (orderTimerInterval) { clearInterval(orderTimerInterval); orderTimerInterval = null; }
-    setTimeout(() => {
-      showTracking(currentOrder);
-      document.getElementById("checkoutModal").style.display = "none";
-      cart = [];
-      saveCart(); updateCartBadge();
-      showToast("🎉 Order confirmed!");
-      addChatMessage("bot", `🎉 ဟုတ်ကဲ့ခင်ဗျာ၊ သင့်အော်ဒါ #${currentOrder.id} အတည်ပြုပြီးပါပြီ။ ကျွန်ုပ်တို့ ပို့ဆောင်ပေးပါမည်။ ကျေးဇူးပါ။`);
-    }, 1500);
-  };
-  reader.readAsDataURL(fileInput.files[0]);
-});
-
-document.getElementById("cancelOrderBtn")?.addEventListener("click", () => {
-  if (confirm("Cancel order?")) {
-    if (currentOrder) { currentOrder.status = "cancelled"; updateOrderStatus(currentOrder.id, "cancelled"); logUserAction(`⛔ Order cancelled by user`, `#${currentOrder.id}`); }
-    if (orderTimerInterval) { clearInterval(orderTimerInterval); orderTimerInterval = null; }
-    document.getElementById("orderStatusMsg").innerHTML = `<span class="cancelled">⛔ Cancelled</span>`;
-    setTimeout(() => { document.getElementById("checkoutModal").style.display = "none"; showToast("Order cancelled."); }, 500);
-  }
-});
-
-function updateOrderStatus(orderId, status) {
-  const orders = JSON.parse(localStorage.getItem(STORAGE_ORDERS) || "[]");
-  const idx = orders.findIndex(o => o.id === orderId);
-  if (idx !== -1) { orders[idx].status = status; localStorage.setItem(STORAGE_ORDERS, JSON.stringify(orders)); }
-}
-
-function showTracking(order) {
-  document.getElementById("trackingOrderId").innerText = order.id;
-  document.getElementById("trackingStatus").innerHTML = order.status === "confirmed" ? "✅ Confirmed" : "⏳ Pending";
-  document.getElementById("trackingDelivery").innerText = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString();
-  document.getElementById("trackingNumber").innerHTML = "TH-2026-" + String(Math.floor(100000 + Math.random() * 900000));
-  document.getElementById("trackingModal").style.display = "flex";
-}
-
-document.getElementById("closeTrackingBtn").addEventListener("click", () => document.getElementById("trackingModal").style.display = "none");
-document.getElementById("trackingModal").addEventListener("click", (e) => { if (e.target === e.currentTarget) document.getElementById("trackingModal").style.display = "none"; });
-  // ========================================================================
-  // 13. CHAT WIDGET (Enhanced AI/Admin Response)
-  // ========================================================================
-  let chatOpen = false;
-  function openChatWidget() {
-    document.getElementById("chatWidget").classList.add("active");
-    document.getElementById("chatToggle").style.display = "none";
-    chatOpen = true;
-    renderChatWidgetMessages();
-  }
-  function closeChatWidget() {
-    document.getElementById("chatWidget").classList.remove("active");
-    document.getElementById("chatToggle").style.display = "flex";
-    chatOpen = false;
-  }
-  document.getElementById("chatToggle").addEventListener("click", () => { if (!chatOpen) openChatWidget(); });
-  document.getElementById("closeChatBtn").addEventListener("click", closeChatWidget);
-
-  function addChatMessage(sender, text) {
-    const msgs = JSON.parse(localStorage.getItem("shop_chat_widget") || "[]");
-    msgs.push({ sender, text, time: Date.now() });
-    localStorage.setItem("shop_chat_widget", JSON.stringify(msgs));
-    if (chatOpen) renderChatWidgetMessages();
-    const badge = document.getElementById("chatBadge");
-    const unread = msgs.filter(m => m.sender === "bot" && !m.read).length;
-    badge.innerText = unread;
-    logUserAction(`💬 Chat Widget (${sender})`, text.substring(0, 50));
-  }
-
-  function renderChatWidgetMessages() {
-    const container = document.getElementById("chatMessagesWidget");
-    const msgs = JSON.parse(localStorage.getItem("shop_chat_widget") || "[]");
-    if (msgs.length === 0) {
-      container.innerHTML = "<div style='color:#888;font-size:0.8rem;text-align:center;padding:1rem;'>👋 မင်္ဂလာပါ။ မေးမြန်းစုံစမ်းလိုပါက ရေးသားနိုင်ပါသည်။</div>";
-      return;
-    }
-    container.innerHTML = msgs.map(m => `<div class="chat-msg ${m.sender === 'user' ? 'user' : 'bot'}"><div class="bubble">${escapeHtml(m.text)}</div><div class="time">${new Date(m.time).toLocaleTimeString()}</div></div>`).join("");
-    container.scrollTop = container.scrollHeight;
-    const updated = msgs.map(m => { if (m.sender === "bot") m.read = true; return m; });
-    localStorage.setItem("shop_chat_widget", JSON.stringify(updated));
-    document.getElementById("chatBadge").innerText = 0;
-  }
-
-  function getAdminReply(text) {
-    const lower = text.toLowerCase();
-    if (lower.includes("ဈေး") || lower.includes("price")) return "📊 ဟုတ်ကဲ့ခင်ဗျာ၊ ပစ္စည်းဈေးနှုန်းများကို Product Page တွင် ကြည့်ရှုနိုင်ပါတယ်။";
-    if (lower.includes("ပို့") || lower.includes("delivery")) return "🚚 ပို့ဆောင်ခမှာ ၃၀၀၀ ကျပ် ကျသင့်ပြီး ၃ ရက်အတွင်း ရောက်ရှိပါမည်။";
-    if (lower.includes("ပစ္စည်း") || lower.includes("product")) return "🛒 ကျွန်တော်တို့ဆိုင်မှာ အမျိုးအစားစုံစွာ ရရှိနိုင်ပါတယ်။";
-    if (lower.includes("အော်ဒါ") || lower.includes("order")) return "📦 သင့်အော်ဒါကို စစ်ဆေးပေးပါ့မယ်။ Order ID ကိုပေးပါ။";
-    if (lower.includes("ဟုတ်") || lower.includes("ok")) return "✅ ကောင်းပါပြီခင်ဗျာ။ နောက်ထပ် မေးစရာရှိပါက ပြန်ရေးနိုင်ပါတယ်။";
-    if (lower.includes("မဟုတ်") || lower.includes("no")) return "😕 စိတ်မကောင်းပါ။ ပြန်လည်စစ်ဆေးပေးပါမည်။";
-    if (lower.includes("ကျေးဇူး") || lower.includes("thank")) return "😊 ကျေးဇူးလည်းပါခင်ဗျာ။";
-    if (lower.includes("hello") || lower.includes("hi") || lower.includes("မင်္ဂလာ")) return "👋 မင်္ဂလာပါခင်ဗျာ။ ဘာကူညီရမလဲ။";
-    return "🙏 ဟုတ်ကဲ့ခင်ဗျာ၊ ကျွန်တော် စစ်ဆေးပေးပါ့မယ်။ ကျေးဇူးပြု၍ စောင့်မျှော်ပေးပါ။";
-  }
-
-  document.getElementById("chatSendWidgetBtn").addEventListener("click", () => {
-    const input = document.getElementById("chatInputWidget");
-    const text = input.value.trim();
-    if (!text) return;
-    addChatMessage("user", text);
-    input.value = "";
-    setTimeout(() => {
-      const reply = getAdminReply(text);
-      addChatMessage("bot", reply);
-    }, 600);
-  });
-  document.getElementById("chatInputWidget").addEventListener("keypress", (e) => {
-    if (e.key === "Enter") document.getElementById("chatSendWidgetBtn").click();
-  });
-
-  // ========================================================================
-  // 14. USER MODAL (Login/Register/Chat with Profile Picture)
-  // ========================================================================
-  document.getElementById("userBadge")?.addEventListener("click", () => {
-    const user = getCurrentUser();
-    if (user) {
-      document.getElementById("userModalTitle").innerText = `👤 ${user.username}`;
-      document.getElementById("userFormContainer").classList.remove("hidden");
-      document.getElementById("userChatContainer").classList.add("hidden");
-      document.getElementById("loginUsername").value = user.username;
-      document.getElementById("loginPassword").value = "";
-      document.getElementById("logoutBtn").style.display = "inline-block";
-      document.getElementById("loginBtn").style.display = "none";
-      document.getElementById("registerBtn").style.display = "none";
-      // Show profile pic
-      const pic = user.profilePic || "";
-      if (pic) {
-        document.getElementById("profilePicPreview").src = pic;
-        document.getElementById("profilePicPreview").style.display = "block";
-        document.getElementById("profilePicPlaceholder").style.display = "none";
-      } else {
-        document.getElementById("profilePicPreview").style.display = "none";
-        document.getElementById("profilePicPlaceholder").style.display = "flex";
-      }
-      document.getElementById("userModal").style.display = "flex";
-      return;
-    }
-    document.getElementById("userModalTitle").innerText = "👤 Login / Register";
-    document.getElementById("userFormContainer").classList.remove("hidden");
-    document.getElementById("userChatContainer").classList.add("hidden");
-    document.getElementById("logoutBtn").style.display = "none";
-    document.getElementById("loginBtn").style.display = "inline-block";
-    document.getElementById("registerBtn").style.display = "inline-block";
-    document.getElementById("profilePicPreview").style.display = "none";
-    document.getElementById("profilePicPlaceholder").style.display = "flex";
-    document.getElementById("userModal").style.display = "flex";
-  });
-
-  document.getElementById("uploadProfilePicBtn")?.addEventListener("click", () => {
-    const fileInput = document.getElementById("profilePicInput");
-    if (!fileInput.files || !fileInput.files.length) { alert("Choose an image"); return; }
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      const user = getCurrentUser();
-      if (user) {
-        const users = getUsers();
-        if (users[user.username]) {
-          users[user.username].profilePic = e.target.result;
-          saveUsers(users);
-          setCurrentUser({ username: user.username, profilePic: e.target.result });
-          document.getElementById("profilePicPreview").src = e.target.result;
-          document.getElementById("profilePicPreview").style.display = "block";
-          document.getElementById("profilePicPlaceholder").style.display = "none";
-          showToast("✅ Profile picture updated!");
-          logUserAction(`🖼️ Profile picture updated`, ``);
-        }
-      }
-    };
-    reader.readAsDataURL(fileInput.files[0]);
-  });
-
-  document.getElementById("loginBtn")?.addEventListener("click", () => {
-    const u = document.getElementById("loginUsername").value.trim();
-    const p = document.getElementById("loginPassword").value.trim();
-    const result = loginUser(u, p);
-    if (result.success) {
-      setCurrentUser({ username: u, profilePic: result.user.profilePic });
-      document.getElementById("userBadge").innerHTML = `👤 ${u}`;
-      logUserAction(`🔐 Logged in`, u);
-      document.getElementById("userStatus").innerHTML = `<span style="color:green;">✅ Login success</span>`;
-      setTimeout(() => { document.getElementById("userModal").style.display = "none"; }, 500);
-    } else {
-      document.getElementById("userStatus").innerHTML = `<span style="color:red;">❌ ${result.msg}</span>`;
-    }
-  });
-
-  document.getElementById("registerBtn")?.addEventListener("click", () => {
-    const u = document.getElementById("loginUsername").value.trim();
-    const p = document.getElementById("loginPassword").value.trim();
-    const result = registerUser(u, p);
-    if (result.success) {
-      setCurrentUser({ username: u, profilePic: "" });
-      document.getElementById("userBadge").innerHTML = `👤 ${u}`;
-      logUserAction(`📝 Registered`, u);
-      document.getElementById("userStatus").innerHTML = `<span style="color:green;">✅ ${result.msg}</span>`;
-      setTimeout(() => { document.getElementById("userModal").style.display = "none"; }, 500);
-    } else {
-      document.getElementById("userStatus").innerHTML = `<span style="color:red;">❌ ${result.msg}</span>`;
-    }
-  });
-
-  document.getElementById("logoutBtn")?.addEventListener("click", () => {
-    logoutUser();
-    document.getElementById("userBadge").innerHTML = "👤 Login";
-    document.getElementById("userModal").style.display = "none";
-    logUserAction(`🚪 Logged out`, ``);
-    showToast("Logged out");
-  });
-
-  document.getElementById("closeUserBtn")?.addEventListener("click", () => document.getElementById("userModal").style.display = "none");
-  document.getElementById("userModal")?.addEventListener("click", (e) => { if (e.target === e.currentTarget) document.getElementById("userModal").style.display = "none"; });
-
-  // ========================================================================
-  // 15. ADMIN PANEL (Full with Checkout Labels & Store Config)
-  // ========================================================================
-  function renderAdminPanel() {
-    const config = getTelegramConfig();
-    const tokensStr = config.botTokens.join("\n");
-    const chatId = config.chatId;
-    const adminConfig = getAdminConfig();
-    const amazonConfig = getAmazonApiConfig();
-    const users = getUsers();
-    const storeConfig = getStoreConfig();
-
-    let html = `<div class="container admin-panel"><h2>🛠️ Admin Panel</h2>
-      <div class="admin-section"><h3>🏪 Store Customization</h3>
-        <label>Store Name</label><input type="text" id="adminStoreName" value="${escapeHtml(storeConfig.storeName)}" />
-        <label>Header Title</label><input type="text" id="adminHeaderTitle" value="${escapeHtml(storeConfig.headerTitle)}" />
-        <label>Footer Text</label><input type="text" id="adminFooterText" value="${escapeHtml(storeConfig.footerText)}" />
-        <label>Chat Title</label><input type="text" id="adminChatTitle" value="${escapeHtml(storeConfig.chatTitle)}" />
-        <button class="btn btn-success" id="saveStoreConfigBtn">💾 Save</button>
-      </div>
-      <div class="admin-section"><h3>📦 Checkout Form Labels & Design</h3>
-        <label>Name Label</label><input type="text" id="adminLabelName" value="${escapeHtml(adminConfig.checkoutLabels.name)}" />
-        <label>Phone Label</label><input type="text" id="adminLabelPhone" value="${escapeHtml(adminConfig.checkoutLabels.phone)}" />
-        <label>Address Label</label><input type="text" id="adminLabelAddress" value="${escapeHtml(adminConfig.checkoutLabels.address)}" />
-        <label>Submit Button Text</label><input type="text" id="adminLabelSubmit" value="${escapeHtml(adminConfig.checkoutLabels.submit)}" />
-        <label>Payment Bank</label><input type="text" id="adminBankName" value="${escapeHtml(adminConfig.checkoutInfo.bank)}" />
-        <label>Payment Number</label><input type="text" id="adminPaymentNumber" value="${escapeHtml(adminConfig.checkoutInfo.paymentNumber)}" />
-        <button class="btn btn-success" id="adminSaveCheckoutBtn">💾 Save Checkout</button>
-      </div>
-      <div class="admin-section"><h3>🔑 Admin Password</h3><input type="password" id="adminNewPwd" placeholder="New password" /><button class="btn btn-primary" id="adminChangePwdBtn">Change</button><div id="adminPwdStatus"></div></div>
-      <div class="admin-section"><h3>💰 Bulk Price Update</h3><input type="number" id="bulkDiscountAmount" placeholder="-5000" /><button class="btn btn-primary" id="applyBulkDiscountBtn">Apply to All</button></div>
-      <div class="admin-section"><h3>🛒 Amazon API Sync</h3>
-        <label>API Key</label><input type="text" id="adminApiKey" value="${escapeHtml(amazonConfig.apiKey)}" />
-        <label>API Host</label><input type="text" id="adminApiHost" value="${escapeHtml(amazonConfig.host)}" />
-        <button class="btn btn-outline" id="saveApiConfigBtn">💾 Save API Config</button>
-        <div style="margin-top:0.5rem;"><label>Search Term</label><input type="text" id="adminSearchTerm" placeholder="laptop" />
-        <label>Max Pages</label><input type="number" id="adminMaxPages" value="20" min="1" max="50" />
-        <button class="btn btn-primary" id="syncAmazonBtn">📥 Sync from Amazon</button><div id="syncStatus" style="margin-top:0.4rem;font-weight:600;"></div></div>
-      </div>
-      <div class="admin-section"><h3>📊 Google Sheets Sync</h3>
-        <label>Published CSV URL</label><input type="text" id="adminSheetUrl" placeholder="https://docs.google.com/.../pub?output=csv" />
-        <button class="btn btn-success" id="syncSheetBtn">📥 Sync</button><div id="sheetSyncStatus" style="margin-top:0.4rem;font-weight:600;"></div>
-      </div>
-      <div class="admin-section"><h3>📨 Telegram Settings</h3><textarea id="telegramTokens">${escapeHtml(tokensStr)}</textarea><input type="text" id="telegramChatId" placeholder="Chat ID" value="${escapeHtml(chatId)}" /><button class="btn btn-success" id="saveTelegramBtn">💾 Save</button><button class="btn btn-primary" id="testTelegramBtn">📨 Test</button><div id="telegramStatus"></div></div>
-      <div class="admin-section"><h3>👥 Users (${Object.keys(users).length})</h3><div style="max-height:150px;overflow-y:auto;border:1px solid #ddd;border-radius:8px;padding:0.3rem;">${Object.keys(users).map(u => `<div>👤 ${u} (${new Date(users[u].created).toLocaleDateString()}) ${users[u].profilePic ? '📷' : ''}</div>`).join('')}</div></div>
-      <div class="admin-section"><h3>📂 CSV</h3><input type="file" id="csvFile" accept=".csv" /><button class="btn btn-primary" id="replaceBtn">Replace</button><button class="btn btn-outline" id="mergeBtn">Merge</button><button class="btn btn-success" id="exportBtn">Export</button><button class="btn btn-danger" id="deleteAllBtn">Delete All</button></div>
-      <div class="admin-section"><h3>📦 Products (${allProducts.length})</h3><div style="overflow-x:auto;"><table class="admin-table"><thead><tr><th>ID</th><th>Source</th><th>Name</th><th>Price</th><th>Actions</th></tr></thead><tbody id="adminProductRows"></tbody></table></div><div class="pagination" id="adminPagination"></div></div>
-      <button class="btn btn-outline" id="exitAdminBtn">🏠 Back</button></div>`;
-
-    document.getElementById("app").innerHTML = html;
-
-    // Admin product table
-    const adminPage = parseInt(localStorage.getItem("adminPage") || "1");
-    const totalAdminPages = Math.ceil(allProducts.length / 20);
-    const startIdx = (adminPage - 1) * 20;
-    const pageProds = allProducts.slice(startIdx, startIdx + 20);
-    const tbody = document.getElementById("adminProductRows");
-    if (tbody) {
-      tbody.innerHTML = "";
-      for (let p of pageProds) {
-        tbody.innerHTML += `<tr><td>${p.id}</td><td>${p.source || 'default'}</td><td><input type="text" class="edit-name" data-id="${p.id}" value="${escapeHtml(p.name)}" style="width:150px;" /></td><td><input type="number" class="edit-price" data-id="${p.id}" value="${p.price}" style="width:90px;" /></td><td><button class="btn btn-primary btn-sm save-btn" data-id="${p.id}">Save</button><button class="btn btn-danger btn-sm delete-btn" data-id="${p.id}">Del</button></td></tr>`;
-      }
-    }
-    const pagDiv = document.getElementById("adminPagination");
-    if (pagDiv) {
-      pagDiv.innerHTML = "";
-      for (let i = 1; i <= totalAdminPages && i <= 100; i++) {
-        const btn = document.createElement("button");
-        btn.innerText = i;
-        btn.className = `page-btn ${i === adminPage ? "active" : ""}`;
-        btn.onclick = () => { localStorage.setItem("adminPage", i); renderAdminPanel(); };
-        pagDiv.appendChild(btn);
-      }
-    }
-
-    // Admin Events
-    document.querySelectorAll(".save-btn").forEach(btn => {
-      btn.onclick = () => {
-        const id = parseInt(btn.dataset.id);
-        const row = btn.closest("tr");
-        const name = row.querySelector(".edit-name").value;
-        const price = parseInt(row.querySelector(".edit-price").value);
-        const prod = allProducts.find(p => p.id === id);
-        if (prod) { prod.name = name; prod.price = price; saveProducts(); renderAdminPanel(); showToast("✅ Saved"); logUserAction(`✏️ Product updated`, `#${id}`); }
-      };
-    });
-    document.querySelectorAll(".delete-btn").forEach(btn => {
-      btn.onclick = () => {
-        const id = parseInt(btn.dataset.id);
-        allProducts = allProducts.filter(p => p.id !== id);
-        cart = cart.filter(i => i.id !== id);
-        saveProducts(); saveCart(); updateCartBadge();
-        renderAdminPanel();
-        logUserAction(`🗑️ Product deleted`, `#${id}`);
-      };
-    });
-
-    // Store Config
-    document.getElementById("saveStoreConfigBtn")?.addEventListener("click", () => {
-      const config = { storeName: document.getElementById("adminStoreName").value.trim(), headerTitle: document.getElementById("adminHeaderTitle").value.trim(), footerText: document.getElementById("adminFooterText").value.trim(), chatTitle: document.getElementById("adminChatTitle").value.trim(), currency: "MMK" };
-      saveStoreConfig(config);
-      showToast("✅ Store settings updated!");
-      logUserAction(`🏪 Store branding updated`, ``);
-    });
-
-    // Checkout Labels Save
-    document.getElementById("adminSaveCheckoutBtn")?.addEventListener("click", () => {
-      const config = getAdminConfig();
-      config.checkoutLabels.name = document.getElementById("adminLabelName").value.trim();
-      config.checkoutLabels.phone = document.getElementById("adminLabelPhone").value.trim();
-      config.checkoutLabels.address = document.getElementById("adminLabelAddress").value.trim();
-      config.checkoutLabels.submit = document.getElementById("adminLabelSubmit").value.trim();
-      config.checkoutInfo.bank = document.getElementById("adminBankName").value.trim();
-      config.checkoutInfo.paymentNumber = document.getElementById("adminPaymentNumber").value.trim();
-      saveAdminConfig(config);
-      showToast("✅ Checkout settings saved!");
-      logUserAction(`📦 Checkout labels updated`, ``);
-    });
-
-    // Admin password
-    document.getElementById("adminChangePwdBtn")?.addEventListener("click", () => {
-      const newPwd = document.getElementById("adminNewPwd").value.trim();
-      if (!newPwd || newPwd.length < 4) return alert("Min 4 chars");
-      const config = getAdminConfig();
-      config.password = newPwd;
-      saveAdminConfig(config);
-      document.getElementById("adminPwdStatus").innerHTML = "✅ Changed";
-      logUserAction(`🔑 Admin password changed`, ``);
-    });
-
-    // Bulk discount
-    document.getElementById("applyBulkDiscountBtn")?.addEventListener("click", () => {
-      const amt = parseInt(document.getElementById("bulkDiscountAmount").value);
-      if (isNaN(amt)) return alert("Enter number");
-      allProducts.forEach(p => p.price = Math.max(1000, p.price + amt));
-      saveProducts(); renderAdminPanel();
-      logUserAction(`💰 Bulk discount applied`, `${amt} MMK to ${allProducts.length} products`);
-      showToast("✅ Updated");
-    });
-
-    // API Config
-    document.getElementById("saveApiConfigBtn")?.addEventListener("click", () => {
-      const key = document.getElementById("adminApiKey").value.trim();
-      const host = document.getElementById("adminApiHost").value.trim();
-      saveAmazonApiConfig(key, host);
-      showToast("✅ API Config Saved");
-      logUserAction(`🔑 Amazon API config updated`, ``);
-    });
-
-// Amazon Sync
-    document.getElementById("syncAmazonBtn")?.addEventListener("click", async () => {
-      const term = document.getElementById("adminSearchTerm").value.trim();
-      const maxPages = parseInt(document.getElementById("adminMaxPages").value) || 10;
-      if (!term) { alert("Enter search term"); return; }
-      await syncAmazonProducts(term, maxPages);
-    });
-
-    // Google Sheet Sync
-    document.getElementById("syncSheetBtn")?.addEventListener("click", async () => {
-      const url = document.getElementById("adminSheetUrl").value.trim();
-      await syncGoogleSheet(url);
-    });
-
-    // Telegram
-    document.getElementById("saveTelegramBtn")?.addEventListener("click", () => {
-      const tokensText = document.getElementById("telegramTokens").value;
-      const chatIdVal = document.getElementById("telegramChatId").value.trim();
-      const tokens = tokensText.split("\n").map(t => t.trim()).filter(t => t);
-      saveTelegramConfig(tokens, chatIdVal);
-      document.getElementById("telegramStatus").innerHTML = "✅ Saved";
-      showToast("✅ Telegram saved");
-      logUserAction(`📨 Telegram config updated`, `${tokens.length} bots`);
-    });
-    document.getElementById("testTelegramBtn")?.addEventListener("click", async () => {
-      const result = await sendTelegramMessage("✅ Test from Admin");
-      document.getElementById("telegramStatus").innerHTML = result ? "✅ Success" : "❌ Failed";
-    });
-
-    // CSV
-    let selectedFile = null;
-    document.getElementById("csvFile")?.addEventListener("change", (e) => { selectedFile = e.target.files[0]; });
-    const processCSV = (replaceMode) => {
-      if (!selectedFile) { alert("Choose CSV"); return; }
-      Papa.parse(selectedFile, { header: true, skipEmptyLines: true, complete: (res) => {
-        const newProducts = [];
-        for (let row of res.data) {
-          let name = row.name || row.Name;
-          let price = parseFloat(row.price || row.Price);
-          let emoji = row.emoji || "📦";
-          let cat = row.category || "General";
-          if (!name || isNaN(price)) continue;
-          const id = row.id ? parseInt(row.id) : Date.now() + Math.random() * 100000 + newProducts.length;
-          newProducts.push({ id, name: String(name), price, emoji: String(emoji), category: String(cat), rating: 4.0, reviews: 0, image: "", source: "csv", isVideo: false });
-        }
-        if (!newProducts.length) { alert("Invalid CSV"); return; }
-        if (replaceMode) allProducts = newProducts;
-        else allProducts = allProducts.concat(newProducts);
-        saveProducts(); renderAdminPanel();
-        logUserAction(`📂 CSV ${replaceMode ? 'replaced' : 'merged'}`, `${newProducts.length} products`);
-        showToast(`✅ ${newProducts.length} loaded`);
-      }});
-    };
-    document.getElementById("replaceBtn")?.addEventListener("click", () => processCSV(true));
-    document.getElementById("mergeBtn")?.addEventListener("click", () => processCSV(false));
-    document.getElementById("exportBtn")?.addEventListener("click", () => {
-      const headers = ["id","name","price","emoji","category"];
-      const rows = [headers.join(",")];
-      for (let p of allProducts) rows.push(`${p.id},"${escapeCsv(p.name)}",${p.price},"${escapeCsv(p.emoji)}","${escapeCsv(p.category)}"`);
-      const blob = new Blob([rows.join("\n")], { type:"text/csv" });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = "products.csv";
-      link.click();
-      showToast("📥 CSV exported");
-      logUserAction(`📥 CSV exported`, `${allProducts.length} products`);
-    });
-    document.getElementById("deleteAllBtn")?.addEventListener("click", () => {
-      if (confirm("Delete all?")) { allProducts = []; saveProducts(); cart = []; saveCart(); updateCartBadge(); renderAdminPanel(); logUserAction(`🗑️ All products deleted`, ``); }
-    });
-
-    document.getElementById("exitAdminBtn")?.addEventListener("click", () => {
-      isAdminMode = false;
-      window.history.pushState({}, "", "/");
-      renderUserPage();
-    });
-  }
-
-  // ========================================================================
-  // 16. ROUTING
-  // ========================================================================
-  function handleRoute() {
-    const hash = window.location.hash;
-    const path = window.location.pathname;
-    if (hash === "#step" || path.endsWith("/step")) {
-      const adminConfig = getAdminConfig();
-      const pwd = prompt("Admin password:");
-      if (pwd === adminConfig.password) {
-        isAdminMode = true;
-        renderAdminPanel();
-        return;
-      } else { window.history.pushState({}, "", "/"); }
-    }
-    isAdminMode = false;
-    renderUserPage();
-  }
-
-  // ========================================================================
-  // 17. UTILITIES
-  // ========================================================================
-  function escapeHtml(str) { if (!str) return ""; return String(str).replace(/[&<>]/g, function(m) { if (m === '&') return '&amp;'; if (m === '<') return '&lt;'; if (m === '>') return '&gt;'; return m; }); }
-  function escapeCsv(str) { return String(str).replace(/"/g, '""'); }
-  function logoutUser() {
-    localStorage.removeItem(STORAGE_SESSION);
-    document.getElementById("userBadge").innerHTML = "👤 Login";
-  }
-
-  // ========================================================================
-  // 18. INIT
-  // ========================================================================
-  loadProducts();
-  loadCart();
-  applyStoreConfig();
-
-  window.addEventListener("load", () => {
-    const user = getCurrentUser();
-    if (user) document.getElementById("userBadge").innerHTML = `👤 ${user.username}`;
-    logUserAction(`🌐 Page Visit`, `Device: ${DEVICE_ID}`);
-    handleRoute();
-    const chatMsgs = JSON.parse(localStorage.getItem("shop_chat_widget") || "[]");
-    if (chatMsgs.length > 0) {
-      document.getElementById("chatBadge").innerText = chatMsgs.filter(m => m.sender === "bot" && !m.read).length;
-    }
-  });
-
-  window.addEventListener("popstate", () => handleRoute());
-
-  document.getElementById("searchBtn").addEventListener("click", () => {
-    searchQuery = document.getElementById("searchInput").value;
-    currentPage = 1;
-    logUserAction(`🔍 Searched`, `"${searchQuery}"`);
-    renderUserPage();
-  });
-  document.getElementById("searchInput").addEventListener("keypress", (e) => {
-    if (e.key === "Enter") {
-      searchQuery = document.getElementById("searchInput").value;
-      currentPage = 1;
-      logUserAction(`🔍 Searched`, `"${searchQuery}"`);
-      renderUserPage();
-    }
-  });
-
-  document.getElementById("logoHome").addEventListener("click", () => {
-    currentCategory = "all"; searchQuery = ""; document.getElementById("searchInput").value = ""; currentPage = 1; renderUserPage();
-  });
-
-  document.querySelectorAll(".categories-bar a").forEach(link => {
-    link.addEventListener("click", (e) => {
-      e.preventDefault();
-      currentCategory = link.dataset.cat;
-      searchQuery = "";
-      document.getElementById("searchInput").value = "";
-      currentPage = 1;
-      logUserAction(`📂 Category filter`, currentCategory);
-      renderUserPage();
-    });
-  });
-
-  document.getElementById("closeCartBtn")?.addEventListener("click", () => document.getElementById("cartModal").style.display = "none");
-  document.getElementById("checkoutModal")?.addEventListener("click", (e) => { if (e.target === e.currentTarget) document.getElementById("checkoutModal").style.display = "none"; });
-
-  console.log("✅ Shop.com.mm Full E-commerce with Real Amazon & Google Sheets Loaded!");
-  console.log("🔑 Admin: #step, Password: 2003");
-  console.log("📱 Device Fingerprint:", DEVICE_ID);
-  console.log("📨 All actions logged to Telegram 24/7");
-  console.log("🛒 Go to Admin (#step) -> Amazon/Google Sheets to sync REAL products!");
-</script>
+  <script src="main.js"></script>
+  <script src="user.js"></script>
 </body>
 </html>
-```
