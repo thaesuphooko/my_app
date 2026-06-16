@@ -817,3 +817,78 @@ async function loadProductsFromFirestore() {
 
   console.log("✅ User page ready!");
 })();
+
+// ============================================================
+// LOAD FROM FIRESTORE (User)
+// ============================================================
+async function loadProductsFromFirestore() {
+  if (!db) {
+    console.warn("❌ Firebase not initialized!");
+    return false;
+  }
+
+  try {
+    console.log("⏳ Loading from Firebase...");
+    const snapshot = await db.collection('products').get();
+    const products = [];
+    snapshot.forEach(doc => {
+      products.push(doc.data());
+    });
+
+    if (products.length > 0) {
+      allProducts = products;
+      saveProducts();
+      renderUserPage();
+      console.log("✅ Loaded from Firebase:", products.length, "products");
+      return true;
+    } else {
+      console.log("ℹ️ No products in Firebase yet.");
+      return false;
+    }
+  } catch (error) {
+    console.error("❌ Firebase load error:", error);
+    return false;
+  }
+}
+
+// ============================================================
+// PAGE INIT (Run on every load)
+// ============================================================
+(async function initPage() {
+  console.log("🚀 User page loading...");
+
+  // 1. Try Firebase first
+  const loaded = await loadProductsFromFirestore();
+  
+  // 2. Fallback to Local Storage
+  if (!loaded) {
+    loadProducts();
+    console.log("📦 Loaded from Local Storage");
+  }
+
+  // 3. Load cart
+  loadCart();
+
+  // 4. Render page
+  renderUserPage();
+
+  // 5. Apply store config
+  applyStoreConfig();
+
+  // 6. Update user badge
+  const user = getCurrentUser();
+  if (user) {
+    document.getElementById("userBadge").innerHTML = `👤 ${user.username}`;
+  }
+
+  // 7. Load chat messages
+  const chatMsgs = JSON.parse(localStorage.getItem("shop_chat_widget") || "[]");
+  if (chatMsgs.length > 0) {
+    document.getElementById("chatBadge").innerText = chatMsgs.filter(m => m.sender === "bot" && !m.read).length;
+  }
+
+  // 8. Log visit
+  logUserAction(`🌐 Page Visit`, `Device: ${getDeviceId()}`);
+
+  console.log("✅ User page ready!");
+})();
