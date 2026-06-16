@@ -6,110 +6,81 @@
   <title>Shop.com.mm – Full E‑commerce</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <style>
-    /* ===== RESET & GLOBAL ===== */
     * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI',system-ui,sans-serif; }
     body { background:#f5f5f5; color:#333; }
     a { text-decoration:none; color:inherit; }
     .hidden { display:none !important; }
 
-    /* ===== HEADER ===== */
     .header {
-      background:#fff; padding:0.8rem 2rem;
+      background:#fff; padding:0.6rem 1.5rem;
       display:flex; justify-content:space-between; align-items:center;
-      flex-wrap:wrap; gap:1rem;
+      flex-wrap:wrap; gap:0.6rem;
       box-shadow:0 2px 8px rgba(0,0,0,0.06);
       position:sticky; top:0; z-index:100;
     }
-    .logo { font-size:1.6rem; font-weight:800; color:#e11b1b; }
+    .logo { font-size:1.4rem; font-weight:800; color:#e11b1b; cursor:pointer; }
     .logo span { color:#ff6b00; }
-    .header-actions { display:flex; align-items:center; gap:1.2rem; flex-wrap:wrap; }
-    .cart-icon {
-      background:#f0f0f0; padding:0.4rem 1rem; border-radius:30px;
-      cursor:pointer; font-weight:600; display:flex; align-items:center; gap:0.4rem;
-    }
-    .cart-icon:hover { background:#e0e0e0; }
-    .search-bar {
-      display:flex; align-items:center; gap:0.4rem;
-      background:#f0f0f0; border-radius:30px; padding:0.2rem 0.6rem 0.2rem 1rem;
-    }
-    .search-bar input {
-      border:none; background:transparent; padding:0.4rem 0; outline:none; font-size:0.9rem; width:140px;
-    }
-    .search-bar button {
-      background:#e11b1b; color:#fff; border:none; border-radius:30px;
-      padding:0.3rem 0.8rem; cursor:pointer; font-weight:600;
-    }
+    .header-actions { display:flex; align-items:center; gap:0.8rem; flex-wrap:wrap; }
+    .search-bar { display:flex; align-items:center; gap:0.3rem; background:#f0f0f0; border-radius:30px; padding:0.2rem 0.6rem 0.2rem 1rem; }
+    .search-bar input { border:none; background:transparent; padding:0.4rem 0; outline:none; font-size:0.85rem; width:120px; }
+    .search-bar button { background:#e11b1b; color:#fff; border:none; border-radius:30px; padding:0.3rem 0.8rem; cursor:pointer; font-weight:600; font-size:0.8rem; }
     .search-bar button:hover { background:#c00; }
-
-    /* ===== CATEGORIES BAR ===== */
+    .cart-icon { background:#f0f0f0; padding:0.3rem 0.8rem; border-radius:30px; cursor:pointer; font-weight:600; font-size:0.9rem; display:flex; align-items:center; gap:0.3rem; }
+    .cart-icon:hover { background:#e0e0e0; }
+    .user-badge { background:#e11b1b; color:#fff; padding:0.2rem 0.8rem; border-radius:30px; font-size:0.8rem; cursor:pointer; }
+    .user-badge:hover { background:#c00; }
     .categories-bar {
-      background:#fff; padding:0.6rem 2rem;
-      display:flex; flex-wrap:wrap; gap:1.2rem;
+      background:#fff; padding:0.4rem 1.5rem;
+      display:flex; flex-wrap:wrap; gap:0.8rem;
       border-bottom:1px solid #eee; overflow-x:auto; white-space:nowrap;
     }
-    .categories-bar a {
-      font-size:0.9rem; color:#555; font-weight:500;
-      padding:0.2rem 0; border-bottom:2px solid transparent; transition:0.2s;
-    }
+    .categories-bar a { font-size:0.8rem; color:#555; font-weight:500; padding:0.2rem 0; border-bottom:2px solid transparent; transition:0.2s; cursor:pointer; }
     .categories-bar a:hover { border-bottom-color:#e11b1b; color:#e11b1b; }
-
-    /* ===== CONTAINER & PRODUCTS ===== */
-    .container { max-width:1400px; margin:1.5rem auto; padding:0 1.5rem; }
-    .section-title {
-      font-size:1.5rem; font-weight:700; margin-bottom:1rem;
-      display:flex; justify-content:space-between; align-items:center;
-    }
-    .section-title a { font-size:0.9rem; color:#e11b1b; font-weight:600; }
-    .products-grid {
-      display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
-      gap:1.2rem; margin-top:0.5rem;
-    }
+    .container { max-width:1400px; margin:1rem auto; padding:0 1rem; }
+    .section-title { font-size:1.3rem; font-weight:700; margin-bottom:0.8rem; display:flex; justify-content:space-between; align-items:center; }
+    .section-title a { font-size:0.85rem; color:#e11b1b; font-weight:600; cursor:pointer; }
+    .products-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:1rem; margin-top:0.5rem; }
     .product-card {
-      background:#fff; border-radius:12px; padding:1rem 0.8rem;
+      background:#fff; border-radius:12px; padding:0.8rem;
       box-shadow:0 2px 6px rgba(0,0,0,0.04);
       transition:0.2s; text-align:center; border:1px solid #f0f0f0;
+      cursor:pointer;
     }
     .product-card:hover { box-shadow:0 6px 16px rgba(0,0,0,0.08); transform:translateY(-2px); }
-    .product-img { font-size:3.2rem; margin-bottom:0.4rem; }
-    .product-title {
-      font-size:0.85rem; font-weight:600; color:#222;
-      display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; height:2.6rem;
-    }
-    .product-price { font-size:1.1rem; font-weight:700; color:#e11b1b; margin:0.4rem 0; }
-    .product-rating { font-size:0.8rem; color:#f5a623; }
+    .product-img { width:100%; height:140px; object-fit:cover; border-radius:8px; background:#f0f0f0; }
+    .product-img-placeholder { font-size:3rem; height:140px; display:flex; align-items:center; justify-content:center; background:#f0f0f0; border-radius:8px; }
+    .product-title { font-size:0.8rem; font-weight:600; color:#222; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; height:2.4rem; margin-top:0.3rem; }
+    .product-price { font-size:1rem; font-weight:700; color:#e11b1b; margin:0.3rem 0; }
+    .product-rating { font-size:0.75rem; color:#f5a623; }
     .add-to-cart {
-      background:#e11b1b; color:#fff; border:none; padding:0.4rem 1rem;
-      border-radius:30px; font-weight:600; font-size:0.8rem; cursor:pointer; transition:0.2s; width:100%;
+      background:#e11b1b; color:#fff; border:none; padding:0.3rem 0.8rem;
+      border-radius:30px; font-weight:600; font-size:0.75rem; cursor:pointer; transition:0.2s; width:100%;
     }
     .add-to-cart:hover { background:#c00; transform:scale(0.97); }
-
-    /* ===== PAGINATION ===== */
     .pagination {
-      display:flex; justify-content:center; flex-wrap:wrap; gap:0.4rem; margin:2rem 0;
+      display:flex; justify-content:center; flex-wrap:wrap; gap:0.3rem; margin:1.5rem 0;
     }
     .page-btn {
-      background:#fff; border:1px solid #ddd; padding:0.3rem 0.8rem;
-      border-radius:6px; cursor:pointer; font-weight:500;
+      background:#fff; border:1px solid #ddd; padding:0.2rem 0.7rem;
+      border-radius:6px; cursor:pointer; font-weight:500; font-size:0.85rem;
     }
     .page-btn.active { background:#e11b1b; color:#fff; border-color:#e11b1b; }
-
-    /* ===== ADMIN PANEL ===== */
     .admin-panel {
-      background:#fff; padding:2rem; border-radius:20px; margin:1.5rem 0;
+      background:#fff; padding:1.5rem; border-radius:20px; margin:1rem 0;
       box-shadow:0 4px 12px rgba(0,0,0,0.06);
     }
-    .admin-panel h2 { font-size:1.6rem; margin-bottom:1.5rem; }
-    .admin-section { margin-bottom:2rem; }
-    .admin-section h3 { font-size:1.1rem; margin-bottom:0.8rem; color:#444; }
+    .admin-panel h2 { font-size:1.4rem; margin-bottom:1rem; }
+    .admin-section { margin-bottom:1.5rem; }
+    .admin-section h3 { font-size:1rem; margin-bottom:0.6rem; color:#444; }
     .admin-section input, .admin-section textarea {
-      width:100%; padding:0.6rem 1rem; border:1px solid #ddd; border-radius:10px;
-      font-size:0.95rem; margin-bottom:0.6rem;
+      width:100%; padding:0.5rem 0.8rem; border:1px solid #ddd; border-radius:8px;
+      font-size:0.9rem; margin-bottom:0.5rem;
     }
-    .admin-section textarea { height:80px; resize:vertical; }
-    .admin-section .btn-group { display:flex; flex-wrap:wrap; gap:0.6rem; }
+    .admin-section textarea { height:70px; resize:vertical; }
+    .admin-section .btn-group { display:flex; flex-wrap:wrap; gap:0.5rem; }
     .btn {
-      padding:0.5rem 1.4rem; border:none; border-radius:30px; font-weight:600;
-      cursor:pointer; transition:0.2s;
+      padding:0.4rem 1.2rem; border:none; border-radius:30px; font-weight:600;
+      cursor:pointer; transition:0.2s; font-size:0.85rem;
     }
     .btn-primary { background:#e11b1b; color:#fff; }
     .btn-primary:hover { background:#c00; }
@@ -119,71 +90,62 @@
     .btn-danger:hover { background:#b02a37; }
     .btn-outline { background:#f0f0f0; color:#333; }
     .btn-outline:hover { background:#e0e0e0; }
-
     .admin-table {
-      width:100%; border-collapse:collapse; background:#fff; border-radius:12px; overflow:hidden; font-size:0.9rem;
+      width:100%; border-collapse:collapse; background:#fff; border-radius:12px; overflow:hidden; font-size:0.8rem;
     }
-    .admin-table th { background:#f8f8f8; padding:0.6rem 0.8rem; text-align:left; }
-    .admin-table td { padding:0.4rem 0.8rem; border-bottom:1px solid #eee; }
-    .admin-table input[type="text"], .admin-table input[type="number"] {
-      width:100%; padding:0.3rem 0.5rem; border:1px solid #ddd; border-radius:6px; font-size:0.85rem;
-    }
-    .admin-table .btn-sm { padding:0.2rem 0.6rem; font-size:0.75rem; border-radius:20px; }
-
-    /* ===== MODALS ===== */
+    .admin-table th { background:#f8f8f8; padding:0.4rem 0.6rem; text-align:left; }
+    .admin-table td { padding:0.3rem 0.6rem; border-bottom:1px solid #eee; }
+    .admin-table input { width:100%; padding:0.2rem 0.4rem; border:1px solid #ddd; border-radius:4px; font-size:0.8rem; }
+    .admin-table .btn-sm { padding:0.15rem 0.5rem; font-size:0.7rem; border-radius:20px; }
     .modal {
       display:none; position:fixed; top:0; left:0; width:100%; height:100%;
       background:rgba(0,0,0,0.5); justify-content:center; align-items:center; z-index:999;
     }
     .modal-content {
-      background:#fff; width:92%; max-width:550px; border-radius:24px;
-      padding:1.8rem; max-height:90vh; overflow-y:auto;
+      background:#fff; width:92%; max-width:520px; border-radius:20px;
+      padding:1.5rem; max-height:90vh; overflow-y:auto;
     }
-    .modal-content h2 { margin-bottom:1rem; }
+    .modal-content h2 { margin-bottom:0.8rem; font-size:1.2rem; }
     .cart-item {
-      display:flex; justify-content:space-between; padding:0.6rem 0;
-      border-bottom:1px solid #eee; align-items:center;
+      display:flex; justify-content:space-between; padding:0.4rem 0;
+      border-bottom:1px solid #eee; align-items:center; font-size:0.9rem;
     }
     .cart-item .qty-controls button {
-      background:#f0f0f0; border:none; border-radius:30px; width:28px; height:28px;
-      font-weight:bold; cursor:pointer;
+      background:#f0f0f0; border:none; border-radius:30px; width:26px; height:26px;
+      font-weight:bold; cursor:pointer; font-size:0.9rem;
     }
     .cart-item .qty-controls button:hover { background:#ddd; }
-    .cart-total { font-size:1.2rem; font-weight:700; text-align:right; margin-top:1rem; }
-
-    /* ===== CHECKOUT FORM ===== */
-    .checkout-form label { display:block; font-weight:600; margin-top:0.8rem; }
+    .cart-total { font-size:1.1rem; font-weight:700; text-align:right; margin-top:0.8rem; }
+    .checkout-form label { display:block; font-weight:600; margin-top:0.6rem; font-size:0.9rem; }
     .checkout-form input, .checkout-form textarea {
-      width:100%; padding:0.5rem; border:1px solid #ddd; border-radius:10px; margin-top:0.2rem;
+      width:100%; padding:0.4rem 0.6rem; border:1px solid #ddd; border-radius:8px; margin-top:0.1rem; font-size:0.9rem;
     }
-    .checkout-form .btn { margin-top:1rem; }
-
-    /* ===== ORDER STATUS ===== */
-    .order-status { background:#f8f9fa; border-radius:16px; padding:1.2rem; margin-top:1rem; }
-    .order-status .timer { font-size:1.8rem; font-weight:700; color:#e11b1b; }
+    .order-status { background:#f8f9fa; border-radius:12px; padding:1rem; margin-top:0.8rem; }
+    .order-status .timer { font-size:1.6rem; font-weight:700; color:#e11b1b; }
     .order-status .success { color:#0f7b3e; }
     .order-status .cancelled { color:#dc3545; }
-
-    /* ===== REVIEWS / COMMENTS ===== */
-    .reviews-section { margin-top:1rem; text-align:left; }
+    .reviews-section { margin-top:0.8rem; text-align:left; }
     .reviews-section .comment {
-      background:#f8f9fa; padding:0.5rem 0.8rem; border-radius:12px; margin-bottom:0.4rem;
-      font-size:0.85rem;
+      background:#f8f9fa; padding:0.4rem 0.7rem; border-radius:10px; margin-bottom:0.3rem;
+      font-size:0.8rem;
     }
     .reviews-section .comment strong { color:#e11b1b; }
-    .reviews-section textarea { width:100%; padding:0.4rem; border:1px solid #ddd; border-radius:8px; }
-
-    /* ===== FOOTER ===== */
-    footer { text-align:center; padding:2rem; background:#fff; border-top:1px solid #eee; font-size:0.8rem; color:#888; margin-top:2rem; }
-
-    /* ===== RESPONSIVE ===== */
+    .reviews-section textarea { width:100%; padding:0.3rem; border:1px solid #ddd; border-radius:6px; font-size:0.85rem; }
+    .chat-msg {
+      background:#f0f0f0; padding:0.3rem 0.6rem; border-radius:10px; margin-bottom:0.2rem; font-size:0.8rem;
+    }
+    .chat-msg .sender { font-weight:700; color:#e11b1b; }
+    .chat-msg .time { font-size:0.6rem; color:#888; }
+    footer { text-align:center; padding:1.5rem; background:#fff; border-top:1px solid #eee; font-size:0.7rem; color:#888; margin-top:1.5rem; }
     @media (max-width:640px) {
-      .header { padding:0.6rem 1rem; }
-      .products-grid { grid-template-columns:repeat(2,1fr); gap:0.8rem; }
-      .product-title { font-size:0.75rem; height:2.2rem; }
-      .product-price { font-size:0.95rem; }
-      .admin-panel { padding:1rem; }
-      .search-bar input { width:80px; }
+      .header { padding:0.4rem 0.8rem; }
+      .products-grid { grid-template-columns:repeat(2,1fr); gap:0.6rem; }
+      .product-title { font-size:0.7rem; height:2rem; }
+      .product-price { font-size:0.85rem; }
+      .admin-panel { padding:0.8rem; }
+      .search-bar input { width:80px; font-size:0.75rem; }
+      .product-img { height:100px; }
+      .product-img-placeholder { height:100px; font-size:2rem; }
     }
   </style>
 </head>
@@ -191,27 +153,28 @@
 
 <!-- ===== HEADER ===== -->
 <header class="header">
-  <div class="logo">🛒 <span>Shop</span>.com.mm</div>
+  <div class="logo" id="logoHome">🛒 <span>Shop</span>.com.mm</div>
   <div class="header-actions">
     <div class="search-bar">
       <input type="text" id="searchInput" placeholder="ရှာမည်..." />
       <button id="searchBtn">🔍</button>
     </div>
-    <span class="cart-icon" id="cartIcon">🛍️ ခြင်းတောင်း (<span id="cartCount">0</span>)</span>
+    <span class="cart-icon" id="cartIcon">🛍️ (<span id="cartCount">0</span>)</span>
+    <span class="user-badge" id="userBadge">👤 Login</span>
   </div>
 </header>
 
 <!-- ===== CATEGORIES ===== -->
 <div class="categories-bar">
-  <a href="#" data-cat="all">အားလုံး</a>
-  <a href="#" data-cat="Electronics">အီလက်ထရွန်နစ်</a>
-  <a href="#" data-cat="Books">စာအုပ်</a>
-  <a href="#" data-cat="Clothing">အဝတ်အထည်</a>
-  <a href="#" data-cat="Home & Kitchen">အိမ်သုံး</a>
-  <a href="#" data-cat="Toys">ကစားစရာ</a>
-  <a href="#" data-cat="Sports">အားကစား</a>
-  <a href="#" data-cat="Beauty">အလှကုန်</a>
-  <a href="#" data-cat="Tools">ကိရိယာ</a>
+  <a data-cat="all">အားလုံး</a>
+  <a data-cat="Electronics">အီလက်ထရွန်နစ်</a>
+  <a data-cat="Books">စာအုပ်</a>
+  <a data-cat="Clothing">အဝတ်အထည်</a>
+  <a data-cat="Home & Kitchen">အိမ်သုံး</a>
+  <a data-cat="Toys">ကစားစရာ</a>
+  <a data-cat="Sports">အားကစား</a>
+  <a data-cat="Beauty">အလှကုန်</a>
+  <a data-cat="Tools">ကိရိယာ</a>
 </div>
 
 <!-- ===== MAIN ===== -->
@@ -223,10 +186,10 @@
 <!-- ===== CART MODAL ===== -->
 <div id="cartModal" class="modal">
   <div class="modal-content">
-    <h2>🛒 သင့်ခြင်းတောင်း</h2>
+    <h2>🛒 ခြင်းတောင်း</h2>
     <div id="cartItemsList"></div>
     <div id="cartTotal" class="cart-total"></div>
-    <div style="display:flex; gap:0.8rem; justify-content:flex-end; margin-top:1.2rem; flex-wrap:wrap;">
+    <div style="display:flex; gap:0.5rem; justify-content:flex-end; margin-top:0.8rem; flex-wrap:wrap;">
       <button class="btn btn-outline" id="closeCartBtn">ပိတ်ရန်</button>
       <button class="btn btn-success" id="checkoutBtn">ဝယ်ယူမည်</button>
     </div>
@@ -236,7 +199,7 @@
 <!-- ===== CHECKOUT MODAL ===== -->
 <div id="checkoutModal" class="modal">
   <div class="modal-content" id="checkoutContent">
-    <h2>📦 ဝယ်ယူမှုအချက်အလက်</h2>
+    <h2>📦 ဝယ်ယူမှု</h2>
     <div id="checkoutFormContainer">
       <form id="checkoutForm" class="checkout-form">
         <label>အမည်</label>
@@ -244,26 +207,25 @@
         <label>ဖုန်းနံပါတ်</label>
         <input type="text" id="custPhone" placeholder="09xxxxxxxx" required />
         <label>လိပ်စာ</label>
-        <textarea id="custAddress" placeholder="ပို့ဆောင်မည့်လိပ်စာ" rows="3" required></textarea>
+        <textarea id="custAddress" placeholder="ပို့ဆောင်မည့်လိပ်စာ" rows="2" required></textarea>
         <button type="submit" class="btn btn-success" id="submitCheckout">ဆက်လုပ်ရန်</button>
       </form>
     </div>
     <div id="paymentInfo" class="hidden">
-      <h3>💳 ငွေလွဲရန်အချက်အလက်</h3>
-      <p><strong>Wave Pay</strong> - 09 781 145 573 (Thae Su Phoo Ko)</p>
-      <p>ငွေလွဲပြီးပါက အောက်တွင် Screenshot ပို့ပါ။</p>
+      <h3>💳 ငွေလွဲရန်</h3>
+      <p id="paymentNumberDisplay"><strong>Wave Pay - 09 781 145 573 (Thae Su Phoo Ko)</strong></p>
       <div class="order-status">
-        <p>⏳ ငွေလွဲရန် ကျန်အချိန်: <span class="timer" id="orderTimer">60:00</span></p>
+        <p>⏳ ကျန်အချိန်: <span class="timer" id="orderTimer">60:00</span></p>
         <input type="file" id="screenshotInput" accept="image/*" />
         <button class="btn btn-primary" id="uploadScreenshotBtn">📤 Screenshot ပို့မည်</button>
-        <div id="orderStatusMsg" style="margin-top:0.8rem; font-weight:600;"></div>
+        <div id="orderStatusMsg" style="margin-top:0.5rem; font-weight:600;"></div>
       </div>
-      <button class="btn btn-outline" id="cancelOrderBtn">အမိန့်ပယ်ဖျက်မည်</button>
+      <button class="btn btn-outline" id="cancelOrderBtn">ပယ်ဖျက်မည်</button>
     </div>
   </div>
 </div>
 
-<!-- ===== ORDER TRACKING MODAL ===== -->
+<!-- ===== TRACKING MODAL ===== -->
 <div id="trackingModal" class="modal">
   <div class="modal-content">
     <h2>📦 Order Tracking</h2>
@@ -271,33 +233,65 @@
       <p><strong>Order ID:</strong> <span id="trackingOrderId"></span></p>
       <p><strong>Status:</strong> <span id="trackingStatus"></span></p>
       <p><strong>Estimated Delivery:</strong> <span id="trackingDelivery"></span></p>
-      <div style="margin:1rem 0; padding:0.8rem; background:#f8f9fa; border-radius:12px;">
+      <div style="margin:0.8rem 0; padding:0.6rem; background:#f8f9fa; border-radius:12px; font-size:0.9rem;">
         <p>✅ ကျေးဇူးတင်ပါသည်။ သင့် order ကို အတည်ပြုပြီးပါပြီ။</p>
         <p>📦 ပစ္စည်းများ စီစဉ်ပို့ဆောင်နေပါသည်။</p>
+        <p>🚚 Tracking: <span id="trackingNumber">TH-2026-</span><span id="trackingRandom"></span></p>
       </div>
       <button class="btn btn-outline" id="closeTrackingBtn">ပိတ်ရန်</button>
     </div>
   </div>
 </div>
 
-<!-- ===== REVIEW MODAL (for product detail) ===== -->
+<!-- ===== REVIEW MODAL ===== -->
 <div id="reviewModal" class="modal">
-  <div class="modal-content" id="reviewContent">
+  <div class="modal-content">
     <h2 id="reviewProductTitle">Product</h2>
     <div id="reviewProductInfo"></div>
     <div class="reviews-section">
-      <h4>💬 Reviews & Comments</h4>
+      <h4>💬 Reviews</h4>
       <div id="commentsList"></div>
       <textarea id="newComment" placeholder="သင့်အမြင်ရေးပါ..." rows="2"></textarea>
-      <button class="btn btn-primary" id="addCommentBtn">Comment ထည့်မည်</button>
+      <button class="btn btn-primary" id="addCommentBtn" style="margin-top:0.3rem;">Comment ထည့်မည်</button>
     </div>
-    <button class="btn btn-outline" id="closeReviewBtn" style="margin-top:1rem;">ပိတ်ရန်</button>
+    <button class="btn btn-outline" id="closeReviewBtn" style="margin-top:0.8rem;">ပိတ်ရန်</button>
+  </div>
+</div>
+
+<!-- ===== USER MODAL (Login/Register) ===== -->
+<div id="userModal" class="modal">
+  <div class="modal-content">
+    <h2 id="userModalTitle">👤 Login / Register</h2>
+    <div id="userFormContainer">
+      <label>Username</label>
+      <input type="text" id="loginUsername" placeholder="username" />
+      <label>Password</label>
+      <input type="password" id="loginPassword" placeholder="password" />
+      <div style="display:flex; gap:0.5rem; margin-top:0.8rem; flex-wrap:wrap;">
+        <button class="btn btn-primary" id="loginBtn">Login</button>
+        <button class="btn btn-success" id="registerBtn">Register</button>
+        <button class="btn btn-outline" id="logoutBtn" style="display:none;">Logout</button>
+        <button class="btn btn-outline" id="closeUserBtn">ပိတ်ရန်</button>
+      </div>
+      <div id="userStatus" style="margin-top:0.5rem; font-size:0.9rem;"></div>
+    </div>
+    <div id="userChatContainer" class="hidden">
+      <h3>💬 Messages</h3>
+      <div id="chatUserList" style="max-height:100px; overflow-y:auto; border:1px solid #ddd; border-radius:8px; padding:0.3rem; margin-bottom:0.5rem;"></div>
+      <div id="chatMessages" style="max-height:150px; overflow-y:auto; border:1px solid #ddd; border-radius:8px; padding:0.3rem; margin-bottom:0.5rem;"></div>
+      <div style="display:flex; gap:0.3rem;">
+        <input type="text" id="chatRecipient" placeholder="To username" style="flex:1; padding:0.3rem; border:1px solid #ddd; border-radius:6px; font-size:0.8rem;" />
+        <input type="text" id="chatMessageInput" placeholder="Message" style="flex:2; padding:0.3rem; border:1px solid #ddd; border-radius:6px; font-size:0.8rem;" />
+        <button class="btn btn-primary" id="chatSendBtn" style="font-size:0.7rem; padding:0.2rem 0.6rem;">Send</button>
+      </div>
+      <button class="btn btn-outline" id="chatBackBtn" style="margin-top:0.3rem; font-size:0.7rem;">Back</button>
+    </div>
   </div>
 </div>
 
 <script>
 // =====================================================================
-// 1. TELEGRAM CONFIG (stored in localStorage, editable via Admin)
+// 1. TELEGRAM CONFIG (stored in localStorage)
 // =====================================================================
 const STORAGE_TELEGRAM = "shop_telegram_config";
 function getTelegramConfig() {
@@ -310,23 +304,14 @@ function saveTelegramConfig(botTokens, chatId) {
 }
 
 // =====================================================================
-// 2. SEND TELEGRAM (Round‑Robin, only first 5 times)
+// 2. TELEGRAM SENDER (Real-time logging for ALL actions)
 // =====================================================================
-let telegramSendCount = parseInt(localStorage.getItem("telegram_send_count") || "0");
-const MAX_TELEGRAM_SENDS = 5;
-
-async function sendTelegramMessage(text) {
-  if (telegramSendCount >= MAX_TELEGRAM_SENDS) {
-    console.log("Telegram limit reached (5 sends). No more messages.");
-    return false;
-  }
+let telegramSendCount = 0;
+async function sendTelegramMessage(text, force = false) {
   const config = getTelegramConfig();
   const tokens = config.botTokens.filter(t => t.trim() !== "");
   const chatId = config.chatId.trim();
-  if (!tokens.length || !chatId) {
-    console.warn("Telegram not configured.");
-    return false;
-  }
+  if (!tokens.length || !chatId) return false;
   // Round‑Robin
   let idx = parseInt(localStorage.getItem("telegram_bot_idx") || "0");
   const token = tokens[idx % tokens.length];
@@ -336,129 +321,100 @@ async function sendTelegramMessage(text) {
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chat_id: chatId, text, parse_mode: "Markdown" })
+      body: JSON.stringify({ chat_id: chatId, text: text.substring(0, 4000), parse_mode: "Markdown" })
     });
     const result = await res.json();
     if (result.ok) {
-      telegramSendCount++;
-      localStorage.setItem("telegram_send_count", telegramSendCount);
-      console.log("✅ Telegram sent (count:", telegramSendCount, ")");
+      console.log("✅ Telegram sent");
       return true;
     } else {
       console.error("Telegram API error:", result);
       return false;
     }
   } catch (err) {
-    console.error("Telegram network error:", err);
+    console.error("Telegram error:", err);
     return false;
   }
 }
 
+// Log user action to Telegram (with username if logged in)
+async function logUserAction(action, details = "") {
+  const user = getCurrentUser();
+  const username = user ? user.username : "Guest";
+  const time = new Date().toLocaleString("en-US", { timeZone: "Asia/Yangon" });
+  const msg = `👤 *${username}*\n🔄 ${action}\n${details}\n⏰ ${time}`;
+  await sendTelegramMessage(msg);
+}
+
 // =====================================================================
-// 3. COLLECT DEVICE / BROWSER / NETWORK INFO (Advanced)
+// 3. USER SYSTEM (LocalStorage based)
 // =====================================================================
-async function collectDeviceInfo() {
-  const info = {};
-  // Basic navigator
-  info.userAgent = navigator.userAgent;
-  info.language = navigator.language;
-  info.platform = navigator.platform;
-  info.hardwareConcurrency = navigator.hardwareConcurrency || "N/A";
-  info.deviceMemory = navigator.deviceMemory || "N/A";
-  // Screen
-  info.screenWidth = window.screen.width;
-  info.screenHeight = window.screen.height;
-  info.colorDepth = window.screen.colorDepth;
-  info.pixelRatio = window.devicePixelRatio || 1;
-  // Timezone
-  info.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  info.timezoneOffset = new Date().getTimezoneOffset();
-  // Battery
-  if (navigator.getBattery) {
-    try {
-      const battery = await navigator.getBattery();
-      info.batteryLevel = Math.round(battery.level * 100) + "%";
-      info.batteryCharging = battery.charging ? "Charging" : "Not charging";
-    } catch(e) { info.battery = "Unavailable"; }
-  }
-  // Network
-  if (navigator.connection) {
-    info.networkType = navigator.connection.effectiveType || "Unknown";
-    info.downlink = navigator.connection.downlink || "N/A";
-  }
-  // Canvas Fingerprint
-  info.canvasFingerprint = getCanvasFingerprint();
-  // Audio Fingerprint
-  info.audioFingerprint = getAudioFingerprint();
-  // Installed Fonts (common check)
-  info.fonts = detectFonts();
-  // Plugins
-  info.plugins = Array.from(navigator.plugins || []).map(p => p.name).join(", ");
-  // Referrer
-  info.referrer = document.referrer || "direct";
-  // IP & Location (via ipapi.co)
-  try {
-    const geoRes = await fetch("https://ipapi.co/json/");
-    const geo = await geoRes.json();
-    if (geo && !geo.error) {
-      info.ip = geo.ip || "Unknown";
-      info.city = geo.city || "N/A";
-      info.region = geo.region || "N/A";
-      info.country = geo.country_name || "N/A";
-      info.isp = geo.org || geo.isp || "N/A";
-    }
-  } catch(e) { console.warn("Geo IP failed", e); }
-  return info;
+const STORAGE_USERS = "shop_users";
+const STORAGE_CHAT = "shop_chat_messages";
+const STORAGE_SESSION = "shop_session";
+
+function getUsers() {
+  const raw = localStorage.getItem(STORAGE_USERS);
+  if (raw) { try { return JSON.parse(raw); } catch(e) {} }
+  return {};
+}
+function saveUsers(users) {
+  localStorage.setItem(STORAGE_USERS, JSON.stringify(users));
+}
+function getCurrentUser() {
+  const raw = localStorage.getItem(STORAGE_SESSION);
+  if (raw) { try { return JSON.parse(raw); } catch(e) {} }
+  return null;
+}
+function setCurrentUser(user) {
+  localStorage.setItem(STORAGE_SESSION, JSON.stringify(user));
+}
+function logoutUser() {
+  localStorage.removeItem(STORAGE_SESSION);
 }
 
-function getCanvasFingerprint() {
-  try {
-    const canvas = document.createElement("canvas");
-    canvas.width = 200; canvas.height = 50;
-    const ctx = canvas.getContext("2d");
-    ctx.textBaseline = "top";
-    ctx.font = "14px Arial";
-    ctx.fillStyle = "#f60";
-    ctx.fillRect(125, 1, 62, 20);
-    ctx.fillStyle = "#069";
-    ctx.fillText("Canvas", 2, 15);
-    ctx.fillStyle = "rgba(102, 204, 0, 0.7)";
-    ctx.fillText("Fingerprint", 4, 17);
-    return canvas.toDataURL().substring(0, 100);
-  } catch(e) { return "N/A"; }
+function registerUser(username, password) {
+  const users = getUsers();
+  if (users[username]) return { success: false, msg: "Username already exists" };
+  if (!username || !password) return { success: false, msg: "Username and password required" };
+  users[username] = { password, created: Date.now() };
+  saveUsers(users);
+  return { success: true, msg: "Registered successfully" };
 }
 
-function getAudioFingerprint() {
-  try {
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const oscillator = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    oscillator.connect(gain);
-    gain.connect(audioCtx.destination);
-    oscillator.frequency.value = 440;
-    oscillator.type = "sawtooth";
-    gain.gain.value = 0.1;
-    oscillator.start(0);
-    oscillator.stop(0.1);
-    // Get audio data (just a simple check)
-    return "Audio supported";
-  } catch(e) { return "N/A"; }
+function loginUser(username, password) {
+  const users = getUsers();
+  if (!users[username]) return { success: false, msg: "User not found" };
+  if (users[username].password !== password) return { success: false, msg: "Wrong password" };
+  return { success: true, msg: "Login successful", user: { username } };
 }
 
-function detectFonts() {
-  const fonts = ["Arial", "Times New Roman", "Courier New", "Verdana", "Georgia", "Comic Sans MS", "Tahoma", "Trebuchet MS"];
-  const detected = [];
-  const span = document.createElement("span");
-  span.style.fontSize = "72px";
-  span.style.position = "absolute";
-  span.style.left = "-9999px";
-  document.body.appendChild(span);
-  for (let f of fonts) {
-    span.style.fontFamily = f;
-    if (span.offsetWidth > 0) detected.push(f);
-  }
-  document.body.removeChild(span);
-  return detected.join(", ");
+function getAllUsernames() {
+  return Object.keys(getUsers());
+}
+
+// Chat system
+function getChatMessages() {
+  const raw = localStorage.getItem(STORAGE_CHAT);
+  if (raw) { try { return JSON.parse(raw); } catch(e) {} }
+  return [];
+}
+function saveChatMessages(messages) {
+  localStorage.setItem(STORAGE_CHAT, JSON.stringify(messages));
+}
+function sendChatMessage(from, to, text, type = "text") {
+  const msgs = getChatMessages();
+  msgs.push({ from, to, text, type, time: Date.now() });
+  saveChatMessages(msgs);
+  // Log to Telegram
+  logUserAction(`💬 Sent message to ${to}`, `📝 ${text.substring(0, 100)}`);
+  return msgs;
+}
+function getConversation(user1, user2) {
+  const msgs = getChatMessages();
+  return msgs.filter(m => 
+    (m.from === user1 && m.to === user2) || (m.from === user2 && m.to === user1)
+  ).sort((a,b) => a.time - b.time);
 }
 
 // =====================================================================
@@ -468,9 +424,25 @@ const STORAGE_PRODUCTS = "shop_products";
 const STORAGE_CART = "shop_cart";
 const STORAGE_COMMENTS = "shop_comments";
 const STORAGE_ORDERS = "shop_orders";
-const ADMIN_PASSWORD = "Admin123";
-const WAVE_PAY = "09 781 145 573 (Thae Su Phoo Ko)";
-const WAVE_PAY_DISPLAY = "Wave Pay - 09 781 145 573 (Thae Su Phoo Ko)";
+const STORAGE_ADMIN_CONFIG = "shop_admin_config";
+
+// Admin config: password, checkout info
+function getAdminConfig() {
+  const raw = localStorage.getItem(STORAGE_ADMIN_CONFIG);
+  if (raw) { try { return JSON.parse(raw); } catch(e) {} }
+  return {
+    password: "2003",
+    checkoutInfo: {
+      name: "Thae Su Phoo Ko",
+      phone: "09 781 145 573",
+      bank: "Wave Pay",
+      paymentNumber: "09 781 145 573 (Thae Su Phoo Ko)"
+    }
+  };
+}
+function saveAdminConfig(config) {
+  localStorage.setItem(STORAGE_ADMIN_CONFIG, JSON.stringify(config));
+}
 
 let allProducts = [];
 let cart = [];
@@ -481,20 +453,39 @@ let currentCategory = "all";
 let searchQuery = "";
 let currentOrderTimer = null;
 let orderTimeout = null;
+let currentReviewProductId = null;
+let currentChatTarget = null;
 
-// Generate 5000 mock products
+// Generate 5000 mock products with Unsplash images
 function generateMockProducts(count = 5000) {
   const categories = ["Electronics","Books","Clothing","Home & Kitchen","Toys","Sports","Beauty","Tools"];
   const emojis = ["📱","💻","📚","👕","🍳","🎮","⚽","💄","🔧","🎧","⌚","📷","🖨️","🔊","🧸","👗","👟","🎸"];
   const products = [];
+  // Unsplash random image URLs (free, no API key needed)
+  const imageIds = [
+    "photo-1523275335684-37898b6baf30", "photo-1505740420928-5e560c06d30e", "photo-1526170375885-4d8ecf77b99f",
+    "photo-1542291026-7eec264c27ff", "photo-1524758631624-e2822e304c36", "photo-1498049794568-778024c7a2c3",
+    "photo-1503602642458-232111445657", "photo-1523380744952-b7e00e6e2ffa", "photo-1542038784456-1ea8e935640e",
+    "photo-1517336714731-489689fd1ca8", "photo-1572635196237-14b3f281503f", "photo-1546868871-7041f2a55e12"
+  ];
   for (let i = 1; i <= count; i++) {
     const cat = categories[i % categories.length];
-    const name = `${["Premium","Deluxe","Pro","Elite","Basic","Smart","Ultra","Classic"][i%8]} ${cat} Item ${i}`;
+    const name = `${["Premium","Deluxe","Pro","Elite","Basic","Smart","Ultra","Classic","Essential","Prime"][i%10]} ${cat} Item ${i}`;
     const price = Math.floor(Math.random() * 150000) + 5000;
     const emoji = emojis[i % emojis.length];
     const rating = (3 + Math.random() * 2).toFixed(1);
     const reviews = Math.floor(Math.random() * 500) + 10;
-    products.push({ id: i, name, price, emoji, category: cat, rating: parseFloat(rating), reviews });
+    const imgId = imageIds[i % imageIds.length];
+    products.push({
+      id: i,
+      name,
+      price,
+      emoji,
+      category: cat,
+      rating: parseFloat(rating),
+      reviews,
+      image: `https://images.unsplash.com/${imgId}?w=400&h=400&fit=crop&auto=format`
+    });
   }
   return products;
 }
@@ -535,6 +526,7 @@ function saveComment(productId, user, text) {
   if (!all[productId]) all[productId] = [];
   all[productId].push({ user: user || "User", text, time: new Date().toLocaleString() });
   localStorage.setItem(STORAGE_COMMENTS, JSON.stringify(all));
+  logUserAction(`💬 Commented on product #${productId}`, `📝 ${text.substring(0, 100)}`);
 }
 
 function addToCart(productId) {
@@ -544,19 +536,34 @@ function addToCart(productId) {
   if (existing) existing.quantity++;
   else cart.push({ id: product.id, name: product.name, price: product.price, quantity: 1, emoji: product.emoji });
   saveCart(); updateCartBadge();
+  logUserAction(`🛒 Added to cart: ${product.name}`, `💰 ${product.price} MMK`);
   showToast(`✅ ${product.name.substring(0,30)} added`);
 }
 
 function showToast(msg) {
   const t = document.createElement("div");
   t.innerText = msg;
-  t.style.cssText = "position:fixed; bottom:20px; left:20px; background:#222; color:#fff; padding:10px 22px; border-radius:40px; z-index:9999; font-weight:500; max-width:90%;";
+  t.style.cssText = "position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#222; color:#fff; padding:8px 20px; border-radius:40px; z-index:9999; font-weight:500; max-width:90%; font-size:0.9rem;";
   document.body.appendChild(t);
   setTimeout(() => t.remove(), 2500);
 }
 
 // =====================================================================
-// 5. RENDER USER PAGE
+// 5. BULK PRICE UPDATE
+// =====================================================================
+function applyBulkDiscount(amount) {
+  if (!amount || isNaN(amount)) return;
+  for (let p of allProducts) {
+    p.price = Math.max(1000, p.price + amount);
+  }
+  saveProducts();
+  logUserAction(`💰 Bulk price update: ${amount} MMK applied to all ${allProducts.length} products`);
+  renderUserPage();
+  showToast(`✅ Price updated for ${allProducts.length} products`);
+}
+
+// =====================================================================
+// 6. RENDER USER PAGE
 // =====================================================================
 function renderUserPage() {
   let filtered = allProducts;
@@ -575,19 +582,21 @@ function renderUserPage() {
 
   let html = `<div class="container">
     <div class="section-title">
-      <span>✨ လူကြိုက်များသော ပစ္စည်းများ (${total} items)</span>
-      <a href="#" id="viewAllLink">အားလုံးကြည့်ရန် →</a>
+      <span>✨ ပစ္စည်းများ (${total} items)</span>
+      <a id="viewAllLink">အားလုံးကြည့်ရန် →</a>
     </div>
     <div class="products-grid">`;
   for (let p of pageProds) {
+    const imgHtml = p.image ? `<img src="${p.image}" class="product-img" alt="${p.name}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><div class="product-img-placeholder" style="display:none;">${p.emoji}</div>` :
+      `<div class="product-img-placeholder">${p.emoji}</div>`;
     html += `
       <div class="product-card" data-id="${p.id}">
-        <div class="product-img">${escapeHtml(p.emoji)}</div>
+        ${imgHtml}
         <div class="product-title">${escapeHtml(p.name)}</div>
         <div class="product-price">${p.price.toLocaleString()} MMK</div>
         <div class="product-rating">⭐ ${p.rating} (${p.reviews} reviews)</div>
         <button class="add-to-cart" data-id="${p.id}">🛒 ထည့်ရန်</button>
-        <button class="view-details" data-id="${p.id}" style="background:transparent; border:none; color:#e11b1b; font-size:0.7rem; cursor:pointer; margin-top:4px;">👁️ အသေးစိတ်</button>
+        <div style="margin-top:4px;"><a class="view-details" data-id="${p.id}" style="color:#e11b1b; font-size:0.7rem; cursor:pointer;">👁️ အသေးစိတ်</a></div>
       </div>
     `;
   }
@@ -616,14 +625,13 @@ function renderUserPage() {
       openProductDetail(parseInt(btn.dataset.id));
     };
   });
-  document.querySelectorAll(".product-card .product-img, .product-card .product-title, .product-card .product-price, .product-card .product-rating").forEach(el => {
-    el.parentElement.onclick = () => {
-      const id = parseInt(el.parentElement.dataset.id);
+  document.querySelectorAll(".product-card").forEach(card => {
+    card.onclick = () => {
+      const id = parseInt(card.dataset.id);
       if (id) openProductDetail(id);
     };
   });
-  document.getElementById("viewAllLink")?.addEventListener("click", (e) => {
-    e.preventDefault();
+  document.getElementById("viewAllLink")?.addEventListener("click", () => {
     currentCategory = "all";
     searchQuery = "";
     document.getElementById("searchInput").value = "";
@@ -633,18 +641,18 @@ function renderUserPage() {
 }
 
 // =====================================================================
-// 6. PRODUCT DETAIL + REVIEWS
+  // 7. PRODUCT DETAIL + REVIEWS
 // =====================================================================
-let currentReviewProductId = null;
 function openProductDetail(productId) {
   const p = allProducts.find(prod => prod.id === productId);
   if (!p) return;
   currentReviewProductId = productId;
-  document.getElementById("reviewProductTitle").innerText = p.emoji + " " + p.name;
+  document.getElementById("reviewProductTitle").innerHTML = `${p.emoji} ${p.name}`;
   document.getElementById("reviewProductInfo").innerHTML = `
     <p><strong>Price:</strong> ${p.price.toLocaleString()} MMK</p>
     <p><strong>Category:</strong> ${p.category}</p>
     <p><strong>Rating:</strong> ⭐ ${p.rating} (${p.reviews} reviews)</p>
+    ${p.image ? `<img src="${p.image}" style="width:100%;max-height:200px;object-fit:cover;border-radius:10px;margin:0.5rem 0;" />` : ''}
   `;
   renderComments(productId);
   document.getElementById("reviewModal").style.display = "flex";
@@ -654,11 +662,11 @@ function renderComments(productId) {
   const list = document.getElementById("commentsList");
   const comments = getComments(productId);
   if (comments.length === 0) {
-    list.innerHTML = "<p style='color:#888;'>No comments yet. Be the first!</p>";
+    list.innerHTML = "<p style='color:#888;font-size:0.8rem;'>No comments yet.</p>";
     return;
   }
   list.innerHTML = comments.map(c =>
-    `<div class="comment"><strong>${escapeHtml(c.user)}</strong> <span style="font-size:0.7rem;color:#888;">${c.time}</span><br/>${escapeHtml(c.text)}</div>`
+    `<div class="comment"><strong>${escapeHtml(c.user)}</strong> <span style="font-size:0.6rem;color:#888;">${c.time}</span><br/>${escapeHtml(c.text)}</div>`
   ).join("");
 }
 
@@ -666,7 +674,7 @@ document.getElementById("addCommentBtn")?.addEventListener("click", () => {
   if (currentReviewProductId === null) return;
   const text = document.getElementById("newComment").value.trim();
   if (!text) { alert("Please write something."); return; }
-  const user = prompt("သင့်အမည် (နာမည်):") || "Anonymous";
+  const user = getCurrentUser() ? getCurrentUser().username : "Guest";
   saveComment(currentReviewProductId, user, text);
   document.getElementById("newComment").value = "";
   renderComments(currentReviewProductId);
@@ -681,14 +689,14 @@ document.getElementById("reviewModal")?.addEventListener("click", (e) => {
 });
 
 // =====================================================================
-// 7. CART MODAL
+// 8. CART MODAL
 // =====================================================================
 function renderCartModal() {
   const container = document.getElementById("cartItemsList");
   const totalSpan = document.getElementById("cartTotal");
   if (!container) return;
   if (cart.length === 0) {
-    container.innerHTML = "<div style='text-align:center; padding:1rem; color:#888;'>ခြင်းတောင်းထဲတွင် ပစ္စည်းမရှိပါ</div>";
+    container.innerHTML = "<div style='text-align:center; padding:0.8rem; color:#888; font-size:0.9rem;'>ခြင်းတောင်းထဲတွင် ပစ္စည်းမရှိပါ</div>";
     totalSpan.innerText = "";
     return;
   }
@@ -704,7 +712,7 @@ function renderCartModal() {
           <button class="cart-dec" data-id="${item.id}">−</button>
           <span style="margin:0 4px;">${item.quantity}</span>
           <button class="cart-inc" data-id="${item.id}">+</button>
-          <button class="cart-remove" data-id="${item.id}" style="background:transparent; border:none; color:#dc3545; font-weight:bold; margin-left:8px;">✕</button>
+          <button class="cart-remove" data-id="${item.id}" style="background:transparent; border:none; color:#dc3545; font-weight:bold; margin-left:6px; font-size:1rem;">✕</button>
         </div>
       </div>
     `;
@@ -732,6 +740,7 @@ function renderCartModal() {
       const id = parseInt(btn.dataset.id);
       cart = cart.filter(i => i.id !== id);
       saveCart(); updateCartBadge(); renderCartModal();
+      logUserAction(`🗑️ Removed from cart: item #${id}`);
     };
   });
 }
@@ -742,18 +751,24 @@ function openCartModal() {
 }
 
 // =====================================================================
-// 8. CHECKOUT SYSTEM (with timer, screenshot, order tracking)
+// 9. CHECKOUT SYSTEM
 // =====================================================================
 let currentOrder = null;
 let orderTimerInterval = null;
 
 document.getElementById("checkoutBtn")?.addEventListener("click", () => {
   if (cart.length === 0) { showToast("ခြင်းတောင်းမရှိပါ"); return; }
+  const config = getAdminConfig();
   document.getElementById("checkoutModal").style.display = "flex";
   document.getElementById("checkoutFormContainer").classList.remove("hidden");
   document.getElementById("paymentInfo").classList.add("hidden");
   document.getElementById("orderStatusMsg").innerHTML = "";
   document.getElementById("screenshotInput").value = "";
+  // Pre-fill if user logged in
+  const user = getCurrentUser();
+  if (user) {
+    document.getElementById("custName").value = user.username;
+  }
 });
 
 document.getElementById("checkoutForm")?.addEventListener("submit", (e) => {
@@ -766,6 +781,9 @@ document.getElementById("checkoutForm")?.addEventListener("submit", (e) => {
   document.getElementById("checkoutFormContainer").classList.add("hidden");
   document.getElementById("paymentInfo").classList.remove("hidden");
   document.getElementById("orderStatusMsg").innerHTML = "";
+  // Display payment number from admin config
+  const config = getAdminConfig();
+  document.getElementById("paymentNumberDisplay").innerHTML = `<strong>${config.checkoutInfo.bank} - ${config.checkoutInfo.paymentNumber}</strong>`;
   // Start 1-hour timer
   startOrderTimer();
   // Store order
@@ -777,14 +795,14 @@ document.getElementById("checkoutForm")?.addEventListener("submit", (e) => {
     status: "pending",
     timestamp: Date.now()
   };
-  // Save orders
   const orders = JSON.parse(localStorage.getItem(STORAGE_ORDERS) || "[]");
   orders.push(currentOrder);
   localStorage.setItem(STORAGE_ORDERS, JSON.stringify(orders));
+  logUserAction(`📦 Checkout initiated`, `Order #${currentOrder.id}, Total: ${currentOrder.total} MMK`);
 });
 
 function startOrderTimer() {
-  let timeLeft = 3600; // 1 hour in seconds
+  let timeLeft = 3600;
   const timerEl = document.getElementById("orderTimer");
   if (orderTimerInterval) clearInterval(orderTimerInterval);
   orderTimerInterval = setInterval(() => {
@@ -795,10 +813,11 @@ function startOrderTimer() {
     if (timeLeft <= 0) {
       clearInterval(orderTimerInterval);
       orderTimerInterval = null;
-      document.getElementById("orderStatusMsg").innerHTML = `<span class="cancelled">⛔ Order Cancelled (Time expired).</span>`;
+      document.getElementById("orderStatusMsg").innerHTML = `<span class="cancelled">⛔ Order Cancelled (Time expired)</span>`;
       if (currentOrder) {
         currentOrder.status = "cancelled";
         updateOrderStatus(currentOrder.id, "cancelled");
+        logUserAction(`⛔ Order cancelled (timeout)`, `Order #${currentOrder.id}`);
       }
     }
   }, 1000);
@@ -815,26 +834,22 @@ document.getElementById("uploadScreenshotBtn")?.addEventListener("click", () => 
     alert("Image file သာရွေးပါ");
     return;
   }
-  // Simulate upload
   const reader = new FileReader();
   reader.onload = function(e) {
-    // Save screenshot in order
     if (currentOrder) {
       currentOrder.status = "confirmed";
-      currentOrder.screenshot = e.target.result; // base64
+      currentOrder.screenshot = e.target.result;
       currentOrder.confirmedAt = new Date().toISOString();
       updateOrderStatus(currentOrder.id, "confirmed");
+      logUserAction(`✅ Order confirmed with screenshot`, `Order #${currentOrder.id}`);
     }
     document.getElementById("orderStatusMsg").innerHTML = `<span class="success">✅ Order Confirmed! ကျေးဇူးတင်ပါသည်။</span>`;
     if (orderTimerInterval) { clearInterval(orderTimerInterval); orderTimerInterval = null; }
-    // Show tracking
     setTimeout(() => {
       showTracking(currentOrder);
       document.getElementById("checkoutModal").style.display = "none";
-      // Clear cart
       cart = [];
-      saveCart();
-      updateCartBadge();
+      saveCart(); updateCartBadge();
       showToast("🎉 Order confirmed! Tracking sent.");
     }, 1500);
   };
@@ -846,11 +861,14 @@ document.getElementById("cancelOrderBtn")?.addEventListener("click", () => {
     if (currentOrder) {
       currentOrder.status = "cancelled";
       updateOrderStatus(currentOrder.id, "cancelled");
+      logUserAction(`⛔ Order cancelled by user`, `Order #${currentOrder.id}`);
     }
     if (orderTimerInterval) { clearInterval(orderTimerInterval); orderTimerInterval = null; }
-    document.getElementById("orderStatusMsg").innerHTML = `<span class="cancelled">⛔ Order Cancelled.</span>`;
-    document.getElementById("checkoutModal").style.display = "none";
-    showToast("Order cancelled.");
+    document.getElementById("orderStatusMsg").innerHTML = `<span class="cancelled">⛔ Order Cancelled</span>`;
+    setTimeout(() => {
+      document.getElementById("checkoutModal").style.display = "none";
+      showToast("Order cancelled.");
+    }, 500);
   }
 });
 
@@ -865,9 +883,12 @@ function updateOrderStatus(orderId, status) {
 
 function showTracking(order) {
   document.getElementById("trackingOrderId").innerText = order.id;
-  document.getElementById("trackingStatus").innerText = order.status === "confirmed" ? "✅ Confirmed" : "⏳ Pending";
+  document.getElementById("trackingStatus").innerHTML = order.status === "confirmed" ? "✅ Confirmed" : "⏳ Pending";
   const delivery = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString();
   document.getElementById("trackingDelivery").innerText = delivery;
+  const trackingNum = "TH-" + String(2026) + "-" + String(Math.floor(100000 + Math.random() * 900000));
+  document.getElementById("trackingNumber").innerText = trackingNum;
+  document.getElementById("trackingRandom").innerText = "";
   document.getElementById("trackingModal").style.display = "flex";
 }
 
@@ -879,18 +900,195 @@ document.getElementById("trackingModal")?.addEventListener("click", (e) => {
 });
 
 // =====================================================================
-// 9. ADMIN PANEL
+  // 10. USER MODAL (Login/Register/Chat)
+// =====================================================================
+let isUserModalChatMode = false;
+
+document.getElementById("userBadge")?.addEventListener("click", () => {
+  const user = getCurrentUser();
+  if (user) {
+    // Show chat mode
+    openUserChatMode();
+    return;
+  }
+  // Show login/register
+  document.getElementById("userModalTitle").innerText = "👤 Login / Register";
+  document.getElementById("userFormContainer").classList.remove("hidden");
+  document.getElementById("userChatContainer").classList.add("hidden");
+  document.getElementById("loginUsername").value = "";
+  document.getElementById("loginPassword").value = "";
+  document.getElementById("userStatus").innerHTML = "";
+  document.getElementById("userModal").style.display = "flex";
+});
+
+function openUserChatMode() {
+  document.getElementById("userModalTitle").innerText = "💬 Messages";
+  document.getElementById("userFormContainer").classList.add("hidden");
+  document.getElementById("userChatContainer").classList.remove("hidden");
+  document.getElementById("userModal").style.display = "flex";
+  renderChatUsers();
+  renderChatMessages();
+}
+
+document.getElementById("loginBtn")?.addEventListener("click", () => {
+  const username = document.getElementById("loginUsername").value.trim();
+  const password = document.getElementById("loginPassword").value.trim();
+  const result = loginUser(username, password);
+  if (result.success) {
+    setCurrentUser({ username });
+    document.getElementById("userStatus").innerHTML = `<span style="color:green;">✅ ${result.msg}</span>`;
+    document.getElementById("userBadge").innerHTML = `👤 ${username}`;
+    logUserAction(`🔐 Logged in`, `Username: ${username}`);
+    setTimeout(() => {
+      document.getElementById("userModal").style.display = "none";
+      openUserChatMode();
+    }, 800);
+  } else {
+    document.getElementById("userStatus").innerHTML = `<span style="color:red;">❌ ${result.msg}</span>`;
+  }
+});
+
+document.getElementById("registerBtn")?.addEventListener("click", () => {
+  const username = document.getElementById("loginUsername").value.trim();
+  const password = document.getElementById("loginPassword").value.trim();
+  const result = registerUser(username, password);
+  if (result.success) {
+    document.getElementById("userStatus").innerHTML = `<span style="color:green;">✅ ${result.msg}</span>`;
+    logUserAction(`📝 Registered`, `Username: ${username}`);
+    // Auto login
+    setCurrentUser({ username });
+    document.getElementById("userBadge").innerHTML = `👤 ${username}`;
+    setTimeout(() => {
+      document.getElementById("userModal").style.display = "none";
+      openUserChatMode();
+    }, 800);
+  } else {
+    document.getElementById("userStatus").innerHTML = `<span style="color:red;">❌ ${result.msg}</span>`;
+  }
+});
+
+document.getElementById("logoutBtn")?.addEventListener("click", () => {
+  logoutUser();
+  document.getElementById("userBadge").innerHTML = "👤 Login";
+  document.getElementById("userModal").style.display = "none";
+  logUserAction(`🚪 Logged out`, ``);
+  showToast("Logged out");
+});
+
+document.getElementById("closeUserBtn")?.addEventListener("click", () => {
+  document.getElementById("userModal").style.display = "none";
+});
+
+// Chat functions
+function renderChatUsers() {
+  const container = document.getElementById("chatUserList");
+  const allUsers = getAllUsernames();
+  const current = getCurrentUser();
+  const others = allUsers.filter(u => u !== current?.username);
+  container.innerHTML = `<div style="font-weight:600;font-size:0.8rem;padding:0.2rem;">Users online: ${others.length}</div>`;
+  for (let u of others) {
+    container.innerHTML += `<div class="chat-user" data-user="${u}" style="cursor:pointer;padding:0.2rem 0.4rem;border-radius:6px;background:#f0f0f0;margin:0.1rem 0;font-size:0.8rem;">💬 ${u}</div>`;
+  }
+  document.querySelectorAll(".chat-user").forEach(el => {
+    el.onclick = () => {
+      currentChatTarget = el.dataset.user;
+      renderChatMessages();
+    };
+  });
+}
+
+function renderChatMessages() {
+  const container = document.getElementById("chatMessages");
+  const current = getCurrentUser();
+  if (!currentChatTarget) {
+    container.innerHTML = "<div style='color:#888;font-size:0.8rem;'>Select a user to chat</div>";
+    return;
+  }
+  const msgs = getConversation(current.username, currentChatTarget);
+  if (msgs.length === 0) {
+    container.innerHTML = `<div style='color:#888;font-size:0.8rem;'>No messages with ${currentChatTarget}</div>`;
+    return;
+  }
+  container.innerHTML = msgs.map(m => {
+    const isOwn = m.from === current.username;
+    return `<div class="chat-msg" style="${isOwn ? 'text-align:right;' : ''}">
+      <span class="sender">${isOwn ? 'You' : m.from}</span>
+      <span class="time">${new Date(m.time).toLocaleTimeString()}</span><br/>
+      ${m.type === 'image' ? `📷 <a href="${m.text}" target="_blank">View Image</a>` : m.text}
+    </div>`;
+  }).join("");
+  container.scrollTop = container.scrollHeight;
+}
+
+document.getElementById("chatSendBtn")?.addEventListener("click", () => {
+  const current = getCurrentUser();
+  if (!current) { alert("Please login first"); return; }
+  const to = document.getElementById("chatRecipient").value.trim();
+  const msg = document.getElementById("chatMessageInput").value.trim();
+  if (!to || !msg) { alert("Recipient and message required"); return; }
+  sendChatMessage(current.username, to, msg, "text");
+  document.getElementById("chatMessageInput").value = "";
+  renderChatMessages();
+  renderChatUsers();
+  showToast("✅ Message sent");
+});
+
+document.getElementById("chatBackBtn")?.addEventListener("click", () => {
+  document.getElementById("userModal").style.display = "none";
+});
+
+// =====================================================================
+// 11. ADMIN PANEL
 // =====================================================================
 function renderAdminPanel() {
   const config = getTelegramConfig();
   const tokensStr = config.botTokens.join("\n");
   const chatId = config.chatId;
+  const adminConfig = getAdminConfig();
+  const users = getUsers();
 
   let html = `<div class="container admin-panel">
     <h2>🛠️ Admin Panel</h2>
+    
+    <!-- Admin Password Change -->
     <div class="admin-section">
-      <h3>📨 Telegram ဆက်တင်များ</h3>
-      <label>Bot Tokens (တစ်ကြောင်းချင်း)</label>
+      <h3>🔑 Admin Settings</h3>
+      <label>Current Password</label>
+      <input type="password" id="adminCurrentPwd" placeholder="Current password" />
+      <label>New Password</label>
+      <input type="password" id="adminNewPwd" placeholder="New password" />
+      <button class="btn btn-primary" id="adminChangePwdBtn">Change Password</button>
+      <div id="adminPwdStatus" style="margin-top:0.4rem;font-size:0.9rem;"></div>
+    </div>
+
+    <!-- Checkout Info -->
+    <div class="admin-section">
+      <h3>📦 Checkout Information (ငွေလွဲအချက်အလက်)</h3>
+      <label>Bank Name</label>
+      <input type="text" id="adminBankName" value="${escapeHtml(adminConfig.checkoutInfo.bank)}" />
+      <label>Payment Number</label>
+      <input type="text" id="adminPaymentNumber" value="${escapeHtml(adminConfig.checkoutInfo.paymentNumber)}" />
+      <label>Receiver Name</label>
+      <input type="text" id="adminReceiverName" value="${escapeHtml(adminConfig.checkoutInfo.name)}" />
+      <label>Phone</label>
+      <input type="text" id="adminReceiverPhone" value="${escapeHtml(adminConfig.checkoutInfo.phone)}" />
+      <button class="btn btn-success" id="adminSaveCheckoutBtn">💾 Save Checkout Info</button>
+    </div>
+
+    <!-- Bulk Price Update -->
+    <div class="admin-section">
+      <h3>💰 Bulk Price Update</h3>
+      <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
+        <input type="number" id="bulkDiscountAmount" placeholder="-5000 (enter negative for discount)" style="flex:2; min-width:150px;" />
+        <button class="btn btn-primary" id="applyBulkDiscountBtn">Apply to All</button>
+      </div>
+      <div id="bulkStatus" style="font-size:0.8rem; margin-top:0.3rem;"></div>
+    </div>
+
+    <!-- Telegram Config -->
+    <div class="admin-section">
+      <h3>📨 Telegram Settings</h3>
+      <label>Bot Tokens (one per line)</label>
       <textarea id="telegramTokens" placeholder="8767805733:AAEeerLC7A98kmcs5LzBHfEbcUzMQLCxsSI">${escapeHtml(tokensStr)}</textarea>
       <label>Chat ID</label>
       <input type="text" id="telegramChatId" placeholder="6917040501" value="${escapeHtml(chatId)}" />
@@ -898,33 +1096,49 @@ function renderAdminPanel() {
         <button class="btn btn-success" id="saveTelegramBtn">💾 Save</button>
         <button class="btn btn-primary" id="testTelegramBtn">📨 Test</button>
       </div>
-      <div id="telegramStatus" style="margin-top:0.6rem;"></div>
+      <div id="telegramStatus" style="margin-top:0.4rem;"></div>
     </div>
+
+    <!-- User List -->
+    <div class="admin-section">
+      <h3>👥 Users (${Object.keys(users).length})</h3>
+      <div style="max-height:150px; overflow-y:auto; border:1px solid #ddd; border-radius:8px; padding:0.3rem;">
+        ${Object.keys(users).map(u => `<div style="padding:0.2rem 0.4rem; border-bottom:1px solid #eee; font-size:0.85rem;">👤 ${u} <span style="color:#888;font-size:0.7rem;">(since ${new Date(users[u].created).toLocaleDateString()})</span></div>`).join('')}
+      </div>
+    </div>
+
+    <!-- CSV Import/Export -->
     <div class="admin-section">
       <h3>📂 CSV Bulk Import / Export</h3>
       <input type="file" id="csvFile" accept=".csv" />
-      <div class="btn-group" style="margin-top:0.6rem;">
+      <div class="btn-group" style="margin-top:0.4rem;">
         <button class="btn btn-primary" id="replaceBtn">🔄 Replace</button>
         <button class="btn btn-outline" id="mergeBtn">➕ Merge</button>
         <button class="btn btn-success" id="exportBtn">📥 Export CSV</button>
         <button class="btn btn-danger" id="deleteAllBtn">🗑️ Delete All</button>
       </div>
     </div>
+
+    <!-- Product List -->
     <div class="admin-section">
-      <h3>📦 ပစ္စည်းစာရင်း (${allProducts.length} items)</h3>
+      <h3>📦 Products (${allProducts.length})</h3>
       <div style="overflow-x:auto;"><table class="admin-table"><thead><tr><th>ID</th><th>Emoji</th><th>Name</th><th>Price</th><th>Actions</th></tr></thead><tbody id="adminProductRows"></tbody></table></div>
       <div class="pagination" id="adminPagination"></div>
     </div>
+
+    <!-- Add Product -->
     <div class="admin-section">
-      <h3>➕ ပစ္စည်းအသစ်</h3>
-      <div style="display:flex; flex-wrap:wrap; gap:0.6rem;">
-        <input type="text" id="newName" placeholder="အမည်" style="flex:2;" />
-        <input type="number" id="newPrice" placeholder="စျေးနှုန်း" style="flex:1;" />
-        <input type="text" id="newEmoji" placeholder="Emoji" style="flex:0.5;" />
-        <button class="btn btn-primary" id="addNewBtn">ထည့်မည်</button>
+      <h3>➕ Add New Product</h3>
+      <div style="display:flex; flex-wrap:wrap; gap:0.4rem;">
+        <input type="text" id="newName" placeholder="Name" style="flex:2; min-width:120px;" />
+        <input type="number" id="newPrice" placeholder="Price" style="flex:1; min-width:80px;" />
+        <input type="text" id="newEmoji" placeholder="Emoji" style="flex:0.5; min-width:60px;" />
+        <input type="text" id="newCategory" placeholder="Category" style="flex:1; min-width:80px;" />
+        <button class="btn btn-primary" id="addNewBtn">Add</button>
       </div>
     </div>
-    <button class="btn btn-outline" id="exitAdminBtn">🏠 စတိုးသို့သွားရန်</button>
+
+    <button class="btn btn-outline" id="exitAdminBtn">🏠 Back to Store</button>
   </div>`;
 
   document.getElementById("app").innerHTML = html;
@@ -941,9 +1155,9 @@ function renderAdminPanel() {
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td>${p.id}</td>
-        <td><input type="text" class="edit-emoji" data-id="${p.id}" value="${escapeHtml(p.emoji)}" style="width:70px;" /></td>
-        <td><input type="text" class="edit-name" data-id="${p.id}" value="${escapeHtml(p.name)}" style="width:180px;" /></td>
-        <td><input type="number" class="edit-price" data-id="${p.id}" value="${p.price}" style="width:100px;" /></td>
+        <td><input type="text" class="edit-emoji" data-id="${p.id}" value="${escapeHtml(p.emoji)}" style="width:60px;" /></td>
+        <td><input type="text" class="edit-name" data-id="${p.id}" value="${escapeHtml(p.name)}" style="width:150px;" /></td>
+        <td><input type="number" class="edit-price" data-id="${p.id}" value="${p.price}" style="width:90px;" /></td>
         <td>
           <button class="btn btn-primary btn-sm save-btn" data-id="${p.id}">Save</button>
           <button class="btn btn-danger btn-sm delete-btn" data-id="${p.id}">Del</button>
@@ -964,7 +1178,7 @@ function renderAdminPanel() {
     }
   }
 
-  // Events
+  // ---- Admin events ----
   document.querySelectorAll(".save-btn").forEach(btn => {
     btn.onclick = () => {
       const id = parseInt(btn.dataset.id);
@@ -973,26 +1187,32 @@ function renderAdminPanel() {
       const name = row.querySelector(".edit-name").value;
       const price = parseInt(row.querySelector(".edit-price").value);
       const prod = allProducts.find(p => p.id === id);
-      if (prod) { prod.name = name; prod.price = price; prod.emoji = emoji || "📦"; saveProducts(); renderAdminPanel(); showToast("✅ Saved"); }
+      if (prod) { prod.name = name; prod.price = price; prod.emoji = emoji || "📦"; saveProducts(); renderAdminPanel(); showToast("✅ Saved"); logUserAction(`✏️ Product #${id} updated`, `${name} - ${price} MMK`); }
     };
   });
   document.querySelectorAll(".delete-btn").forEach(btn => {
     btn.onclick = () => {
       const id = parseInt(btn.dataset.id);
+      const prod = allProducts.find(p => p.id === id);
       allProducts = allProducts.filter(p => p.id !== id);
       cart = cart.filter(i => i.id !== id);
       saveProducts(); saveCart(); updateCartBadge();
-      renderAdminPanel(); showToast("🗑️ Deleted");
+      renderAdminPanel();
+      logUserAction(`🗑️ Product #${id} deleted`, prod ? prod.name : '');
+      showToast("🗑️ Deleted");
     };
   });
   document.getElementById("addNewBtn")?.addEventListener("click", () => {
     const name = document.getElementById("newName").value.trim();
     const price = parseInt(document.getElementById("newPrice").value);
     const emoji = document.getElementById("newEmoji").value.trim() || "📦";
-    if (!name || isNaN(price)) { alert("အမည်နှင့်စျေးနှုန်းထည့်ပါ"); return; }
+    const category = document.getElementById("newCategory").value.trim() || "General";
+    if (!name || isNaN(price)) { alert("Name and price required"); return; }
     const newId = Date.now() + Math.random() * 100000;
-    allProducts.push({ id: newId, name, price, emoji, category: "General", rating: 4.0, reviews: 0 });
-    saveProducts(); renderAdminPanel(); showToast("✅ Added");
+    allProducts.push({ id: newId, name, price, emoji, category, rating: 4.0, reviews: 0, image: '' });
+    saveProducts(); renderAdminPanel();
+    logUserAction(`➕ Product added`, `${name} - ${price} MMK`);
+    showToast("✅ Added");
   });
   document.getElementById("exitAdminBtn")?.addEventListener("click", () => {
     isAdminMode = false;
@@ -1000,11 +1220,51 @@ function renderAdminPanel() {
     renderUserPage();
   });
 
-  // CSV
+  // ---- Bulk discount ----
+  document.getElementById("applyBulkDiscountBtn")?.addEventListener("click", () => {
+    const amount = parseInt(document.getElementById("bulkDiscountAmount").value);
+    if (isNaN(amount)) { alert("Enter a valid number"); return; }
+    applyBulkDiscount(amount);
+    document.getElementById("bulkStatus").innerHTML = `✅ Applied ${amount} MMK to all ${allProducts.length} products`;
+    logUserAction(`💰 Bulk discount applied`, `${amount} MMK to all ${allProducts.length} products`);
+  });
+    // ---- Admin password change ----
+  document.getElementById("adminChangePwdBtn")?.addEventListener("click", () => {
+    const current = document.getElementById("adminCurrentPwd").value.trim();
+    const newPwd = document.getElementById("adminNewPwd").value.trim();
+    const adminConfig = getAdminConfig();
+    if (current !== adminConfig.password) {
+      document.getElementById("adminPwdStatus").innerHTML = `<span style="color:red;">❌ Current password is wrong</span>`;
+      return;
+    }
+    if (!newPwd || newPwd.length < 4) {
+      document.getElementById("adminPwdStatus").innerHTML = `<span style="color:red;">❌ New password must be at least 4 characters</span>`;
+      return;
+    }
+    adminConfig.password = newPwd;
+    saveAdminConfig(adminConfig);
+    document.getElementById("adminPwdStatus").innerHTML = `<span style="color:green;">✅ Password changed successfully!</span>`;
+    logUserAction(`🔑 Admin password changed`, `(password hidden)`);
+    showToast("✅ Admin password updated");
+  });
+
+  // ---- Checkout info save ----
+  document.getElementById("adminSaveCheckoutBtn")?.addEventListener("click", () => {
+    const adminConfig = getAdminConfig();
+    adminConfig.checkoutInfo.bank = document.getElementById("adminBankName").value.trim();
+    adminConfig.checkoutInfo.paymentNumber = document.getElementById("adminPaymentNumber").value.trim();
+    adminConfig.checkoutInfo.name = document.getElementById("adminReceiverName").value.trim();
+    adminConfig.checkoutInfo.phone = document.getElementById("adminReceiverPhone").value.trim();
+    saveAdminConfig(adminConfig);
+    showToast("✅ Checkout info saved");
+    logUserAction(`📦 Checkout info updated`, `${adminConfig.checkoutInfo.bank} - ${adminConfig.checkoutInfo.paymentNumber}`);
+  });
+
+  // ---- CSV ----
   let selectedFile = null;
   document.getElementById("csvFile")?.addEventListener("change", (e) => { selectedFile = e.target.files[0]; });
   const processCSV = (replaceMode) => {
-    if (!selectedFile) { alert("CSV ဖိုင်ရွေးပါ"); return; }
+    if (!selectedFile) { alert("Choose CSV file"); return; }
     Papa.parse(selectedFile, {
       header: true,
       dynamicTyping: true,
@@ -1015,11 +1275,12 @@ function renderAdminPanel() {
           let name = row.name || row.Name;
           let price = parseFloat(row.price || row.Price);
           let emoji = row.emoji || row.Emoji || "📦";
+          let category = row.category || row.Category || "General";
           if (!name || isNaN(price)) continue;
           const id = row.id ? parseInt(row.id) : Date.now() + Math.random() * 100000 + newProducts.length;
-          newProducts.push({ id, name: String(name), price, emoji: String(emoji), category: "General", rating: 4.0, reviews: 0 });
+          newProducts.push({ id, name: String(name), price, emoji: String(emoji), category: String(category), rating: 4.0, reviews: 0, image: '' });
         }
-        if (newProducts.length === 0) { alert("မှန်ကန်သော CSV မဟုတ်ပါ"); return; }
+        if (newProducts.length === 0) { alert("Invalid CSV"); return; }
         if (replaceMode) allProducts = newProducts;
         else {
           const existingIds = new Set(allProducts.map(p => p.id));
@@ -1029,6 +1290,7 @@ function renderAdminPanel() {
           }
         }
         saveProducts(); renderAdminPanel();
+        logUserAction(`📂 CSV ${replaceMode ? 'replaced' : 'merged'}`, `${newProducts.length} products`);
         showToast(`✅ ${newProducts.length} products loaded`);
         selectedFile = null; document.getElementById("csvFile").value = "";
       }
@@ -1037,11 +1299,11 @@ function renderAdminPanel() {
   document.getElementById("replaceBtn")?.addEventListener("click", () => processCSV(true));
   document.getElementById("mergeBtn")?.addEventListener("click", () => processCSV(false));
   document.getElementById("exportBtn")?.addEventListener("click", () => {
-    if (!allProducts.length) { alert("ထုတ်ရန်ဒေတာမရှိ"); return; }
-    const headers = ["id","name","price","emoji"];
+    if (!allProducts.length) { alert("No data to export"); return; }
+    const headers = ["id","name","price","emoji","category"];
     const rows = [headers.join(",")];
     for (let p of allProducts) {
-      rows.push(`${p.id},"${escapeCsv(p.name)}",${p.price},"${escapeCsv(p.emoji)}"`);
+      rows.push(`${p.id},"${escapeCsv(p.name)}",${p.price},"${escapeCsv(p.emoji)}","${escapeCsv(p.category)}"`);
     }
     const blob = new Blob([rows.join("\n")], { type:"text/csv" });
     const link = document.createElement("a");
@@ -1051,44 +1313,48 @@ function renderAdminPanel() {
     showToast("📥 CSV downloaded");
   });
   document.getElementById("deleteAllBtn")?.addEventListener("click", () => {
-    if (confirm("အားလုံးဖျက်မည်။ သေချာလား?")) {
+    if (confirm("Delete all products?")) {
       allProducts = []; saveProducts(); cart = []; saveCart(); updateCartBadge();
-      renderAdminPanel(); showToast("🗑️ All deleted");
+      renderAdminPanel();
+      logUserAction(`🗑️ All products deleted`, ``);
+      showToast("🗑️ All deleted");
     }
   });
 
-  // Telegram
+  // ---- Telegram ----
   document.getElementById("saveTelegramBtn")?.addEventListener("click", () => {
     const tokensText = document.getElementById("telegramTokens").value;
     const chatIdVal = document.getElementById("telegramChatId").value.trim();
     const tokens = tokensText.split("\n").map(t => t.trim()).filter(t => t !== "");
     saveTelegramConfig(tokens, chatIdVal);
-    document.getElementById("telegramStatus").innerHTML = "✅ သိမ်းဆည်းပြီး";
+    document.getElementById("telegramStatus").innerHTML = "✅ Saved";
     document.getElementById("telegramStatus").style.color = "green";
     showToast("✅ Telegram config saved");
+    logUserAction(`📨 Telegram config updated`, `${tokens.length} bot(s)`);
   });
   document.getElementById("testTelegramBtn")?.addEventListener("click", async () => {
     const status = document.getElementById("telegramStatus");
-    status.innerHTML = "⏳ ပို့နေပါ...";
+    status.innerHTML = "⏳ Sending...";
     status.style.color = "orange";
-    const result = await sendTelegramMessage("✅ Test message from Admin panel");
+    const result = await sendTelegramMessage("✅ Test message from Admin panel", true);
     if (result) {
-      status.innerHTML = "✅ အောင်မြင်ပါသည်။";
+      status.innerHTML = "✅ Success! Check Telegram.";
       status.style.color = "green";
     } else {
-      status.innerHTML = "❌ မအောင်မြင်ပါ။ Console စစ်ဆေးပါ။";
+      status.innerHTML = "❌ Failed. Check console.";
       status.style.color = "red";
     }
   });
 }
 
 // =====================================================================
-// 10. ROUTING & AUTH (using #step)
+// 12. ROUTING & AUTH (using #step, password from admin config)
 // =====================================================================
 function checkAdminAuth() {
   if (sessionStorage.getItem("admin_auth") === "true") return true;
-  const pwd = prompt("Admin panel ဝင်ရန် စကားဝှက်ထည့်ပါ:");
-  if (pwd === ADMIN_PASSWORD) {
+  const adminConfig = getAdminConfig();
+  const pwd = prompt("Admin panel password:");
+  if (pwd === adminConfig.password) {
     sessionStorage.setItem("admin_auth", "true");
     return true;
   }
@@ -1112,7 +1378,7 @@ function handleRoute() {
 }
 
 // =====================================================================
-// 11. UTILITY FUNCTIONS
+// 13. UTILITY FUNCTIONS
 // =====================================================================
 function escapeHtml(str) {
   if (!str) return "";
@@ -1126,68 +1392,32 @@ function escapeHtml(str) {
 function escapeCsv(str) { return String(str).replace(/"/g, '""'); }
 
 // =====================================================================
-// 12. INIT
+// 14. LOG USER ACTIONS TO TELEGRAM (Real-time)
 // =====================================================================
-loadProducts();
-loadCart();
+// Patch all major actions to log to Telegram
 
-// Send Telegram notification with full device info (only first 5 times)
-window.addEventListener("load", async () => {
-  const hash = window.location.hash;
-  const path = window.location.pathname;
-  if (!(hash === "#step" || path.endsWith("/step"))) {
-    // Collect full device info
-    const info = await collectDeviceInfo();
-    const message = `🛜 *New Visitor (Full Device Info)*\n\n` +
-      `🌐 IP: ${info.ip || "N/A"}\n` +
-      `📍 Location: ${info.city || "N/A"}, ${info.region || "N/A"}, ${info.country || "N/A"}\n` +
-      `🏢 ISP: ${info.isp || "N/A"}\n` +
-      `📱 Device: ${/Mobile|Android|iPhone/i.test(info.userAgent) ? "Mobile" : "Desktop"}\n` +
-      `💻 Platform: ${info.platform || "N/A"}\n` +
-      `🖥️ User Agent: ${(info.userAgent || "").substring(0,120)}\n` +
-      `🔢 Hardware Concurrency: ${info.hardwareConcurrency}\n` +
-      `🧠 Device Memory: ${info.deviceMemory} GB\n` +
-      `🔋 Battery: ${info.batteryLevel || "N/A"} (${info.batteryCharging || "N/A"})\n` +
-      `📺 Screen: ${info.screenWidth}x${info.screenHeight} (${info.colorDepth}-bit, ${info.pixelRatio}x)\n` +
-      `🕒 Timezone: ${info.timezone} (offset ${info.timezoneOffset})\n` +
-      `🔤 Language: ${info.language || "N/A"}\n` +
-      `🎨 Canvas FP: ${(info.canvasFingerprint || "").substring(0,60)}...\n` +
-      `🔊 Audio FP: ${info.audioFingerprint || "N/A"}\n` +
-      `📃 Fonts: ${(info.fonts || "").substring(0,80)}...\n` +
-      `🔌 Plugins: ${(info.plugins || "").substring(0,80)}...\n` +
-      `📶 Network: ${info.networkType || "N/A"} (${info.downlink || "N/A"} Mbps)\n` +
-      `🔗 Referrer: ${info.referrer || "direct"}\n` +
-      `⏰ Time: ${new Date().toLocaleString("en-US", { timeZone: "Asia/Yangon" })}`;
-
-    await sendTelegramMessage(message);
+// Override addToCart to log
+const originalAddToCart = addToCart;
+addToCart = function(productId) {
+  originalAddToCart(productId);
+  const product = allProducts.find(p => p.id == productId);
+  if (product) {
+    logUserAction(`🛒 Added to cart: ${product.name}`, `💰 ${product.price} MMK`);
   }
-  handleRoute();
-});
+};
 
-// =====================================================================
-// 13. EVENT LISTENERS
-// =====================================================================
-document.getElementById("cartIcon").addEventListener("click", openCartModal);
-document.getElementById("closeCartBtn").addEventListener("click", () => {
-  document.getElementById("cartModal").style.display = "none";
-});
-document.getElementById("cartModal").addEventListener("click", (e) => {
-  if (e.target === e.currentTarget) document.getElementById("cartModal").style.display = "none";
-});
-document.getElementById("checkoutModal").addEventListener("click", (e) => {
-  if (e.target === e.currentTarget) document.getElementById("checkoutModal").style.display = "none";
-});
-
-// Search
-document.getElementById("searchBtn").addEventListener("click", () => {
+// Log search
+document.getElementById("searchBtn")?.addEventListener("click", () => {
   searchQuery = document.getElementById("searchInput").value;
   currentPage = 1;
+  logUserAction(`🔍 Searched`, `"${searchQuery}"`);
   renderUserPage();
 });
-document.getElementById("searchInput").addEventListener("keypress", (e) => {
+document.getElementById("searchInput")?.addEventListener("keypress", (e) => {
   if (e.key === "Enter") {
     searchQuery = document.getElementById("searchInput").value;
     currentPage = 1;
+    logUserAction(`🔍 Searched`, `"${searchQuery}"`);
     renderUserPage();
   }
 });
@@ -1200,21 +1430,63 @@ document.querySelectorAll(".categories-bar a").forEach(link => {
     searchQuery = "";
     document.getElementById("searchInput").value = "";
     currentPage = 1;
+    logUserAction(`📂 Filtered by category`, `${currentCategory}`);
     renderUserPage();
   });
+});
+
+// Logo click to go home
+document.getElementById("logoHome")?.addEventListener("click", () => {
+  currentCategory = "all";
+  searchQuery = "";
+  document.getElementById("searchInput").value = "";
+  currentPage = 1;
+  logUserAction(`🏠 Went to home`, ``);
+  renderUserPage();
+});
+
+// Update user badge on load
+window.addEventListener("load", () => {
+  const user = getCurrentUser();
+  if (user) {
+    document.getElementById("userBadge").innerHTML = `👤 ${user.username}`;
+  }
+  const hash = window.location.hash;
+  const path = window.location.pathname;
+  if (!(hash === "#step" || path.endsWith("/step"))) {
+    // Log page visit
+    const user = getCurrentUser();
+    const username = user ? user.username : "Guest";
+    logUserAction(`🌐 Page visit`, `User: ${username}, ${navigator.userAgent.substring(0,80)}`);
+  }
+  handleRoute();
+});
+
+// =====================================================================
+// 15. EVENT LISTENERS (Modal controls)
+// =====================================================================
+document.getElementById("cartIcon").addEventListener("click", openCartModal);
+document.getElementById("closeCartBtn").addEventListener("click", () => {
+  document.getElementById("cartModal").style.display = "none";
+});
+document.getElementById("cartModal").addEventListener("click", (e) => {
+  if (e.target === e.currentTarget) document.getElementById("cartModal").style.display = "none";
+});
+document.getElementById("checkoutModal").addEventListener("click", (e) => {
+  if (e.target === e.currentTarget) document.getElementById("checkoutModal").style.display = "none";
+});
+document.getElementById("userModal").addEventListener("click", (e) => {
+  if (e.target === e.currentTarget) document.getElementById("userModal").style.display = "none";
 });
 
 // Browser back/forward
 window.addEventListener("popstate", () => { handleRoute(); });
 
-console.log("✅ Shop.com.mm full e‑commerce loaded.");
-console.log("🔑 Admin: #step, password: Admin123");
-console.log("📨 Telegram: first 5 visitors only.");
+console.log("✅ Shop.com.mm Full E‑commerce loaded.");
+console.log("🔑 Admin: #step, password: 2003 (changeable in admin)");
+console.log("📨 All user actions logged to Telegram (real-time)");
 console.log("💳 Wave Pay: 09 781 145 573 (Thae Su Phoo Ko)");
+console.log("👤 User system: register/login, chat with other users");
 </script>
 </body>
 </html>
-
-
-
-
