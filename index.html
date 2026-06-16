@@ -38,6 +38,50 @@
       font-size: 0.6rem;
       color: #888;
     }
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title id="pageTitle">Shop.com.mm</title>
+
+  <!-- Papa Parse (CSV) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js">
+  </script>
+
+  <!-- ========================================================== -->
+  <!-- FIREBASE SDK (CDN) - ဒီနေရာမှာ ထည့်ပါ                    -->
+  <!-- ========================================================== -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js">
+  </script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js">
+  </script>
+
+  <script>
+    // ============================================================
+    // FIREBASE CONFIG - ခင်ဗျားရဲ့ Config ကို ဒီမှာထည့်ပါ
+    // ============================================================
+    const firebaseConfig = {
+      apiKey: "AIzaSyBZVwNtZ3EOAAtSJ69delNpKSRRkCjF2ak",
+      authDomain: "my-eshop-a5bd4.firebaseapp.com",
+      projectId: "my-eshop-a5bd4",
+      storageBucket: "my-eshop-a5bd4.firebasestorage.app",
+      messagingSenderId: "712113582989",
+      appId: "1:712113582989:web:5264518aa186925dac03c4",
+      measurementId: "G-9L6P8LVNLE"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    console.log("✅ Firebase connected!");
+  </script>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="style.css">
+  <!-- User Styles -->
+  <style>
+    /* ... your existing styles ... */
+  </style>
+</head>
   </style>
 </head>
 <body>
