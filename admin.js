@@ -699,3 +699,15 @@ async function syncProductsToFirestore() {
     alert("❌ Sync failed!");
   }
 }
+// admin.js ထဲမှာ ဒါကိုလည်း ထည့်ပါ
+document.addEventListener("DOMContentLoaded", function() {
+  setTimeout(() => {
+    const btn = document.createElement("button");
+    btn.className = "btn btn-success";
+    btn.innerHTML = "☁️ Sync to Firebase";
+    btn.onclick = syncProductsToFirestore;
+    
+    const target = document.querySelector('.admin-section .btn-group');
+    if (target) target.appendChild(btn);
+  }, 1000);
+});
