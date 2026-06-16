@@ -672,3 +672,30 @@ document.addEventListener("DOMContentLoaded", function() {
 console.log("✅ Admin Panel loaded!");
 console.log("🔑 Admin password can be changed in the panel.");
 console.log("📢 Broadcast messages to any user via Telegram.");
+// ============================================================
+// SYNC TO FIREBASE (Admin)
+// ============================================================
+async function syncProductsToFirestore() {
+  if (!db) return alert("❌ Firebase not ready!");
+  if (allProducts.length === 0) return alert("❌ No products!");
+
+  try {
+    const batch = db.batch();
+    const productsRef = db.collection('products');
+
+    // Clear old data
+    const snapshot = await productsRef.get();
+    snapshot.forEach(doc => batch.delete(doc.ref));
+
+    // Add new products
+    allProducts.forEach(p => {
+      batch.set(productsRef.doc(String(p.id)), p);
+    });
+
+    await batch.commit();
+    alert(`✅ ${allProducts.length} products synced!`);
+  } catch (e) {
+    console.error(e);
+    alert("❌ Sync failed!");
+  }
+}
