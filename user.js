@@ -746,3 +746,74 @@ async function loadProductsFromFirestore() {
     return false;
   }
 }
+// ============================================================
+// FIREBASE LOAD (User)
+// ============================================================
+async function loadProductsFromFirestore() {
+  if (!db) {
+    console.warn("Firebase not initialized.");
+    return false;
+  }
+
+  try {
+    const snapshot = await db.collection('products').get();
+    const products = [];
+    snapshot.forEach(doc => {
+      products.push(doc.data());
+    });
+
+    if (products.length > 0) {
+      allProducts = products;
+      saveProducts();
+      renderUserPage();
+      console.log("✅ Products loaded from Firebase:", products.length);
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.warn("Firebase load error:", error);
+    return false;
+  }
+}
+
+// ============================================================
+// INIT - Page Load
+// ============================================================
+(async function init() {
+  console.log("🚀 User page loading...");
+
+  // 1. Firebase ကနေ ပစ္စည်းတွေ အရင်ဆွဲ
+  const loaded = await loadProductsFromFirestore();
+  
+  // 2. Firebase မှာ မရှိရင် Local Storage ကနေ ဆွဲ
+  if (!loaded) {
+    loadProducts();
+    console.log("📦 Loaded from Local Storage");
+  }
+
+  // 3. Cart ကိုဆွဲ
+  loadCart();
+
+  // 4. Page ကို Render လုပ်
+  renderUserPage();
+
+  // 5. Store Config ကိုသုံး
+  applyStoreConfig();
+
+  // 6. User အကောင့် ရှိမရှိ စစ်
+  const user = getCurrentUser();
+  if (user) {
+    document.getElementById("userBadge").innerHTML = `👤 ${user.username}`;
+  }
+
+  // 7. Chat Messages ကိုဆွဲ
+  const chatMsgs = JSON.parse(localStorage.getItem("shop_chat_widget") || "[]");
+  if (chatMsgs.length > 0) {
+    document.getElementById("chatBadge").innerText = chatMsgs.filter(m => m.sender === "bot" && !m.read).length;
+  }
+
+  // 8. Page Visit Log
+  logUserAction(`🌐 Page Visit`, `Device: ${getDeviceId()}`);
+
+  console.log("✅ User page ready!");
+})();
