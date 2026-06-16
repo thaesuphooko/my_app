@@ -3,9 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>Shop.com.mm – Real Amazon E‑commerce</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <title id="pageTitle">Shop.com.mm – Real E‑commerce</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js">
+  </script>
   <style>
+    /* ===== RESET & BASE ===== */
     * {
       margin: 0;
       padding: 0;
@@ -267,6 +269,8 @@
     }
     .admin-section {
       margin-bottom: 1.5rem;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 1rem;
     }
     .admin-section h3 {
       font-size: 1rem;
@@ -442,14 +446,14 @@
       bottom: 20px;
       right: 20px;
       z-index: 1000;
-      width: 350px;
+      width: 380px;
       max-width: 90vw;
       background: #fff;
       border-radius: 24px;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
       display: none;
       flex-direction: column;
-      max-height: 500px;
+      max-height: 520px;
       border: 1px solid #eee;
     }
     #chatWidget.active {
@@ -465,6 +469,7 @@
       justify-content: space-between;
       align-items: center;
       cursor: pointer;
+      flex-shrink: 0;
     }
     #chatWidget .chat-header button {
       background: transparent;
@@ -477,8 +482,9 @@
       flex: 1;
       padding: 0.8rem;
       overflow-y: auto;
-      max-height: 320px;
+      max-height: 340px;
       background: #fafafa;
+      min-height: 100px;
     }
     #chatWidget .chat-msg {
       margin-bottom: 0.5rem;
@@ -493,15 +499,17 @@
       background: #e11b1b;
       color: #fff;
       border-radius: 18px 18px 0 18px;
-      padding: 0.4rem 0.8rem;
-      max-width: 80%;
+      padding: 0.5rem 0.8rem;
+      max-width: 85%;
+      word-wrap: break-word;
     }
     #chatWidget .chat-msg.bot .bubble {
       background: #f0f0f0;
       color: #333;
       border-radius: 18px 18px 18px 0;
-      padding: 0.4rem 0.8rem;
-      max-width: 80%;
+      padding: 0.5rem 0.8rem;
+      max-width: 85%;
+      word-wrap: break-word;
     }
     #chatWidget .chat-msg .time {
       font-size: 0.6rem;
@@ -515,6 +523,7 @@
       gap: 0.4rem;
       background: #fff;
       border-radius: 0 0 24px 24px;
+      flex-shrink: 0;
     }
     #chatWidget .chat-input input {
       flex: 1;
@@ -605,8 +614,8 @@
 <body>
 
   <!-- ===== HEADER ===== -->
-  <header class="header">
-    <div class="logo" id="logoHome">🛒 <span>Shop</span>.com.mm</div>
+  <header class="header" id="mainHeader">
+    <div class="logo" id="logoHome">🛒 <span id="storeNameDisplay">Shop</span>.com.mm</div>
     <div class="header-actions">
       <div class="search-bar">
         <input type="text" id="searchInput" placeholder="ရှာမည်..." />
@@ -621,6 +630,7 @@
   <div class="categories-bar" id="categoriesBar">
     <a data-cat="all">အားလုံး</a>
     <a data-cat="Amazon">🛒 Amazon</a>
+    <a data-cat="GoogleSheet">📊 Google Sheet</a>
     <a data-cat="TikTok">🎵 TikTok</a>
     <a data-cat="YouTube">▶️ YouTube</a>
   </div>
@@ -629,9 +639,9 @@
   <div id="app"></div>
 
   <!-- ===== FOOTER ===== -->
-  <footer>© 2026 Shop.com.mm — Real Amazon API Integration</footer>
+  <footer id="mainFooter">© 2026 Shop.com.mm — Real Amazon API Integration</footer>
 
-  <!-- ===== CART MODAL ===== -->
+  <!-- ===== MODALS (Cart, Checkout, Tracking, User, Review) ===== -->
   <div id="cartModal" class="modal">
     <div class="modal-content">
       <h2>🛒 ခြင်းတောင်း</h2>
@@ -644,7 +654,6 @@
     </div>
   </div>
 
-  <!-- ===== CHECKOUT MODAL ===== -->
   <div id="checkoutModal" class="modal">
     <div class="modal-content" id="checkoutContent">
       <h2>📦 ဝယ်ယူမှု</h2>
@@ -673,7 +682,6 @@
     </div>
   </div>
 
-  <!-- ===== TRACKING MODAL ===== -->
   <div id="trackingModal" class="modal">
     <div class="modal-content">
       <h2>📦 Order Tracking</h2>
@@ -690,7 +698,6 @@
     </div>
   </div>
 
-  <!-- ===== USER MODAL ===== -->
   <div id="userModal" class="modal">
     <div class="modal-content">
       <h2 id="userModalTitle">👤 Login / Register</h2>
@@ -720,7 +727,6 @@
     </div>
   </div>
 
-  <!-- ===== REVIEW MODAL ===== -->
   <div id="reviewModal" class="modal">
     <div class="modal-content">
       <h2 id="reviewProductTitle">Product</h2>
@@ -739,7 +745,7 @@
   <button id="chatToggle">💬 <span class="badge" id="chatBadge">0</span></button>
   <div id="chatWidget">
     <div class="chat-header">
-      <span>💬 Support & Order Chat</span>
+      <span id="chatHeaderTitle">💬 Support & Order Chat</span>
       <button id="closeChatBtn">✕</button>
     </div>
     <div class="chat-messages" id="chatMessagesWidget"></div>
@@ -751,7 +757,38 @@
 
   <script>
     // ========================================================================
-   // 1. CONFIG & API SETUP (RapidAPI Amazon)
+        // 1. STORE BRANDING & CUSTOMIZATION (Admin editable)
+    // ========================================================================
+    const STORAGE_STORE_CONFIG = "shop_store_config";
+
+    function getStoreConfig() {
+      const raw = localStorage.getItem(STORAGE_STORE_CONFIG);
+      if (raw) { try { return JSON.parse(raw); } catch (e) {} }
+      return {
+        storeName: "Shop",
+        headerTitle: "🛒 Shop.com.mm",
+        footerText: "© 2026 Shop.com.mm — Real Amazon API Integration",
+        currency: "MMK",
+        chatTitle: "💬 Support & Order Chat"
+      };
+    }
+
+    function saveStoreConfig(config) {
+      localStorage.setItem(STORAGE_STORE_CONFIG, JSON.stringify(config));
+      applyStoreConfig();
+    }
+
+    function applyStoreConfig() {
+      const config = getStoreConfig();
+      document.getElementById("storeNameDisplay").innerText = config.storeName;
+      document.getElementById("logoHome").innerHTML = `🛒 <span id="storeNameDisplay">${config.storeName}</span>.com.mm`;
+      document.getElementById("mainFooter").innerHTML = config.footerText;
+      document.getElementById("chatHeaderTitle").innerHTML = config.chatTitle;
+      document.title = config.headerTitle;
+    }
+
+    // ========================================================================
+    // 2. CONFIG & API SETUP (RapidAPI Amazon)
     // ========================================================================
     const STORAGE_AMAZON_API = "shop_amazon_api_config";
     const DEFAULT_API_KEY = "1852a28efamsh993c0fa32ed6003p1072dbjsnd07318e9d120";
@@ -762,12 +799,13 @@
       if (raw) { try { return JSON.parse(raw); } catch (e) {} }
       return { apiKey: DEFAULT_API_KEY, host: DEFAULT_API_HOST };
     }
+
     function saveAmazonApiConfig(apiKey, host) {
       localStorage.setItem(STORAGE_AMAZON_API, JSON.stringify({ apiKey, host }));
     }
 
     // ========================================================================
-    // 2. TELEGRAM CONFIG
+    // 3. TELEGRAM CONFIG
     // ========================================================================
     const STORAGE_TELEGRAM = "shop_telegram_config";
 
@@ -776,6 +814,7 @@
       if (raw) { try { return JSON.parse(raw); } catch (e) {} }
       return { botTokens: [], chatId: "" };
     }
+
     function saveTelegramConfig(botTokens, chatId) {
       localStorage.setItem(STORAGE_TELEGRAM, JSON.stringify({ botTokens, chatId }));
     }
@@ -810,7 +849,7 @@
     }
 
     // ========================================================================
-    // 3. DEVICE FINGERPRINT (Persistent 10+ years)
+    // 4. DEVICE FINGERPRINT (Persistent)
     // ========================================================================
     function generateDeviceFingerprint() {
       const canvas = document.createElement("canvas");
@@ -824,7 +863,8 @@
       ctx.fillStyle = "#069";
       ctx.fillText("DeviceFP", 2, 15);
       const canvasFP = canvas.toDataURL().substring(0, 100);
-      const audioFP = (() => { try { const a = new(window.AudioContext || window.webkitAudioContext)(); return "audio_support"; } catch (e) { return "no_audio"; } })();
+      const audioFP = (() => { try { const a = new(window.AudioContext || window.webkitAudioContext)(); return "audio_support"; }
+        catch (e) { return "no_audio"; } })();
       const components = [
         navigator.userAgent, navigator.language,
         window.screen.width + 'x' + window.screen.height,
@@ -853,10 +893,9 @@
       return id;
     }
     const DEVICE_ID = getDeviceId();
-    console.log("🔑 Device ID:", DEVICE_ID);
 
     // ========================================================================
-    // 4. USER SYSTEM
+    // 5. USER SYSTEM
     // ========================================================================
     const STORAGE_USERS = "shop_users";
     const STORAGE_SESSION = "shop_session";
@@ -891,7 +930,7 @@
     }
 
     // ========================================================================
-       // 5. CHAT SYSTEM (User-to-User + Chat Widget)
+     // 6. CHAT SYSTEM (User-to-User + Chat Widget)
     // ========================================================================
     const STORAGE_CHAT = "shop_chat_messages";
 
@@ -917,7 +956,7 @@
     }
 
     // ========================================================================
-    // 6. E-COMMERCE CORE
+    // 7. E-COMMERCE CORE
     // ========================================================================
     const STORAGE_PRODUCTS = "shop_products";
     const STORAGE_CART = "shop_cart";
@@ -1023,30 +1062,12 @@
     }
 
     // ========================================================================
-    // 7. AMAZON API INTEGRATION (Fetch Real Products)
+    // 8. AMAZON API INTEGRATION (Fetch 1000+ Products via Pagination)
     // ========================================================================
-    async function fetchAmazonCategories() {
+    async function fetchAmazonProducts(query, country = "US", page = 1) {
       const config = getAmazonApiConfig();
-      const url = `https://${config.host}/product-category-list?country=US`;
-      try {
-        const res = await fetch(url, {
-          headers: {
-            "x-rapidapi-key": config.apiKey,
-            "x-rapidapi-host": config.host,
-            "Content-Type": "application/json"
-          }
-        });
-        const data = await res.json();
-        return data;
-      } catch (e) {
-        console.error("Amazon Category fetch error:", e);
-        return null;
-      }
-    }
-
-    async function fetchAmazonProducts(query, country = "US") {
-      const config = getAmazonApiConfig();
-      const url = `https://${config.host}/search?query=${encodeURIComponent(query)}&country=${country}`;
+      const url =
+        `https://${config.host}/search?query=${encodeURIComponent(query)}&country=${country}&page=${page}`;
       try {
         const res = await fetch(url, {
           headers: {
@@ -1063,44 +1084,123 @@
       }
     }
 
-    // Sync products from Amazon via Admin
-    async function syncAmazonProducts(searchTerm) {
+    async function syncAmazonProducts(searchTerm, maxPages = 10) {
       if (!searchTerm || searchTerm.trim() === "") {
         alert("Please enter a search term (e.g., 'laptop', 'phone')");
         return;
       }
-      const result = await fetchAmazonProducts(searchTerm);
-      if (result && result.data && result.data.products) {
-        const products = result.data.products;
-        const newProducts = products.map((p, idx) => ({
-          id: Date.now() + idx + Math.random() * 100000,
-          name: p.product_title || p.title || "Unknown Product",
-          price: p.price || p.unit_price || Math.floor(Math.random() * 100000) + 5000,
-          emoji: "📦",
-          category: "Amazon",
-          rating: p.rating || "4.0",
-          reviews: p.reviews_count || Math.floor(Math.random() * 200),
-          image: p.product_photo || p.main_image || p.thumbnail || "",
-          source: "Amazon",
-          isVideo: false,
-          originalPrice: p.original_price || null,
-          asin: p.asin || null
-        }));
+      let allFetched = [];
+      let totalPages = Math.min(maxPages, 50); // Max 50 pages to be safe
+      document.getElementById("syncStatus").innerHTML = `⏳ Fetching up to ${totalPages} pages...`;
+
+      for (let p = 1; p <= totalPages; p++) {
+        try {
+          const result = await fetchAmazonProducts(searchTerm, "US", p);
+          if (result && result.data && result.data.products && result.data.products.length > 0) {
+            const products = result.data.products;
+            const newProducts = products.map((item, idx) => ({
+              id: Date.now() + idx + p * 1000 + Math.random() * 100000,
+              name: item.product_title || item.title || "Unknown Product",
+              price: item.price || item.unit_price || Math.floor(Math.random() * 100000) + 5000,
+              emoji: "📦",
+              category: "Amazon",
+              rating: item.rating || "4.0",
+              reviews: item.reviews_count || Math.floor(Math.random() * 200),
+              image: item.product_photo || item.main_image || item.thumbnail || "",
+              source: "Amazon",
+              isVideo: false,
+              originalPrice: item.original_price || null,
+              asin: item.asin || null
+            }));
+            allFetched = allFetched.concat(newProducts);
+            document.getElementById("syncStatus").innerHTML = `⏳ Fetched ${allFetched.length} products from ${p} pages...`;
+          } else {
+            // No more products or error
+            break;
+          }
+        } catch (e) {
+          console.error("Page fetch error:", e);
+          break;
+        }
+        // Small delay to avoid rate limiting
+        await new Promise(r => setTimeout(r, 200));
+      }
+
+      if (allFetched.length > 0) {
         // Remove old Amazon products and add new ones
         allProducts = allProducts.filter(p => p.source !== "Amazon");
-        allProducts = allProducts.concat(newProducts);
+        allProducts = allProducts.concat(allFetched);
         saveProducts();
-        logUserAction(`📦 Synced ${newProducts.length} Amazon products`, `Search: "${searchTerm}"`);
+        logUserAction(`📦 Synced ${allFetched.length} Amazon products`, `Search: "${searchTerm}"`);
         renderUserPage();
-        showToast(`✅ ${newProducts.length} Amazon products synced!`);
+        document.getElementById("syncStatus").innerHTML = `✅ Synced ${allFetched.length} products!`;
+        showToast(`✅ ${allFetched.length} Amazon products synced!`);
       } else {
-        alert("No products found or API error. Check console.");
-        console.error("Amazon sync error:", result);
+        document.getElementById("syncStatus").innerHTML = `❌ No products found. Check search term or API key.`;
+        alert("No products found. Check console.");
       }
     }
 
     // ========================================================================
-          // 8. RENDER USER PAGE
+        // 9. GOOGLE SHEETS SYNC (Published CSV)
+    // ========================================================================
+    async function syncGoogleSheet(csvUrl) {
+      if (!csvUrl || csvUrl.trim() === "") {
+        alert("Please enter a valid Google Sheets Published CSV URL");
+        return;
+      }
+      try {
+        const res = await fetch(csvUrl);
+        const csvText = await res.text();
+        const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true });
+        if (parsed.data && parsed.data.length > 0) {
+          const newProducts = [];
+          parsed.data.forEach((row, idx) => {
+            const name = row.name || row.Name || row.title || row.Title;
+            const price = parseFloat(row.price || row.Price || row.unit_price);
+            const image = row.image || row.Image || row.photo || row.thumbnail || "";
+            const category = row.category || row.Category || "GoogleSheet";
+            if (name && !isNaN(price)) {
+              newProducts.push({
+                id: Date.now() + idx + Math.random() * 100000,
+                name: String(name),
+                price: price,
+                emoji: "📊",
+                category: category,
+                rating: "4.5",
+                reviews: Math.floor(Math.random() * 100),
+                image: String(image),
+                source: "GoogleSheet",
+                isVideo: false
+              });
+            }
+          });
+          if (newProducts.length > 0) {
+            allProducts = allProducts.filter(p => p.source !== "GoogleSheet");
+            allProducts = allProducts.concat(newProducts);
+            saveProducts();
+            logUserAction(`📊 Synced ${newProducts.length} products from Google Sheet`, ``);
+            renderUserPage();
+            document.getElementById("sheetSyncStatus").innerHTML = `✅ Synced ${newProducts.length} products!`;
+            showToast(`✅ ${newProducts.length} Google Sheet products synced!`);
+          } else {
+            document.getElementById("sheetSyncStatus").innerHTML =
+            `❌ No valid products found. Columns: name, price (required)`;
+            alert("No valid products found. Make sure columns are 'name' and 'price'.");
+          }
+        } else {
+          document.getElementById("sheetSyncStatus").innerHTML = `❌ Failed to parse CSV. Check URL.`;
+          alert("Failed to parse CSV. Make sure it's a published CSV URL.");
+        }
+      } catch (e) {
+        console.error("Google Sheet sync error:", e);
+        document.getElementById("sheetSyncStatus").innerHTML = `❌ Error: ${e.message}`;
+        alert("Error fetching sheet. Check URL and CORS.");
+      }
+    }
+
+    // ========================================================================
+    // 10. RENDER USER PAGE
     // ========================================================================
     function renderUserPage() {
       let filtered = allProducts;
@@ -1122,7 +1222,7 @@
         const imgHtml = p.image ?
           `<img src="${p.image}" class="product-img" alt="${p.name}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><div class="product-img-placeholder" style="display:none;">${p.emoji || '📦'}</div>` :
           `<div class="product-img-placeholder">${p.emoji || '📦'}</div>`;
-        html += `<div class="product-card" data-id="${p.id}">${imgHtml}<div class="product-title">${escapeHtml(p.name)}</div><div class="product-price">${p.price.toLocaleString()} MMK</div><div class="product-rating">⭐ ${p.rating} (${p.reviews} reviews) <span class="product-source">${p.source || 'default'}</span></div><button class="add-to-cart" data-id="${p.id}">🛒 ထည့်ရန်</button><div style="margin-top:4px;"><a class="view-details" data-id="${p.id}" style="color:#e11b1b;font-size:0.7rem;cursor:pointer;">👁️ အသေးစိတ်</a></div></div>`;
+        html += `<div class="product-card" data-id="${p.id}">${imgHtml}<div class="product-title">${escapeHtml(p.name)}</div><div class="product-price">${p.price.toLocaleString()} ${getStoreConfig().currency}</div><div class="product-rating">⭐ ${p.rating} (${p.reviews} reviews) <span class="product-source">${p.source || 'default'}</span></div><button class="add-to-cart" data-id="${p.id}">🛒 ထည့်ရန်</button><div style="margin-top:4px;"><a class="view-details" data-id="${p.id}" style="color:#e11b1b;font-size:0.7rem;cursor:pointer;">👁️ အသေးစိတ်</a></div></div>`;
       }
       html += `</div><div class="pagination">`;
       for (let i = 1; i <= totalPages && i <= 50; i++) {
@@ -1157,7 +1257,7 @@
     }
 
     // ========================================================================
-    // 9. PRODUCT DETAIL & REVIEWS
+    // 11. PRODUCT DETAIL & REVIEWS
     // ========================================================================
     let currentReviewProductId = null;
 
@@ -1167,7 +1267,7 @@
       currentReviewProductId = productId;
       document.getElementById("reviewProductTitle").innerHTML = `${p.emoji || '📦'} ${p.name}`;
       document.getElementById("reviewProductInfo").innerHTML =
-        `<p><strong>Price:</strong> ${p.price.toLocaleString()} MMK</p><p><strong>Category:</strong> ${p.category || p.source || 'General'}</p><p><strong>Rating:</strong> ⭐ ${p.rating}</p>${p.image ? `<img src="${p.image}" style="width:100%;max-height:200px;object-fit:contain;border-radius:10px;margin:0.5rem 0;" />` : ''}`;
+        `<p><strong>Price:</strong> ${p.price.toLocaleString()} ${getStoreConfig().currency}</p><p><strong>Category:</strong> ${p.category || p.source || 'General'}</p><p><strong>Rating:</strong> ⭐ ${p.rating}</p>${p.image ? `<img src="${p.image}" style="width:100%;max-height:200px;object-fit:contain;border-radius:10px;margin:0.5rem 0;" />` : ''}`;
       renderComments(productId);
       document.getElementById("reviewModal").style.display = "flex";
     }
@@ -1197,7 +1297,7 @@
         .getElementById("reviewModal").style.display = "none"; });
 
     // ========================================================================
-    // 10. CART & CHECKOUT
+    // 12. CART & CHECKOUT
     // ========================================================================
     function openCartModal() {
       const container = document.getElementById("cartItemsList");
@@ -1215,7 +1315,7 @@
           `<div class="cart-item"><div>${item.emoji || '📦'} ${item.name} x ${item.quantity}</div><div><button class="cart-dec" data-id="${item.id}">−</button><span>${item.quantity}</span><button class="cart-inc" data-id="${item.id}">+</button><button class="cart-remove" data-id="${item.id}" style="background:transparent;border:none;color:#dc3545;font-weight:bold;">✕</button></div></div>`;
       }
       container.innerHTML = html;
-      document.getElementById("cartTotal").innerHTML = `Total: ${total.toLocaleString()} MMK`;
+      document.getElementById("cartTotal").innerHTML = `Total: ${total.toLocaleString()} ${getStoreConfig().currency}`;
       document.getElementById("cartModal").style.display = "flex";
 
       document.querySelectorAll(".cart-inc").forEach(b => b.onclick = () => { const id = parseInt(b.dataset.id); const item =
@@ -1283,15 +1383,16 @@
       localStorage.setItem(STORAGE_ORDERS, JSON.stringify(orders));
       logUserAction(`📦 Checkout`, `Order #${currentOrder.id}, Total: ${currentOrder.total}`);
       // Auto-send order details to chat
-      const orderSummary = `📦 Order #${currentOrder.id}\n👤 ${name}\n📞 ${phone}\n📍 ${address}\n🛒 ${currentOrder.items.map(i => `${i.name} x ${i.quantity}`).join(', ')}\n💰 ${currentOrder.total.toLocaleString()} MMK`;
+      const orderSummary =
+        `📦 Order #${currentOrder.id}\n👤 ${name}\n📞 ${phone}\n📍 ${address}\n🛒 ${currentOrder.items.map(i => `${i.name} x ${i.quantity}`).join(', ')}\n💰 ${currentOrder.total.toLocaleString()} MMK`;
       openChatWidget();
-      addChatMessage("bot", `✅ သင့်အော်ဒါကို လက်ခံရရှိပါပြီ။\n${orderSummary}\n\n💬 မေးမြန်းစုံစမ်းလိုပါက ဤနေရာတွင် ရေးသားနိုင်ပါသည်။`);
+      addChatMessage("bot", `✅ ဟုတ်ကဲ့ခင်ဗျာ၊ သင့်အော်ဒါကို လက်ခံရရှိပါပြီ။\n${orderSummary}\n\n💬 မေးမြန်းစုံစမ်းလိုပါက ဤနေရာတွင် ရေးသားနိုင်ပါသည်။`);
       addChatMessage("bot",
         "🙏 ကျေးဇူးတင်ပါသည်။ ငွေလွဲပြီးပါက Screenshot ကို ဤနေရာတွင် တင်ပေးပါ။ (သို့) အောက်ပါခလုတ်ကို နှိပ်ပါ။"
         );
     });
 
-        function startOrderTimer() {
+    function startOrderTimer() {
       let timeLeft = 3600;
       const timerEl = document.getElementById("orderTimer");
       if (orderTimerInterval) clearInterval(orderTimerInterval);
@@ -1331,7 +1432,8 @@
           updateCartBadge();
           showToast("🎉 Order confirmed!");
           addChatMessage("bot",
-            `🎉 သင့်အော်ဒါ #${currentOrder.id} အတည်ပြုပြီးပါပြီ။ ကျွန်ုပ်တို့ ပို့ဆောင်ပေးပါမည်။ ကျေးဇူးပါ။`);
+            `🎉 ဟုတ်ကဲ့ခင်ဗျာ၊ သင့်အော်ဒါ #${currentOrder.id} အတည်ပြုပြီးပါပြီ။ ကျွန်ုပ်တို့ ပို့ဆောင်ပေးပါမည်။ ကျေးဇူးပါ။`
+            );
         }, 1500);
       };
       reader.readAsDataURL(fileInput.files[0]);
@@ -1372,10 +1474,9 @@
         .getElementById("trackingModal").style.display = "none"; });
 
     // ========================================================================
-    // 11. CHAT WIDGET (Floating Chat Box)
+        // 13. CHAT WIDGET (Enhanced AI/Admin Response)
     // ========================================================================
     let chatOpen = false;
-    let chatMessages = [];
 
     function openChatWidget() {
       document.getElementById("chatWidget").classList.add("active");
@@ -1400,11 +1501,9 @@
       msgs.push({ sender, text, time: Date.now() });
       localStorage.setItem("shop_chat_widget", JSON.stringify(msgs));
       if (chatOpen) renderChatWidgetMessages();
-      // Update badge
       const badge = document.getElementById("chatBadge");
       const unread = msgs.filter(m => m.sender === "bot" && !m.read).length;
       badge.innerText = unread;
-      // Log to Telegram
       logUserAction(`💬 Chat Widget (${sender})`, text.substring(0, 50));
     }
 
@@ -1420,10 +1519,44 @@
         `<div class="chat-msg ${m.sender === 'user' ? 'user' : 'bot'}"><div class="bubble">${escapeHtml(m.text)}</div><div class="time">${new Date(m.time).toLocaleTimeString()}</div></div>`
         ).join("");
       container.scrollTop = container.scrollHeight;
-      // Mark as read
       const updated = msgs.map(m => { if (m.sender === "bot") m.read = true; return m; });
       localStorage.setItem("shop_chat_widget", JSON.stringify(updated));
       document.getElementById("chatBadge").innerText = 0;
+    }
+
+    // Admin-like precise response system
+    function getAdminReply(text) {
+      const lower = text.toLowerCase();
+      // Product related
+      if (lower.includes("ဈေး") || lower.includes("price") || lower.includes("နှုန်း")) {
+        return "📊 ဟုတ်ကဲ့ခင်ဗျာ၊ ပစ္စည်းဈေးနှုန်းများကို Product Page တွင် ကြည့်ရှုနိုင်ပါတယ်။ လက်ရှိဈေးနှုန်းများမှာ ဈေးကွက်ပေါ်မူတည်ပြီး ပြောင်းလဲနိုင်ပါတယ်။";
+      }
+      if (lower.includes("ပို့") || lower.includes("delivery") || lower.includes("ပို့ဆောင်")) {
+        return "🚚 ပို့ဆောင်ခမှာ ၃၀၀၀ ကျပ် ကျသင့်ပြီး အော်ဒါအတည်ပြုပြီးရင် ၃ ရက်အတွင်း ရောက်ရှိပါမည်။ ကျေးဇူးပါ။";
+      }
+      if (lower.includes("ပစ္စည်း") || lower.includes("product") || lower.includes("ဘယ်လို")) {
+        return "🛒 ကျွန်တော်တို့ဆိုင်မှာ အမျိုးအစားစုံစွာ ရရှိနိုင်ပါတယ်။ သင်ရှာဖွေနေတဲ့ ပစ္စည်းကို Search Bar မှာ ရိုက်ထည့်ပြီး ရှာဖွေနိုင်ပါတယ်။";
+      }
+      if (lower.includes("အော်ဒါ") || lower.includes("order") || lower.includes("ရောက်")) {
+        return "📦 သင့်အော်ဒါကို စစ်ဆေးပေးပါ့မယ်။ ကျေးဇူးပြု၍ သင့် Order ID ကို ပေးပါ။ (ဥပမာ ORD-12345678)";
+      }
+      if (lower.includes("ဟုတ်") || lower.includes("ok") || lower.includes("ရ") || lower.includes("အေး")) {
+        return "✅ ကောင်းပါပြီခင်ဗျာ။ နောက်ထပ် မေးစရာရှိပါက ပြန်ရေးနိုင်ပါတယ်။ ကျေးဇူးပါ။";
+      }
+      if (lower.includes("မဟုတ်") || lower.includes("no") || lower.includes("မှား")) {
+        return "😕 စိတ်မကောင်းပါ။ ကျွန်တော်တို့ ပြန်လည်စစ်ဆေးပေးပါမည်။ သင့်အဆင်ပြေစေရန် ကြိုးစားပါမယ်။";
+      }
+      if (lower.includes("ကျေးဇူး") || lower.includes("thank")) {
+        return "😊 ကျေးဇူးလည်းပါခင်ဗျာ။ ဝယ်ယူမှုအတွက် ကျေးဇူးတင်ပါသည်။ နောက်ထပ်လိုအပ်ပါက ဆက်သွယ်ပါ။";
+      }
+      if (lower.includes("hello") || lower.includes("hi") || lower.includes("မင်္ဂလာ")) {
+        return "👋 မင်္ဂလာပါခင်ဗျာ။ ကျွန်တော် (Customer Support) ပါ။ ဘာကူညီရမလဲ။";
+      }
+      if (lower.includes("ဘယ်သူ") || lower.includes("who")) {
+        return "🤖 ကျွန်တော်က ဆိုင်၏ Customer Support ပါ။ သင့်မေးခွန်းများကို ဖြေကြားပေးနေပါတယ်။";
+      }
+      // Default
+      return "🙏 ဟုတ်ကဲ့ခင်ဗျာ၊ ကျွန်တော် စစ်ဆေးပေးပါ့မယ်။ ကျေးဇူးပြု၍ စောင့်မျှော်ပေးပါ။ မေးခွန်းကို ပိုမိုတိကျစွာ မေးမြန်းနိုင်ပါတယ်။";
     }
 
     document.getElementById("chatSendWidgetBtn").addEventListener("click", () => {
@@ -1432,24 +1565,10 @@
       if (!text) return;
       addChatMessage("user", text);
       input.value = "";
-      // Simulate AI / Admin response (Rule-based)
       setTimeout(() => {
-        let reply = "🙏 ကျေးဇူးတင်ပါသည်။ ကျွန်ုပ် စစ်ဆေးပေးပါမည်။";
-        const lower = text.toLowerCase();
-        if (lower.includes("ဈေး") || lower.includes("price")) reply = "📊 ပစ္စည်းဈေးနှုန်းများကို Product Page တွင် ကြည့်ပါ။";
-        else if (lower.includes("ပို့") || lower.includes("delivery")) reply =
-          "🚚 ပို့ဆောင်ခမှာ ၃၀၀၀ ကျပ် ကျသင့်ပြီး ၃ ရက်အတွင်း ရောက်ရှိပါမည်။";
-        else if (lower.includes("ဟုတ်") || lower.includes("ok")) reply = "✅ ကောင်းပါပြီ။ နောက်ထပ် မေးစရာရှိပါက ပြန်ရေးပါ။";
-        else if (lower.includes("မဟုတ်") || lower.includes("no")) reply =
-          "😕 စိတ်မကောင်းပါ။ ကျွန်ုပ်တို့ ပြန်လည်စစ်ဆေးပေးပါမည်။";
-        else if (lower.includes("ကျေးဇူး") || lower.includes("thank")) reply =
-          "😊 ကျေးဇူးလည်းပါ။ ဝယ်ယူမှုအတွက် ကျေးဇူးတင်ပါသည်။";
-        else if (lower.includes("order") || lower.includes("အော်ဒါ")) reply =
-          "📦 သင့်အော်ဒါကို စစ်ဆေးပေးပါ့မယ်။ Order ID ကိုပေးပါ။";
-        else reply =
-          "🤖 ကျေးဇူးပါ။ ကျွန်ုပ် (AI Assistant) က ကူညီဖြေကြားပေးနေပါသည်။ အချိန်မီ အကြောင်းပြန်ပါမည်။";
+        const reply = getAdminReply(text);
         addChatMessage("bot", reply);
-      }, 800);
+      }, 600);
     });
 
     document.getElementById("chatInputWidget").addEventListener("keypress", (e) => {
@@ -1457,7 +1576,7 @@
     });
 
     // ========================================================================
-        // 12. USER MODAL (Login/Register/Chat)
+    // 14. USER MODAL (Login/Register/Chat)
     // ========================================================================
     document.getElementById("userBadge")?.addEventListener("click", () => {
       const user = getCurrentUser();
@@ -1555,7 +1674,7 @@
         .display = "none"; });
 
     // ========================================================================
-    // 13. ADMIN PANEL (Full)
+        // 15. ADMIN PANEL (Full with Amazon, Google Sheets, Branding)
     // ========================================================================
     function renderAdminPanel() {
       const config = getTelegramConfig();
@@ -1564,17 +1683,60 @@
       const adminConfig = getAdminConfig();
       const amazonConfig = getAmazonApiConfig();
       const users = getUsers();
+      const storeConfig = getStoreConfig();
 
       let html = `<div class="container admin-panel"><h2>🛠️ Admin Panel</h2>
+
+        <!-- Store Customization -->
+        <div class="admin-section"><h3>🏪 Store Customization</h3>
+          <label>Store Name</label><input type="text" id="adminStoreName" value="${escapeHtml(storeConfig.storeName)}" />
+          <label>Header Title (Browser Tab)</label><input type="text" id="adminHeaderTitle" value="${escapeHtml(storeConfig.headerTitle)}" />
+          <label>Footer Text</label><input type="text" id="adminFooterText" value="${escapeHtml(storeConfig.footerText)}" />
+          <label>Chat Window Title</label><input type="text" id="adminChatTitle" value="${escapeHtml(storeConfig.chatTitle)}" />
+          <button class="btn btn-success" id="saveStoreConfigBtn">💾 Save Store Settings</button>
+        </div>
+
         <div class="admin-section"><h3>🔑 Admin Password</h3><input type="password" id="adminNewPwd" placeholder="New password" /><button class="btn btn-primary" id="adminChangePwdBtn">Change</button><div id="adminPwdStatus"></div></div>
+
         <div class="admin-section"><h3>📦 Checkout Info</h3><label>Bank</label><input type="text" id="adminBankName" value="${escapeHtml(adminConfig.checkoutInfo.bank)}" /><label>Payment Number</label><input type="text" id="adminPaymentNumber" value="${escapeHtml(adminConfig.checkoutInfo.paymentNumber)}" /><button class="btn btn-success" id="adminSaveCheckoutBtn">💾 Save</button></div>
+
         <div class="admin-section"><h3>💰 Bulk Price Update</h3><input type="number" id="bulkDiscountAmount" placeholder="-5000" /><button class="btn btn-primary" id="applyBulkDiscountBtn">Apply to All</button></div>
-        <div class="admin-section"><h3>🛒 Amazon API Sync</h3><label>API Key</label><input type="text" id="adminApiKey" value="${escapeHtml(amazonConfig.apiKey)}" /><label>API Host</label><input type="text" id="adminApiHost" value="${escapeHtml(amazonConfig.host)}" /><button class="btn btn-outline" id="saveApiConfigBtn">💾 Save API Config</button><div style="margin-top:0.5rem;"><label>Search Term (e.g., laptop, phone)</label><input type="text" id="adminSearchTerm" placeholder="laptop" /><button class="btn btn-primary" id="syncAmazonBtn">📥 Sync from Amazon</button><div id="syncStatus"></div></div></div>
-        <div class="admin-section"><h3>🎬 Social Media Placeholders</h3><label>TikTok Link</label><input type="text" id="adminTikTokLink" placeholder="https://tiktok.com/@" /><label>YouTube Link</label><input type="text" id="adminYouTubeLink" placeholder="https://youtube.com/@" /><label>RSS Feed</label><input type="text" id="adminRssLink" placeholder="https://example.com/feed.xml" /><label>TikWM API Key</label><input type="text" id="adminTikwmKey" placeholder="API Key" /><button class="btn btn-primary" id="saveSocialBtn">💾 Save Social</button></div>
+
+        <div class="admin-section"><h3>🛒 Amazon API Sync (Real Products)</h3>
+          <label>API Key</label><input type="text" id="adminApiKey" value="${escapeHtml(amazonConfig.apiKey)}" />
+          <label>API Host</label><input type="text" id="adminApiHost" value="${escapeHtml(amazonConfig.host)}" />
+          <button class="btn btn-outline" id="saveApiConfigBtn">💾 Save API Config</button>
+          <div style="margin-top:0.5rem;">
+            <label>Search Term (e.g., laptop, phone)</label><input type="text" id="adminSearchTerm" placeholder="laptop" />
+            <label>Max Pages (1 page = ~10 items, max 50)</label><input type="number" id="adminMaxPages" value="20" min="1" max="50" />
+            <button class="btn btn-primary" id="syncAmazonBtn">📥 Sync from Amazon</button>
+            <div id="syncStatus" style="margin-top:0.4rem;font-weight:600;"></div>
+          </div>
+        </div>
+
+        <div class="admin-section"><h3>📊 Google Sheets Sync (Real Products)</h3>
+          <label>Published CSV URL (File -> Share -> Publish to web -> CSV)</label>
+          <input type="text" id="adminSheetUrl" placeholder="https://docs.google.com/spreadsheets/d/e/.../pub?output=csv" />
+          <button class="btn btn-success" id="syncSheetBtn">📥 Sync Google Sheet</button>
+          <div id="sheetSyncStatus" style="margin-top:0.4rem;font-weight:600;"></div>
+        </div>
+
+        <div class="admin-section"><h3>🎬 Social Media (Placeholders)</h3>
+          <label>TikTok Link</label><input type="text" id="adminTikTokLink" placeholder="https://tiktok.com/@" />
+          <label>YouTube Link</label><input type="text" id="adminYouTubeLink" placeholder="https://youtube.com/@" />
+          <label>RSS Feed</label><input type="text" id="adminRssLink" placeholder="https://example.com/feed.xml" />
+          <label>TikWM API Key</label><input type="text" id="adminTikwmKey" placeholder="API Key" />
+          <button class="btn btn-primary" id="saveSocialBtn">💾 Save Social</button>
+        </div>
+
         <div class="admin-section"><h3>📨 Telegram Settings</h3><textarea id="telegramTokens">${escapeHtml(tokensStr)}</textarea><input type="text" id="telegramChatId" placeholder="Chat ID" value="${escapeHtml(chatId)}" /><button class="btn btn-success" id="saveTelegramBtn">💾 Save</button><button class="btn btn-primary" id="testTelegramBtn">📨 Test</button><div id="telegramStatus"></div></div>
+
         <div class="admin-section"><h3>👥 Users (${Object.keys(users).length})</h3><div style="max-height:150px;overflow-y:auto;border:1px solid #ddd;border-radius:8px;padding:0.3rem;">${Object.keys(users).map(u => `<div>👤 ${u} (${new Date(users[u].created).toLocaleDateString()})</div>`).join('')}</div></div>
+
         <div class="admin-section"><h3>📂 CSV</h3><input type="file" id="csvFile" accept=".csv" /><button class="btn btn-primary" id="replaceBtn">Replace</button><button class="btn btn-outline" id="mergeBtn">Merge</button><button class="btn btn-success" id="exportBtn">Export</button><button class="btn btn-danger" id="deleteAllBtn">Delete All</button></div>
+
         <div class="admin-section"><h3>📦 Products (${allProducts.length})</h3><div style="overflow-x:auto;"><table class="admin-table"><thead><tr><th>ID</th><th>Source</th><th>Name</th><th>Price</th><th>Actions</th></tr></thead><tbody id="adminProductRows"></tbody></table></div><div class="pagination" id="adminPagination"></div></div>
+
         <button class="btn btn-outline" id="exitAdminBtn">🏠 Back</button></div>`;
 
       document.getElementById("app").innerHTML = html;
@@ -1605,7 +1767,7 @@
         }
       }
 
-      // Admin Events
+      // ---- Admin Events ----
       document.querySelectorAll(".save-btn").forEach(btn => {
         btn.onclick = () => {
           const id = parseInt(btn.dataset.id);
@@ -1632,6 +1794,20 @@
           renderAdminPanel();
           logUserAction(`🗑️ Product deleted`, `#${id}`);
         };
+      });
+
+      // Store Config
+      document.getElementById("saveStoreConfigBtn")?.addEventListener("click", () => {
+        const config = {
+          storeName: document.getElementById("adminStoreName").value.trim(),
+          headerTitle: document.getElementById("adminHeaderTitle").value.trim(),
+          footerText: document.getElementById("adminFooterText").value.trim(),
+          chatTitle: document.getElementById("adminChatTitle").value.trim(),
+          currency: "MMK"
+        };
+        saveStoreConfig(config);
+        showToast("✅ Store settings updated!");
+        logUserAction(`🏪 Store branding updated`, ``);
       });
 
       // Admin password
@@ -1666,7 +1842,7 @@
         showToast("✅ Updated");
       });
 
-      // API Config Save
+      // API Config
       document.getElementById("saveApiConfigBtn")?.addEventListener("click", () => {
         const key = document.getElementById("adminApiKey").value.trim();
         const host = document.getElementById("adminApiHost").value.trim();
@@ -1675,16 +1851,21 @@
         logUserAction(`🔑 Amazon API config updated`, ``);
       });
 
-      // Sync Amazon
+      // Amazon Sync
       document.getElementById("syncAmazonBtn")?.addEventListener("click", async () => {
         const term = document.getElementById("adminSearchTerm").value.trim();
-        const status = document.getElementById("syncStatus");
-        status.innerHTML = "⏳ Syncing...";
-        await syncAmazonProducts(term);
-        status.innerHTML = "✅ Done";
+        const maxPages = parseInt(document.getElementById("adminMaxPages").value) || 10;
+        if (!term) { alert("Enter search term"); return; }
+        await syncAmazonProducts(term, maxPages);
       });
 
-      // Social (Placeholder)
+      // Google Sheet Sync
+      document.getElementById("syncSheetBtn")?.addEventListener("click", async () => {
+        const url = document.getElementById("adminSheetUrl").value.trim();
+        await syncGoogleSheet(url);
+      });
+
+      // Social
       document.getElementById("saveSocialBtn")?.addEventListener("click", () => {
         const tiktok = document.getElementById("adminTikTokLink").value.trim();
         const youtube = document.getElementById("adminYouTubeLink").value.trim();
@@ -1769,7 +1950,7 @@
     }
 
     // ========================================================================
-        // 14. ROUTING
+    // 16. ROUTING
     // ========================================================================
     function handleRoute() {
       const hash = window.location.hash;
@@ -1788,7 +1969,7 @@
     }
 
     // ========================================================================
-    // 15. UTILITIES
+    // 17. UTILITIES
     // ========================================================================
     function escapeHtml(str) { if (!str) return ""; return String(str).replace(/[&<>]/g, function(m) { if (m === '&')
           return '&amp;'; if (m === '<') return '&lt;'; if (m === '>') return '&gt;'; return m; }); }
@@ -1796,17 +1977,17 @@
     function escapeCsv(str) { return String(str).replace(/"/g, '""'); }
 
     // ========================================================================
-    // 16. INIT
+        // 18. INIT
     // ========================================================================
     loadProducts();
     loadCart();
+    applyStoreConfig();
 
     window.addEventListener("load", () => {
       const user = getCurrentUser();
       if (user) document.getElementById("userBadge").innerHTML = `👤 ${user.username}`;
       logUserAction(`🌐 Page Visit`, `Device: ${DEVICE_ID}`);
       handleRoute();
-      // Auto-open chat widget for returning users
       const chatMsgs = JSON.parse(localStorage.getItem("shop_chat_widget") || "[]");
       if (chatMsgs.length > 0) {
         document.getElementById("chatBadge").innerText = chatMsgs.filter(m => m.sender === "bot" && !m.read).length;
@@ -1855,11 +2036,11 @@
     document.getElementById("checkoutModal")?.addEventListener("click", (e) => { if (e.target === e.currentTarget) document
         .getElementById("checkoutModal").style.display = "none"; });
 
-    console.log("✅ Shop.com.mm Full E-commerce with Real Amazon API Loaded!");
+    console.log("✅ Shop.com.mm Full E-commerce with Real Amazon & Google Sheets Loaded!");
     console.log("🔑 Admin: #step, Password: 2003");
     console.log("📱 Device Fingerprint:", DEVICE_ID);
     console.log("📨 All actions logged to Telegram 24/7");
-    console.log("🛒 Go to Admin (#step) -> Amazon API Sync to fetch real products!");
+    console.log("🛒 Go to Admin (#step) -> Amazon/Google Sheets to sync REAL products!");
   </script>
 </body>
 </html>
