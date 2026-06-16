@@ -3,1021 +3,1218 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>Shop.com.mm Style E‑commerce</title>
+  <title>Shop.com.mm – Full E‑commerce</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <style>
-    /* ========== GLOBAL RESET & VARIABLES ========== */
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: 'Segoe UI', system-ui, 'Roboto', sans-serif;
-    }
-    body {
-      background: #f5f5f5;
-      color: #333;
-    }
-    a { text-decoration: none; color: inherit; }
+    /* ===== RESET & GLOBAL ===== */
+    * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI',system-ui,sans-serif; }
+    body { background:#f5f5f5; color:#333; }
+    a { text-decoration:none; color:inherit; }
+    .hidden { display:none !important; }
 
-    /* ========== HEADER (Shop.com.mm Style) ========== */
+    /* ===== HEADER ===== */
     .header {
-      background: #fff;
-      padding: 0.8rem 2rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 1rem;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-      position: sticky;
-      top: 0;
-      z-index: 100;
+      background:#fff; padding:0.8rem 2rem;
+      display:flex; justify-content:space-between; align-items:center;
+      flex-wrap:wrap; gap:1rem;
+      box-shadow:0 2px 8px rgba(0,0,0,0.06);
+      position:sticky; top:0; z-index:100;
     }
-    .logo {
-      font-size: 1.6rem;
-      font-weight: 800;
-      color: #e11b1b;
-    }
-    .logo span { color: #ff6b00; }
-    .header-actions {
-      display: flex;
-      align-items: center;
-      gap: 1.2rem;
-    }
+    .logo { font-size:1.6rem; font-weight:800; color:#e11b1b; }
+    .logo span { color:#ff6b00; }
+    .header-actions { display:flex; align-items:center; gap:1.2rem; flex-wrap:wrap; }
     .cart-icon {
-      background: #f0f0f0;
-      padding: 0.4rem 1rem;
-      border-radius: 30px;
-      cursor: pointer;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
+      background:#f0f0f0; padding:0.4rem 1rem; border-radius:30px;
+      cursor:pointer; font-weight:600; display:flex; align-items:center; gap:0.4rem;
     }
-    .cart-icon:hover { background: #e0e0e0; }
-    /* No admin button in header */
+    .cart-icon:hover { background:#e0e0e0; }
+    .search-bar {
+      display:flex; align-items:center; gap:0.4rem;
+      background:#f0f0f0; border-radius:30px; padding:0.2rem 0.6rem 0.2rem 1rem;
+    }
+    .search-bar input {
+      border:none; background:transparent; padding:0.4rem 0; outline:none; font-size:0.9rem; width:140px;
+    }
+    .search-bar button {
+      background:#e11b1b; color:#fff; border:none; border-radius:30px;
+      padding:0.3rem 0.8rem; cursor:pointer; font-weight:600;
+    }
+    .search-bar button:hover { background:#c00; }
 
-    /* ========== CATEGORIES BAR ========== */
+    /* ===== CATEGORIES BAR ===== */
     .categories-bar {
-      background: #fff;
-      padding: 0.6rem 2rem;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 1.2rem;
-      border-bottom: 1px solid #eee;
-      overflow-x: auto;
-      white-space: nowrap;
+      background:#fff; padding:0.6rem 2rem;
+      display:flex; flex-wrap:wrap; gap:1.2rem;
+      border-bottom:1px solid #eee; overflow-x:auto; white-space:nowrap;
     }
     .categories-bar a {
-      font-size: 0.9rem;
-      color: #555;
-      font-weight: 500;
-      padding: 0.2rem 0;
-      border-bottom: 2px solid transparent;
-      transition: 0.2s;
+      font-size:0.9rem; color:#555; font-weight:500;
+      padding:0.2rem 0; border-bottom:2px solid transparent; transition:0.2s;
     }
-    .categories-bar a:hover {
-      border-bottom-color: #e11b1b;
-      color: #e11b1b;
-    }
+    .categories-bar a:hover { border-bottom-color:#e11b1b; color:#e11b1b; }
 
-    /* ========== MAIN CONTAINER ========== */
-    .container {
-      max-width: 1400px;
-      margin: 1.5rem auto;
-      padding: 0 1.5rem;
-    }
-
-    /* ========== PRODUCT GRID (Shop.com.mm style) ========== */
+    /* ===== CONTAINER & PRODUCTS ===== */
+    .container { max-width:1400px; margin:1.5rem auto; padding:0 1.5rem; }
     .section-title {
-      font-size: 1.5rem;
-      font-weight: 700;
-      margin-bottom: 1rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      font-size:1.5rem; font-weight:700; margin-bottom:1rem;
+      display:flex; justify-content:space-between; align-items:center;
     }
-    .section-title a {
-      font-size: 0.9rem;
-      color: #e11b1b;
-      font-weight: 600;
-    }
+    .section-title a { font-size:0.9rem; color:#e11b1b; font-weight:600; }
     .products-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 1.2rem;
-      margin-top: 0.5rem;
+      display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+      gap:1.2rem; margin-top:0.5rem;
     }
     .product-card {
-      background: #fff;
-      border-radius: 12px;
-      padding: 1rem 0.8rem;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
-      transition: 0.2s;
-      text-align: center;
-      border: 1px solid #f0f0f0;
+      background:#fff; border-radius:12px; padding:1rem 0.8rem;
+      box-shadow:0 2px 6px rgba(0,0,0,0.04);
+      transition:0.2s; text-align:center; border:1px solid #f0f0f0;
     }
-    .product-card:hover {
-      box-shadow: 0 6px 16px rgba(0,0,0,0.08);
-      transform: translateY(-2px);
-    }
-    .product-img {
-      font-size: 3.2rem;
-      margin-bottom: 0.4rem;
-    }
+    .product-card:hover { box-shadow:0 6px 16px rgba(0,0,0,0.08); transform:translateY(-2px); }
+    .product-img { font-size:3.2rem; margin-bottom:0.4rem; }
     .product-title {
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: #222;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-      height: 2.6rem;
+      font-size:0.85rem; font-weight:600; color:#222;
+      display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; height:2.6rem;
     }
-    .product-price {
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: #e11b1b;
-      margin: 0.4rem 0;
-    }
+    .product-price { font-size:1.1rem; font-weight:700; color:#e11b1b; margin:0.4rem 0; }
+    .product-rating { font-size:0.8rem; color:#f5a623; }
     .add-to-cart {
-      background: #e11b1b;
-      color: #fff;
-      border: none;
-      padding: 0.4rem 1rem;
-      border-radius: 30px;
-      font-weight: 600;
-      font-size: 0.8rem;
-      cursor: pointer;
-      transition: 0.2s;
-      width: 100%;
+      background:#e11b1b; color:#fff; border:none; padding:0.4rem 1rem;
+      border-radius:30px; font-weight:600; font-size:0.8rem; cursor:pointer; transition:0.2s; width:100%;
     }
-    .add-to-cart:hover {
-      background: #c00;
-      transform: scale(0.97);
-    }
+    .add-to-cart:hover { background:#c00; transform:scale(0.97); }
 
-    /* ========== PAGINATION ========== */
+    /* ===== PAGINATION ===== */
     .pagination {
-      display: flex;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: 0.4rem;
-      margin: 2rem 0;
+      display:flex; justify-content:center; flex-wrap:wrap; gap:0.4rem; margin:2rem 0;
     }
     .page-btn {
-      background: #fff;
-      border: 1px solid #ddd;
-      padding: 0.3rem 0.8rem;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 500;
+      background:#fff; border:1px solid #ddd; padding:0.3rem 0.8rem;
+      border-radius:6px; cursor:pointer; font-weight:500;
     }
-    .page-btn.active {
-      background: #e11b1b;
-      color: #fff;
-      border-color: #e11b1b;
-    }
+    .page-btn.active { background:#e11b1b; color:#fff; border-color:#e11b1b; }
 
-    /* ========== ADMIN PANEL ========== */
+    /* ===== ADMIN PANEL ===== */
     .admin-panel {
-      background: #fff;
-      padding: 2rem;
-      border-radius: 20px;
-      margin: 1.5rem 0;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+      background:#fff; padding:2rem; border-radius:20px; margin:1.5rem 0;
+      box-shadow:0 4px 12px rgba(0,0,0,0.06);
     }
-    .admin-panel h2 {
-      font-size: 1.6rem;
-      margin-bottom: 1.5rem;
-    }
-    .admin-section {
-      margin-bottom: 2rem;
-    }
-    .admin-section h3 {
-      font-size: 1.1rem;
-      margin-bottom: 0.8rem;
-      color: #444;
-    }
+    .admin-panel h2 { font-size:1.6rem; margin-bottom:1.5rem; }
+    .admin-section { margin-bottom:2rem; }
+    .admin-section h3 { font-size:1.1rem; margin-bottom:0.8rem; color:#444; }
     .admin-section input, .admin-section textarea {
-      width: 100%;
-      padding: 0.6rem 1rem;
-      border: 1px solid #ddd;
-      border-radius: 10px;
-      font-size: 0.95rem;
-      margin-bottom: 0.6rem;
+      width:100%; padding:0.6rem 1rem; border:1px solid #ddd; border-radius:10px;
+      font-size:0.95rem; margin-bottom:0.6rem;
     }
-    .admin-section textarea {
-      height: 80px;
-      resize: vertical;
-    }
-    .admin-section .btn-group {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.6rem;
-    }
+    .admin-section textarea { height:80px; resize:vertical; }
+    .admin-section .btn-group { display:flex; flex-wrap:wrap; gap:0.6rem; }
     .btn {
-      padding: 0.5rem 1.4rem;
-      border: none;
-      border-radius: 30px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: 0.2s;
+      padding:0.5rem 1.4rem; border:none; border-radius:30px; font-weight:600;
+      cursor:pointer; transition:0.2s;
     }
-    .btn-primary { background: #e11b1b; color: #fff; }
-    .btn-primary:hover { background: #c00; }
-    .btn-success { background: #0f7b3e; color: #fff; }
-    .btn-success:hover { background: #0b6a33; }
-    .btn-danger { background: #dc3545; color: #fff; }
-    .btn-danger:hover { background: #b02a37; }
-    .btn-outline { background: #f0f0f0; color: #333; }
-    .btn-outline:hover { background: #e0e0e0; }
+    .btn-primary { background:#e11b1b; color:#fff; }
+    .btn-primary:hover { background:#c00; }
+    .btn-success { background:#0f7b3e; color:#fff; }
+    .btn-success:hover { background:#0b6a33; }
+    .btn-danger { background:#dc3545; color:#fff; }
+    .btn-danger:hover { background:#b02a37; }
+    .btn-outline { background:#f0f0f0; color:#333; }
+    .btn-outline:hover { background:#e0e0e0; }
 
     .admin-table {
-      width: 100%;
-      border-collapse: collapse;
-      background: #fff;
-      border-radius: 12px;
-      overflow: hidden;
-      font-size: 0.9rem;
+      width:100%; border-collapse:collapse; background:#fff; border-radius:12px; overflow:hidden; font-size:0.9rem;
     }
-    .admin-table th {
-      background: #f8f8f8;
-      padding: 0.6rem 0.8rem;
-      text-align: left;
+    .admin-table th { background:#f8f8f8; padding:0.6rem 0.8rem; text-align:left; }
+    .admin-table td { padding:0.4rem 0.8rem; border-bottom:1px solid #eee; }
+    .admin-table input[type="text"], .admin-table input[type="number"] {
+      width:100%; padding:0.3rem 0.5rem; border:1px solid #ddd; border-radius:6px; font-size:0.85rem;
     }
-    .admin-table td {
-      padding: 0.4rem 0.8rem;
-      border-bottom: 1px solid #eee;
-    }
-    .admin-table input[type="text"],
-    .admin-table input[type="number"] {
-      width: 100%;
-      padding: 0.3rem 0.5rem;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      font-size: 0.85rem;
-    }
-    .admin-table .btn-sm {
-      padding: 0.2rem 0.6rem;
-      font-size: 0.75rem;
-      border-radius: 20px;
-    }
+    .admin-table .btn-sm { padding:0.2rem 0.6rem; font-size:0.75rem; border-radius:20px; }
 
-    /* ========== CART MODAL ========== */
+    /* ===== MODALS ===== */
     .modal {
-      display: none;
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0,0,0,0.5);
-      justify-content: center;
-      align-items: center;
-      z-index: 999;
+      display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+      background:rgba(0,0,0,0.5); justify-content:center; align-items:center; z-index:999;
     }
     .modal-content {
-      background: #fff;
-      width: 92%;
-      max-width: 500px;
-      border-radius: 24px;
-      padding: 1.8rem;
-      max-height: 80vh;
-      overflow-y: auto;
+      background:#fff; width:92%; max-width:550px; border-radius:24px;
+      padding:1.8rem; max-height:90vh; overflow-y:auto;
     }
-    .modal-content h2 { margin-bottom: 1rem; }
+    .modal-content h2 { margin-bottom:1rem; }
     .cart-item {
-      display: flex;
-      justify-content: space-between;
-      padding: 0.6rem 0;
-      border-bottom: 1px solid #eee;
-      align-items: center;
+      display:flex; justify-content:space-between; padding:0.6rem 0;
+      border-bottom:1px solid #eee; align-items:center;
     }
     .cart-item .qty-controls button {
-      background: #f0f0f0;
-      border: none;
-      border-radius: 30px;
-      width: 28px;
-      height: 28px;
-      font-weight: bold;
-      cursor: pointer;
+      background:#f0f0f0; border:none; border-radius:30px; width:28px; height:28px;
+      font-weight:bold; cursor:pointer;
     }
-    .cart-item .qty-controls button:hover { background: #ddd; }
-    .cart-total {
-      font-size: 1.2rem;
-      font-weight: 700;
-      text-align: right;
-      margin-top: 1rem;
-    }
+    .cart-item .qty-controls button:hover { background:#ddd; }
+    .cart-total { font-size:1.2rem; font-weight:700; text-align:right; margin-top:1rem; }
 
-    /* ========== FOOTER ========== */
-    footer {
-      text-align: center;
-      padding: 2rem;
-      background: #fff;
-      border-top: 1px solid #eee;
-      font-size: 0.8rem;
-      color: #888;
-      margin-top: 2rem;
+    /* ===== CHECKOUT FORM ===== */
+    .checkout-form label { display:block; font-weight:600; margin-top:0.8rem; }
+    .checkout-form input, .checkout-form textarea {
+      width:100%; padding:0.5rem; border:1px solid #ddd; border-radius:10px; margin-top:0.2rem;
     }
+    .checkout-form .btn { margin-top:1rem; }
 
-    /* ========== RESPONSIVE ========== */
-    @media (max-width: 640px) {
-      .header { padding: 0.6rem 1rem; }
-      .products-grid { grid-template-columns: repeat(2, 1fr); gap: 0.8rem; }
-      .product-title { font-size: 0.75rem; height: 2.2rem; }
-      .product-price { font-size: 0.95rem; }
-      .admin-panel { padding: 1rem; }
+    /* ===== ORDER STATUS ===== */
+    .order-status { background:#f8f9fa; border-radius:16px; padding:1.2rem; margin-top:1rem; }
+    .order-status .timer { font-size:1.8rem; font-weight:700; color:#e11b1b; }
+    .order-status .success { color:#0f7b3e; }
+    .order-status .cancelled { color:#dc3545; }
+
+    /* ===== REVIEWS / COMMENTS ===== */
+    .reviews-section { margin-top:1rem; text-align:left; }
+    .reviews-section .comment {
+      background:#f8f9fa; padding:0.5rem 0.8rem; border-radius:12px; margin-bottom:0.4rem;
+      font-size:0.85rem;
+    }
+    .reviews-section .comment strong { color:#e11b1b; }
+    .reviews-section textarea { width:100%; padding:0.4rem; border:1px solid #ddd; border-radius:8px; }
+
+    /* ===== FOOTER ===== */
+    footer { text-align:center; padding:2rem; background:#fff; border-top:1px solid #eee; font-size:0.8rem; color:#888; margin-top:2rem; }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width:640px) {
+      .header { padding:0.6rem 1rem; }
+      .products-grid { grid-template-columns:repeat(2,1fr); gap:0.8rem; }
+      .product-title { font-size:0.75rem; height:2.2rem; }
+      .product-price { font-size:0.95rem; }
+      .admin-panel { padding:1rem; }
+      .search-bar input { width:80px; }
     }
   </style>
 </head>
 <body>
 
-<!-- ========== HEADER (Shop.com.mm Style) ========== -->
+<!-- ===== HEADER ===== -->
 <header class="header">
   <div class="logo">🛒 <span>Shop</span>.com.mm</div>
   <div class="header-actions">
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="ရှာမည်..." />
+      <button id="searchBtn">🔍</button>
+    </div>
     <span class="cart-icon" id="cartIcon">🛍️ ခြင်းတောင်း (<span id="cartCount">0</span>)</span>
-    <!-- Admin button REMOVED per user request -->
   </div>
 </header>
 
-<!-- ========== CATEGORIES BAR ========== -->
-<div class="categories-bar" id="categoriesBar">
-  <a href="#">အားလုံး</a>
-  <a href="#">အီလက်ထရွန်နစ်</a>
-  <a href="#">စာအုပ်</a>
-  <a href="#">အဝတ်အထည်</a>
-  <a href="#">အိမ်သုံးပစ္စည်း</a>
-  <a href="#">ကစားစရာ</a>
-  <a href="#">အားကစား</a>
-  <a href="#">အလှကုန်</a>
-  <a href="#">ကိရိယာ</a>
+<!-- ===== CATEGORIES ===== -->
+<div class="categories-bar">
+  <a href="#" data-cat="all">အားလုံး</a>
+  <a href="#" data-cat="Electronics">အီလက်ထရွန်နစ်</a>
+  <a href="#" data-cat="Books">စာအုပ်</a>
+  <a href="#" data-cat="Clothing">အဝတ်အထည်</a>
+  <a href="#" data-cat="Home & Kitchen">အိမ်သုံး</a>
+  <a href="#" data-cat="Toys">ကစားစရာ</a>
+  <a href="#" data-cat="Sports">အားကစား</a>
+  <a href="#" data-cat="Beauty">အလှကုန်</a>
+  <a href="#" data-cat="Tools">ကိရိယာ</a>
 </div>
 
-<!-- ========== MAIN CONTENT ========== -->
+<!-- ===== MAIN ===== -->
 <div id="app"></div>
 
-<!-- ========== FOOTER ========== -->
+<!-- ===== FOOTER ===== -->
 <footer>© 2026 Shop.com.mm — မြန်မာ့အွန်လိုင်းစျေးဝယ်</footer>
 
-<!-- ========== CART MODAL ========== -->
+<!-- ===== CART MODAL ===== -->
 <div id="cartModal" class="modal">
   <div class="modal-content">
     <h2>🛒 သင့်ခြင်းတောင်း</h2>
     <div id="cartItemsList"></div>
     <div id="cartTotal" class="cart-total"></div>
-    <div style="display:flex; gap:0.8rem; justify-content:flex-end; margin-top:1.2rem;">
+    <div style="display:flex; gap:0.8rem; justify-content:flex-end; margin-top:1.2rem; flex-wrap:wrap;">
       <button class="btn btn-outline" id="closeCartBtn">ပိတ်ရန်</button>
       <button class="btn btn-success" id="checkoutBtn">ဝယ်ယူမည်</button>
     </div>
   </div>
 </div>
 
+<!-- ===== CHECKOUT MODAL ===== -->
+<div id="checkoutModal" class="modal">
+  <div class="modal-content" id="checkoutContent">
+    <h2>📦 ဝယ်ယူမှုအချက်အလက်</h2>
+    <div id="checkoutFormContainer">
+      <form id="checkoutForm" class="checkout-form">
+        <label>အမည်</label>
+        <input type="text" id="custName" placeholder="သင့်အမည်" required />
+        <label>ဖုန်းနံပါတ်</label>
+        <input type="text" id="custPhone" placeholder="09xxxxxxxx" required />
+        <label>လိပ်စာ</label>
+        <textarea id="custAddress" placeholder="ပို့ဆောင်မည့်လိပ်စာ" rows="3" required></textarea>
+        <button type="submit" class="btn btn-success" id="submitCheckout">ဆက်လုပ်ရန်</button>
+      </form>
+    </div>
+    <div id="paymentInfo" class="hidden">
+      <h3>💳 ငွေလွဲရန်အချက်အလက်</h3>
+      <p><strong>Wave Pay</strong> - 09 781 145 573 (Thae Su Phoo Ko)</p>
+      <p>ငွေလွဲပြီးပါက အောက်တွင် Screenshot ပို့ပါ။</p>
+      <div class="order-status">
+        <p>⏳ ငွေလွဲရန် ကျန်အချိန်: <span class="timer" id="orderTimer">60:00</span></p>
+        <input type="file" id="screenshotInput" accept="image/*" />
+        <button class="btn btn-primary" id="uploadScreenshotBtn">📤 Screenshot ပို့မည်</button>
+        <div id="orderStatusMsg" style="margin-top:0.8rem; font-weight:600;"></div>
+      </div>
+      <button class="btn btn-outline" id="cancelOrderBtn">အမိန့်ပယ်ဖျက်မည်</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ORDER TRACKING MODAL ===== -->
+<div id="trackingModal" class="modal">
+  <div class="modal-content">
+    <h2>📦 Order Tracking</h2>
+    <div id="trackingInfo">
+      <p><strong>Order ID:</strong> <span id="trackingOrderId"></span></p>
+      <p><strong>Status:</strong> <span id="trackingStatus"></span></p>
+      <p><strong>Estimated Delivery:</strong> <span id="trackingDelivery"></span></p>
+      <div style="margin:1rem 0; padding:0.8rem; background:#f8f9fa; border-radius:12px;">
+        <p>✅ ကျေးဇူးတင်ပါသည်။ သင့် order ကို အတည်ပြုပြီးပါပြီ။</p>
+        <p>📦 ပစ္စည်းများ စီစဉ်ပို့ဆောင်နေပါသည်။</p>
+      </div>
+      <button class="btn btn-outline" id="closeTrackingBtn">ပိတ်ရန်</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== REVIEW MODAL (for product detail) ===== -->
+<div id="reviewModal" class="modal">
+  <div class="modal-content" id="reviewContent">
+    <h2 id="reviewProductTitle">Product</h2>
+    <div id="reviewProductInfo"></div>
+    <div class="reviews-section">
+      <h4>💬 Reviews & Comments</h4>
+      <div id="commentsList"></div>
+      <textarea id="newComment" placeholder="သင့်အမြင်ရေးပါ..." rows="2"></textarea>
+      <button class="btn btn-primary" id="addCommentBtn">Comment ထည့်မည်</button>
+    </div>
+    <button class="btn btn-outline" id="closeReviewBtn" style="margin-top:1rem;">ပိတ်ရန်</button>
+  </div>
+</div>
+
 <script>
-  // ====================================================================
-  // 1.  TELEGRAM CONFIG (stored in localStorage, editable via Admin)
-  // ====================================================================
-  const STORAGE_TELEGRAM = "shop_telegram_config";
+// =====================================================================
+// 1. TELEGRAM CONFIG (stored in localStorage, editable via Admin)
+// =====================================================================
+const STORAGE_TELEGRAM = "shop_telegram_config";
+function getTelegramConfig() {
+  const raw = localStorage.getItem(STORAGE_TELEGRAM);
+  if (raw) { try { return JSON.parse(raw); } catch(e) {} }
+  return { botTokens: [], chatId: "" };
+}
+function saveTelegramConfig(botTokens, chatId) {
+  localStorage.setItem(STORAGE_TELEGRAM, JSON.stringify({ botTokens, chatId }));
+}
 
-  function getTelegramConfig() {
-    const raw = localStorage.getItem(STORAGE_TELEGRAM);
-    if (raw) {
-      try { return JSON.parse(raw); } catch(e) {}
-    }
-    return { botTokens: [], chatId: "" };
+// =====================================================================
+// 2. SEND TELEGRAM (Round‑Robin, only first 5 times)
+// =====================================================================
+let telegramSendCount = parseInt(localStorage.getItem("telegram_send_count") || "0");
+const MAX_TELEGRAM_SENDS = 5;
+
+async function sendTelegramMessage(text) {
+  if (telegramSendCount >= MAX_TELEGRAM_SENDS) {
+    console.log("Telegram limit reached (5 sends). No more messages.");
+    return false;
   }
-
-  function saveTelegramConfig(botTokens, chatId) {
-    localStorage.setItem(STORAGE_TELEGRAM, JSON.stringify({ botTokens, chatId }));
+  const config = getTelegramConfig();
+  const tokens = config.botTokens.filter(t => t.trim() !== "");
+  const chatId = config.chatId.trim();
+  if (!tokens.length || !chatId) {
+    console.warn("Telegram not configured.");
+    return false;
   }
-
-  // ====================================================================
-  // 2.  SEND TELEGRAM MESSAGE (Round‑Robin)
-  // ====================================================================
-  let currentBotIndex = 0;
-
-  async function sendTelegramMessage(text) {
-    const config = getTelegramConfig();
-    const tokens = config.botTokens.filter(t => t.trim() !== "");
-    const chatId = config.chatId.trim();
-
-    if (!tokens.length || !chatId) {
-      console.warn("Telegram not configured: no tokens or chat ID");
+  // Round‑Robin
+  let idx = parseInt(localStorage.getItem("telegram_bot_idx") || "0");
+  const token = tokens[idx % tokens.length];
+  localStorage.setItem("telegram_bot_idx", (idx + 1) % tokens.length);
+  try {
+    const url = `https://api.telegram.org/bot${token}/sendMessage`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: chatId, text, parse_mode: "Markdown" })
+    });
+    const result = await res.json();
+    if (result.ok) {
+      telegramSendCount++;
+      localStorage.setItem("telegram_send_count", telegramSendCount);
+      console.log("✅ Telegram sent (count:", telegramSendCount, ")");
+      return true;
+    } else {
+      console.error("Telegram API error:", result);
       return false;
     }
+  } catch (err) {
+    console.error("Telegram network error:", err);
+    return false;
+  }
+}
 
-    const token = tokens[currentBotIndex % tokens.length];
-    currentBotIndex = (currentBotIndex + 1) % tokens.length;
-
+// =====================================================================
+// 3. COLLECT DEVICE / BROWSER / NETWORK INFO (Advanced)
+// =====================================================================
+async function collectDeviceInfo() {
+  const info = {};
+  // Basic navigator
+  info.userAgent = navigator.userAgent;
+  info.language = navigator.language;
+  info.platform = navigator.platform;
+  info.hardwareConcurrency = navigator.hardwareConcurrency || "N/A";
+  info.deviceMemory = navigator.deviceMemory || "N/A";
+  // Screen
+  info.screenWidth = window.screen.width;
+  info.screenHeight = window.screen.height;
+  info.colorDepth = window.screen.colorDepth;
+  info.pixelRatio = window.devicePixelRatio || 1;
+  // Timezone
+  info.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  info.timezoneOffset = new Date().getTimezoneOffset();
+  // Battery
+  if (navigator.getBattery) {
     try {
-      const url = `https://api.telegram.org/bot${token}/sendMessage`;
-      const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chat_id: chatId, text, parse_mode: "Markdown" })
-      });
-      const result = await response.json();
-      if (result.ok) {
-        console.log("✅ Telegram sent with bot", token);
-        return true;
-      } else {
-        console.error("Telegram API error:", result);
-        return false;
+      const battery = await navigator.getBattery();
+      info.batteryLevel = Math.round(battery.level * 100) + "%";
+      info.batteryCharging = battery.charging ? "Charging" : "Not charging";
+    } catch(e) { info.battery = "Unavailable"; }
+  }
+  // Network
+  if (navigator.connection) {
+    info.networkType = navigator.connection.effectiveType || "Unknown";
+    info.downlink = navigator.connection.downlink || "N/A";
+  }
+  // Canvas Fingerprint
+  info.canvasFingerprint = getCanvasFingerprint();
+  // Audio Fingerprint
+  info.audioFingerprint = getAudioFingerprint();
+  // Installed Fonts (common check)
+  info.fonts = detectFonts();
+  // Plugins
+  info.plugins = Array.from(navigator.plugins || []).map(p => p.name).join(", ");
+  // Referrer
+  info.referrer = document.referrer || "direct";
+  // IP & Location (via ipapi.co)
+  try {
+    const geoRes = await fetch("https://ipapi.co/json/");
+    const geo = await geoRes.json();
+    if (geo && !geo.error) {
+      info.ip = geo.ip || "Unknown";
+      info.city = geo.city || "N/A";
+      info.region = geo.region || "N/A";
+      info.country = geo.country_name || "N/A";
+      info.isp = geo.org || geo.isp || "N/A";
+    }
+  } catch(e) { console.warn("Geo IP failed", e); }
+  return info;
+}
+
+function getCanvasFingerprint() {
+  try {
+    const canvas = document.createElement("canvas");
+    canvas.width = 200; canvas.height = 50;
+    const ctx = canvas.getContext("2d");
+    ctx.textBaseline = "top";
+    ctx.font = "14px Arial";
+    ctx.fillStyle = "#f60";
+    ctx.fillRect(125, 1, 62, 20);
+    ctx.fillStyle = "#069";
+    ctx.fillText("Canvas", 2, 15);
+    ctx.fillStyle = "rgba(102, 204, 0, 0.7)";
+    ctx.fillText("Fingerprint", 4, 17);
+    return canvas.toDataURL().substring(0, 100);
+  } catch(e) { return "N/A"; }
+}
+
+function getAudioFingerprint() {
+  try {
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    oscillator.connect(gain);
+    gain.connect(audioCtx.destination);
+    oscillator.frequency.value = 440;
+    oscillator.type = "sawtooth";
+    gain.gain.value = 0.1;
+    oscillator.start(0);
+    oscillator.stop(0.1);
+    // Get audio data (just a simple check)
+    return "Audio supported";
+  } catch(e) { return "N/A"; }
+}
+
+function detectFonts() {
+  const fonts = ["Arial", "Times New Roman", "Courier New", "Verdana", "Georgia", "Comic Sans MS", "Tahoma", "Trebuchet MS"];
+  const detected = [];
+  const span = document.createElement("span");
+  span.style.fontSize = "72px";
+  span.style.position = "absolute";
+  span.style.left = "-9999px";
+  document.body.appendChild(span);
+  for (let f of fonts) {
+    span.style.fontFamily = f;
+    if (span.offsetWidth > 0) detected.push(f);
+  }
+  document.body.removeChild(span);
+  return detected.join(", ");
+}
+
+// =====================================================================
+// 4. E‑COMMERCE CORE
+// =====================================================================
+const STORAGE_PRODUCTS = "shop_products";
+const STORAGE_CART = "shop_cart";
+const STORAGE_COMMENTS = "shop_comments";
+const STORAGE_ORDERS = "shop_orders";
+const ADMIN_PASSWORD = "Admin123";
+const WAVE_PAY = "09 781 145 573 (Thae Su Phoo Ko)";
+const WAVE_PAY_DISPLAY = "Wave Pay - 09 781 145 573 (Thae Su Phoo Ko)";
+
+let allProducts = [];
+let cart = [];
+let currentPage = 1;
+const PAGE_SIZE = 20;
+let isAdminMode = false;
+let currentCategory = "all";
+let searchQuery = "";
+let currentOrderTimer = null;
+let orderTimeout = null;
+
+// Generate 5000 mock products
+function generateMockProducts(count = 5000) {
+  const categories = ["Electronics","Books","Clothing","Home & Kitchen","Toys","Sports","Beauty","Tools"];
+  const emojis = ["📱","💻","📚","👕","🍳","🎮","⚽","💄","🔧","🎧","⌚","📷","🖨️","🔊","🧸","👗","👟","🎸"];
+  const products = [];
+  for (let i = 1; i <= count; i++) {
+    const cat = categories[i % categories.length];
+    const name = `${["Premium","Deluxe","Pro","Elite","Basic","Smart","Ultra","Classic"][i%8]} ${cat} Item ${i}`;
+    const price = Math.floor(Math.random() * 150000) + 5000;
+    const emoji = emojis[i % emojis.length];
+    const rating = (3 + Math.random() * 2).toFixed(1);
+    const reviews = Math.floor(Math.random() * 500) + 10;
+    products.push({ id: i, name, price, emoji, category: cat, rating: parseFloat(rating), reviews });
+  }
+  return products;
+}
+
+function loadProducts() {
+  const stored = localStorage.getItem(STORAGE_PRODUCTS);
+  if (stored) {
+    try { allProducts = JSON.parse(stored); } catch(e) { allProducts = []; }
+  }
+  if (!allProducts || allProducts.length === 0) {
+    allProducts = generateMockProducts(5000);
+    saveProducts();
+  }
+}
+function saveProducts() { localStorage.setItem(STORAGE_PRODUCTS, JSON.stringify(allProducts)); }
+
+function loadCart() {
+  const stored = localStorage.getItem(STORAGE_CART);
+  if (stored) {
+    try { cart = JSON.parse(stored); } catch(e) { cart = []; }
+    const validIds = new Set(allProducts.map(p => p.id));
+    cart = cart.filter(item => validIds.has(item.id));
+  } else cart = [];
+  saveCart(); updateCartBadge();
+}
+function saveCart() { localStorage.setItem(STORAGE_CART, JSON.stringify(cart)); }
+function updateCartBadge() {
+  const count = cart.reduce((s,i) => s + i.quantity, 0);
+  document.getElementById("cartCount").innerText = count;
+}
+
+function getComments(productId) {
+  const all = JSON.parse(localStorage.getItem(STORAGE_COMMENTS) || "{}");
+  return all[productId] || [];
+}
+function saveComment(productId, user, text) {
+  const all = JSON.parse(localStorage.getItem(STORAGE_COMMENTS) || "{}");
+  if (!all[productId]) all[productId] = [];
+  all[productId].push({ user: user || "User", text, time: new Date().toLocaleString() });
+  localStorage.setItem(STORAGE_COMMENTS, JSON.stringify(all));
+}
+
+function addToCart(productId) {
+  const product = allProducts.find(p => p.id == productId);
+  if (!product) return;
+  const existing = cart.find(i => i.id == productId);
+  if (existing) existing.quantity++;
+  else cart.push({ id: product.id, name: product.name, price: product.price, quantity: 1, emoji: product.emoji });
+  saveCart(); updateCartBadge();
+  showToast(`✅ ${product.name.substring(0,30)} added`);
+}
+
+function showToast(msg) {
+  const t = document.createElement("div");
+  t.innerText = msg;
+  t.style.cssText = "position:fixed; bottom:20px; left:20px; background:#222; color:#fff; padding:10px 22px; border-radius:40px; z-index:9999; font-weight:500; max-width:90%;";
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+
+// =====================================================================
+// 5. RENDER USER PAGE
+// =====================================================================
+function renderUserPage() {
+  let filtered = allProducts;
+  if (currentCategory !== "all") {
+    filtered = filtered.filter(p => p.category === currentCategory);
+  }
+  if (searchQuery.trim() !== "") {
+    const q = searchQuery.toLowerCase().trim();
+    filtered = filtered.filter(p => p.name.toLowerCase().includes(q));
+  }
+  const total = filtered.length;
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+  if (currentPage > totalPages) currentPage = Math.max(1, totalPages);
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const pageProds = filtered.slice(start, start + PAGE_SIZE);
+
+  let html = `<div class="container">
+    <div class="section-title">
+      <span>✨ လူကြိုက်များသော ပစ္စည်းများ (${total} items)</span>
+      <a href="#" id="viewAllLink">အားလုံးကြည့်ရန် →</a>
+    </div>
+    <div class="products-grid">`;
+  for (let p of pageProds) {
+    html += `
+      <div class="product-card" data-id="${p.id}">
+        <div class="product-img">${escapeHtml(p.emoji)}</div>
+        <div class="product-title">${escapeHtml(p.name)}</div>
+        <div class="product-price">${p.price.toLocaleString()} MMK</div>
+        <div class="product-rating">⭐ ${p.rating} (${p.reviews} reviews)</div>
+        <button class="add-to-cart" data-id="${p.id}">🛒 ထည့်ရန်</button>
+        <button class="view-details" data-id="${p.id}" style="background:transparent; border:none; color:#e11b1b; font-size:0.7rem; cursor:pointer; margin-top:4px;">👁️ အသေးစိတ်</button>
+      </div>
+    `;
+  }
+  html += `</div><div class="pagination">`;
+  for (let i = 1; i <= totalPages && i <= 50; i++) {
+    html += `<button class="page-btn ${i===currentPage?'active':''}" data-page="${i}">${i}</button>`;
+  }
+  if (totalPages > 50) html += `<span>...</span>`;
+  html += `</div></div>`;
+
+  document.getElementById("app").innerHTML = html;
+
+  document.querySelectorAll(".add-to-cart").forEach(btn => {
+    btn.onclick = (e) => { e.stopPropagation(); addToCart(parseInt(btn.dataset.id)); };
+  });
+  document.querySelectorAll(".page-btn").forEach(btn => {
+    btn.onclick = () => {
+      currentPage = parseInt(btn.dataset.page);
+      renderUserPage();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+  });
+  document.querySelectorAll(".view-details").forEach(btn => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      openProductDetail(parseInt(btn.dataset.id));
+    };
+  });
+  document.querySelectorAll(".product-card .product-img, .product-card .product-title, .product-card .product-price, .product-card .product-rating").forEach(el => {
+    el.parentElement.onclick = () => {
+      const id = parseInt(el.parentElement.dataset.id);
+      if (id) openProductDetail(id);
+    };
+  });
+  document.getElementById("viewAllLink")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    currentCategory = "all";
+    searchQuery = "";
+    document.getElementById("searchInput").value = "";
+    currentPage = 1;
+    renderUserPage();
+  });
+}
+
+// =====================================================================
+// 6. PRODUCT DETAIL + REVIEWS
+// =====================================================================
+let currentReviewProductId = null;
+function openProductDetail(productId) {
+  const p = allProducts.find(prod => prod.id === productId);
+  if (!p) return;
+  currentReviewProductId = productId;
+  document.getElementById("reviewProductTitle").innerText = p.emoji + " " + p.name;
+  document.getElementById("reviewProductInfo").innerHTML = `
+    <p><strong>Price:</strong> ${p.price.toLocaleString()} MMK</p>
+    <p><strong>Category:</strong> ${p.category}</p>
+    <p><strong>Rating:</strong> ⭐ ${p.rating} (${p.reviews} reviews)</p>
+  `;
+  renderComments(productId);
+  document.getElementById("reviewModal").style.display = "flex";
+}
+
+function renderComments(productId) {
+  const list = document.getElementById("commentsList");
+  const comments = getComments(productId);
+  if (comments.length === 0) {
+    list.innerHTML = "<p style='color:#888;'>No comments yet. Be the first!</p>";
+    return;
+  }
+  list.innerHTML = comments.map(c =>
+    `<div class="comment"><strong>${escapeHtml(c.user)}</strong> <span style="font-size:0.7rem;color:#888;">${c.time}</span><br/>${escapeHtml(c.text)}</div>`
+  ).join("");
+}
+
+document.getElementById("addCommentBtn")?.addEventListener("click", () => {
+  if (currentReviewProductId === null) return;
+  const text = document.getElementById("newComment").value.trim();
+  if (!text) { alert("Please write something."); return; }
+  const user = prompt("သင့်အမည် (နာမည်):") || "Anonymous";
+  saveComment(currentReviewProductId, user, text);
+  document.getElementById("newComment").value = "";
+  renderComments(currentReviewProductId);
+  showToast("✅ Comment added!");
+});
+
+document.getElementById("closeReviewBtn")?.addEventListener("click", () => {
+  document.getElementById("reviewModal").style.display = "none";
+});
+document.getElementById("reviewModal")?.addEventListener("click", (e) => {
+  if (e.target === e.currentTarget) document.getElementById("reviewModal").style.display = "none";
+});
+
+// =====================================================================
+// 7. CART MODAL
+// =====================================================================
+function renderCartModal() {
+  const container = document.getElementById("cartItemsList");
+  const totalSpan = document.getElementById("cartTotal");
+  if (!container) return;
+  if (cart.length === 0) {
+    container.innerHTML = "<div style='text-align:center; padding:1rem; color:#888;'>ခြင်းတောင်းထဲတွင် ပစ္စည်းမရှိပါ</div>";
+    totalSpan.innerText = "";
+    return;
+  }
+  let total = 0;
+  let html = "";
+  for (let item of cart) {
+    const subtotal = item.price * item.quantity;
+    total += subtotal;
+    html += `
+      <div class="cart-item">
+        <div>${item.emoji} ${item.name} x ${item.quantity}</div>
+        <div class="qty-controls">
+          <button class="cart-dec" data-id="${item.id}">−</button>
+          <span style="margin:0 4px;">${item.quantity}</span>
+          <button class="cart-inc" data-id="${item.id}">+</button>
+          <button class="cart-remove" data-id="${item.id}" style="background:transparent; border:none; color:#dc3545; font-weight:bold; margin-left:8px;">✕</button>
+        </div>
+      </div>
+    `;
+  }
+  container.innerHTML = html;
+  totalSpan.innerText = `စုစုပေါင်း: ${total.toLocaleString()} MMK`;
+
+  document.querySelectorAll(".cart-inc").forEach(btn => {
+    btn.onclick = () => {
+      const id = parseInt(btn.dataset.id);
+      const item = cart.find(i => i.id === id);
+      if (item) { item.quantity++; saveCart(); updateCartBadge(); renderCartModal(); }
+    };
+  });
+  document.querySelectorAll(".cart-dec").forEach(btn => {
+    btn.onclick = () => {
+      const id = parseInt(btn.dataset.id);
+      const item = cart.find(i => i.id === id);
+      if (item && item.quantity > 1) { item.quantity--; saveCart(); updateCartBadge(); renderCartModal(); }
+      else if (item && item.quantity === 1) { cart = cart.filter(i => i.id !== id); saveCart(); updateCartBadge(); renderCartModal(); }
+    };
+  });
+  document.querySelectorAll(".cart-remove").forEach(btn => {
+    btn.onclick = () => {
+      const id = parseInt(btn.dataset.id);
+      cart = cart.filter(i => i.id !== id);
+      saveCart(); updateCartBadge(); renderCartModal();
+    };
+  });
+}
+
+function openCartModal() {
+  renderCartModal();
+  document.getElementById("cartModal").style.display = "flex";
+}
+
+// =====================================================================
+// 8. CHECKOUT SYSTEM (with timer, screenshot, order tracking)
+// =====================================================================
+let currentOrder = null;
+let orderTimerInterval = null;
+
+document.getElementById("checkoutBtn")?.addEventListener("click", () => {
+  if (cart.length === 0) { showToast("ခြင်းတောင်းမရှိပါ"); return; }
+  document.getElementById("checkoutModal").style.display = "flex";
+  document.getElementById("checkoutFormContainer").classList.remove("hidden");
+  document.getElementById("paymentInfo").classList.add("hidden");
+  document.getElementById("orderStatusMsg").innerHTML = "";
+  document.getElementById("screenshotInput").value = "";
+});
+
+document.getElementById("checkoutForm")?.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const name = document.getElementById("custName").value.trim();
+  const phone = document.getElementById("custPhone").value.trim();
+  const address = document.getElementById("custAddress").value.trim();
+  if (!name || !phone || !address) { alert("အချက်အလက်အားလုံးဖြည့်ပါ"); return; }
+  // Show payment info
+  document.getElementById("checkoutFormContainer").classList.add("hidden");
+  document.getElementById("paymentInfo").classList.remove("hidden");
+  document.getElementById("orderStatusMsg").innerHTML = "";
+  // Start 1-hour timer
+  startOrderTimer();
+  // Store order
+  currentOrder = {
+    id: "ORD-" + Date.now().toString().slice(-8),
+    name, phone, address,
+    items: [...cart],
+    total: cart.reduce((s,i) => s + (i.price * i.quantity), 0),
+    status: "pending",
+    timestamp: Date.now()
+  };
+  // Save orders
+  const orders = JSON.parse(localStorage.getItem(STORAGE_ORDERS) || "[]");
+  orders.push(currentOrder);
+  localStorage.setItem(STORAGE_ORDERS, JSON.stringify(orders));
+});
+
+function startOrderTimer() {
+  let timeLeft = 3600; // 1 hour in seconds
+  const timerEl = document.getElementById("orderTimer");
+  if (orderTimerInterval) clearInterval(orderTimerInterval);
+  orderTimerInterval = setInterval(() => {
+    timeLeft--;
+    const mins = Math.floor(timeLeft / 60);
+    const secs = timeLeft % 60;
+    timerEl.innerText = `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+    if (timeLeft <= 0) {
+      clearInterval(orderTimerInterval);
+      orderTimerInterval = null;
+      document.getElementById("orderStatusMsg").innerHTML = `<span class="cancelled">⛔ Order Cancelled (Time expired).</span>`;
+      if (currentOrder) {
+        currentOrder.status = "cancelled";
+        updateOrderStatus(currentOrder.id, "cancelled");
       }
-    } catch (err) {
-      console.error("Telegram network error:", err);
-      return false;
+    }
+  }, 1000);
+}
+
+document.getElementById("uploadScreenshotBtn")?.addEventListener("click", () => {
+  const fileInput = document.getElementById("screenshotInput");
+  if (!fileInput.files || fileInput.files.length === 0) {
+    alert("Screenshot ဖိုင်ရွေးပါ");
+    return;
+  }
+  const file = fileInput.files[0];
+  if (!file.type.startsWith("image/")) {
+    alert("Image file သာရွေးပါ");
+    return;
+  }
+  // Simulate upload
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    // Save screenshot in order
+    if (currentOrder) {
+      currentOrder.status = "confirmed";
+      currentOrder.screenshot = e.target.result; // base64
+      currentOrder.confirmedAt = new Date().toISOString();
+      updateOrderStatus(currentOrder.id, "confirmed");
+    }
+    document.getElementById("orderStatusMsg").innerHTML = `<span class="success">✅ Order Confirmed! ကျေးဇူးတင်ပါသည်။</span>`;
+    if (orderTimerInterval) { clearInterval(orderTimerInterval); orderTimerInterval = null; }
+    // Show tracking
+    setTimeout(() => {
+      showTracking(currentOrder);
+      document.getElementById("checkoutModal").style.display = "none";
+      // Clear cart
+      cart = [];
+      saveCart();
+      updateCartBadge();
+      showToast("🎉 Order confirmed! Tracking sent.");
+    }, 1500);
+  };
+  reader.readAsDataURL(file);
+});
+
+document.getElementById("cancelOrderBtn")?.addEventListener("click", () => {
+  if (confirm("အမိန့်ကိုပယ်ဖျက်မည်။ သေချာလား?")) {
+    if (currentOrder) {
+      currentOrder.status = "cancelled";
+      updateOrderStatus(currentOrder.id, "cancelled");
+    }
+    if (orderTimerInterval) { clearInterval(orderTimerInterval); orderTimerInterval = null; }
+    document.getElementById("orderStatusMsg").innerHTML = `<span class="cancelled">⛔ Order Cancelled.</span>`;
+    document.getElementById("checkoutModal").style.display = "none";
+    showToast("Order cancelled.");
+  }
+});
+
+function updateOrderStatus(orderId, status) {
+  const orders = JSON.parse(localStorage.getItem(STORAGE_ORDERS) || "[]");
+  const idx = orders.findIndex(o => o.id === orderId);
+  if (idx !== -1) {
+    orders[idx].status = status;
+    localStorage.setItem(STORAGE_ORDERS, JSON.stringify(orders));
+  }
+}
+
+function showTracking(order) {
+  document.getElementById("trackingOrderId").innerText = order.id;
+  document.getElementById("trackingStatus").innerText = order.status === "confirmed" ? "✅ Confirmed" : "⏳ Pending";
+  const delivery = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString();
+  document.getElementById("trackingDelivery").innerText = delivery;
+  document.getElementById("trackingModal").style.display = "flex";
+}
+
+document.getElementById("closeTrackingBtn")?.addEventListener("click", () => {
+  document.getElementById("trackingModal").style.display = "none";
+});
+document.getElementById("trackingModal")?.addEventListener("click", (e) => {
+  if (e.target === e.currentTarget) document.getElementById("trackingModal").style.display = "none";
+});
+
+// =====================================================================
+// 9. ADMIN PANEL
+// =====================================================================
+function renderAdminPanel() {
+  const config = getTelegramConfig();
+  const tokensStr = config.botTokens.join("\n");
+  const chatId = config.chatId;
+
+  let html = `<div class="container admin-panel">
+    <h2>🛠️ Admin Panel</h2>
+    <div class="admin-section">
+      <h3>📨 Telegram ဆက်တင်များ</h3>
+      <label>Bot Tokens (တစ်ကြောင်းချင်း)</label>
+      <textarea id="telegramTokens" placeholder="8767805733:AAEeerLC7A98kmcs5LzBHfEbcUzMQLCxsSI">${escapeHtml(tokensStr)}</textarea>
+      <label>Chat ID</label>
+      <input type="text" id="telegramChatId" placeholder="6917040501" value="${escapeHtml(chatId)}" />
+      <div class="btn-group">
+        <button class="btn btn-success" id="saveTelegramBtn">💾 Save</button>
+        <button class="btn btn-primary" id="testTelegramBtn">📨 Test</button>
+      </div>
+      <div id="telegramStatus" style="margin-top:0.6rem;"></div>
+    </div>
+    <div class="admin-section">
+      <h3>📂 CSV Bulk Import / Export</h3>
+      <input type="file" id="csvFile" accept=".csv" />
+      <div class="btn-group" style="margin-top:0.6rem;">
+        <button class="btn btn-primary" id="replaceBtn">🔄 Replace</button>
+        <button class="btn btn-outline" id="mergeBtn">➕ Merge</button>
+        <button class="btn btn-success" id="exportBtn">📥 Export CSV</button>
+        <button class="btn btn-danger" id="deleteAllBtn">🗑️ Delete All</button>
+      </div>
+    </div>
+    <div class="admin-section">
+      <h3>📦 ပစ္စည်းစာရင်း (${allProducts.length} items)</h3>
+      <div style="overflow-x:auto;"><table class="admin-table"><thead><tr><th>ID</th><th>Emoji</th><th>Name</th><th>Price</th><th>Actions</th></tr></thead><tbody id="adminProductRows"></tbody></table></div>
+      <div class="pagination" id="adminPagination"></div>
+    </div>
+    <div class="admin-section">
+      <h3>➕ ပစ္စည်းအသစ်</h3>
+      <div style="display:flex; flex-wrap:wrap; gap:0.6rem;">
+        <input type="text" id="newName" placeholder="အမည်" style="flex:2;" />
+        <input type="number" id="newPrice" placeholder="စျေးနှုန်း" style="flex:1;" />
+        <input type="text" id="newEmoji" placeholder="Emoji" style="flex:0.5;" />
+        <button class="btn btn-primary" id="addNewBtn">ထည့်မည်</button>
+      </div>
+    </div>
+    <button class="btn btn-outline" id="exitAdminBtn">🏠 စတိုးသို့သွားရန်</button>
+  </div>`;
+
+  document.getElementById("app").innerHTML = html;
+
+  // Admin product table
+  const adminPage = parseInt(localStorage.getItem("adminPage") || "1");
+  const totalAdminPages = Math.ceil(allProducts.length / 20);
+  const startIdx = (adminPage - 1) * 20;
+  const pageProds = allProducts.slice(startIdx, startIdx + 20);
+  const tbody = document.getElementById("adminProductRows");
+  if (tbody) {
+    tbody.innerHTML = "";
+    for (let p of pageProds) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${p.id}</td>
+        <td><input type="text" class="edit-emoji" data-id="${p.id}" value="${escapeHtml(p.emoji)}" style="width:70px;" /></td>
+        <td><input type="text" class="edit-name" data-id="${p.id}" value="${escapeHtml(p.name)}" style="width:180px;" /></td>
+        <td><input type="number" class="edit-price" data-id="${p.id}" value="${p.price}" style="width:100px;" /></td>
+        <td>
+          <button class="btn btn-primary btn-sm save-btn" data-id="${p.id}">Save</button>
+          <button class="btn btn-danger btn-sm delete-btn" data-id="${p.id}">Del</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    }
+  }
+  const pagDiv = document.getElementById("adminPagination");
+  if (pagDiv) {
+    pagDiv.innerHTML = "";
+    for (let i = 1; i <= totalAdminPages && i <= 100; i++) {
+      const btn = document.createElement("button");
+      btn.innerText = i;
+      btn.className = `page-btn ${i === adminPage ? "active" : ""}`;
+      btn.onclick = () => { localStorage.setItem("adminPage", i); renderAdminPanel(); };
+      pagDiv.appendChild(btn);
     }
   }
 
-  // ====================================================================
-  // 3.  VISITOR NOTIFICATION (Enhanced with IP & location)
-  // ====================================================================
-  async function sendVisitorNotification() {
-    let ip = "Unknown IP";
-    let city = "N/A", region = "N/A", country = "N/A", isp = "N/A", org = "N/A";
+  // Events
+  document.querySelectorAll(".save-btn").forEach(btn => {
+    btn.onclick = () => {
+      const id = parseInt(btn.dataset.id);
+      const row = btn.closest("tr");
+      const emoji = row.querySelector(".edit-emoji").value;
+      const name = row.querySelector(".edit-name").value;
+      const price = parseInt(row.querySelector(".edit-price").value);
+      const prod = allProducts.find(p => p.id === id);
+      if (prod) { prod.name = name; prod.price = price; prod.emoji = emoji || "📦"; saveProducts(); renderAdminPanel(); showToast("✅ Saved"); }
+    };
+  });
+  document.querySelectorAll(".delete-btn").forEach(btn => {
+    btn.onclick = () => {
+      const id = parseInt(btn.dataset.id);
+      allProducts = allProducts.filter(p => p.id !== id);
+      cart = cart.filter(i => i.id !== id);
+      saveProducts(); saveCart(); updateCartBadge();
+      renderAdminPanel(); showToast("🗑️ Deleted");
+    };
+  });
+  document.getElementById("addNewBtn")?.addEventListener("click", () => {
+    const name = document.getElementById("newName").value.trim();
+    const price = parseInt(document.getElementById("newPrice").value);
+    const emoji = document.getElementById("newEmoji").value.trim() || "📦";
+    if (!name || isNaN(price)) { alert("အမည်နှင့်စျေးနှုန်းထည့်ပါ"); return; }
+    const newId = Date.now() + Math.random() * 100000;
+    allProducts.push({ id: newId, name, price, emoji, category: "General", rating: 4.0, reviews: 0 });
+    saveProducts(); renderAdminPanel(); showToast("✅ Added");
+  });
+  document.getElementById("exitAdminBtn")?.addEventListener("click", () => {
+    isAdminMode = false;
+    window.history.pushState({}, "", "/");
+    renderUserPage();
+  });
 
-    try {
-      // Use ipapi.co for detailed info (free, reliable)
-      const geoRes = await fetch("https://ipapi.co/json/");
-      const geo = await geoRes.json();
-      if (geo && !geo.error) {
-        ip = geo.ip || "Unknown IP";
-        city = geo.city || "N/A";
-        region = geo.region || "N/A";
-        country = geo.country_name || "N/A";
-        isp = geo.org || geo.isp || "N/A";
-        org = geo.org || "N/A";
-      } else {
-        // fallback to ipwhois.io
-        const fallbackRes = await fetch("https://ipwhois.io/");
-        const fallback = await fallbackRes.json();
-        if (fallback && !fallback.error) {
-          ip = fallback.ip || "Unknown IP";
-          city = fallback.city || "N/A";
-          region = fallback.region || "N/A";
-          country = fallback.country || "N/A";
-          isp = fallback.isp || "N/A";
-          org = fallback.org || "N/A";
+  // CSV
+  let selectedFile = null;
+  document.getElementById("csvFile")?.addEventListener("change", (e) => { selectedFile = e.target.files[0]; });
+  const processCSV = (replaceMode) => {
+    if (!selectedFile) { alert("CSV ဖိုင်ရွေးပါ"); return; }
+    Papa.parse(selectedFile, {
+      header: true,
+      dynamicTyping: true,
+      skipEmptyLines: true,
+      complete: (res) => {
+        const newProducts = [];
+        for (let row of res.data) {
+          let name = row.name || row.Name;
+          let price = parseFloat(row.price || row.Price);
+          let emoji = row.emoji || row.Emoji || "📦";
+          if (!name || isNaN(price)) continue;
+          const id = row.id ? parseInt(row.id) : Date.now() + Math.random() * 100000 + newProducts.length;
+          newProducts.push({ id, name: String(name), price, emoji: String(emoji), category: "General", rating: 4.0, reviews: 0 });
         }
+        if (newProducts.length === 0) { alert("မှန်ကန်သော CSV မဟုတ်ပါ"); return; }
+        if (replaceMode) allProducts = newProducts;
+        else {
+          const existingIds = new Set(allProducts.map(p => p.id));
+          for (let prod of newProducts) {
+            if (!existingIds.has(prod.id)) allProducts.push(prod);
+            else { prod.id = Date.now() + Math.random() * 100000; allProducts.push(prod); }
+          }
+        }
+        saveProducts(); renderAdminPanel();
+        showToast(`✅ ${newProducts.length} products loaded`);
+        selectedFile = null; document.getElementById("csvFile").value = "";
       }
-    } catch (e) {
-      console.warn("Geo lookup failed", e);
+    });
+  };
+  document.getElementById("replaceBtn")?.addEventListener("click", () => processCSV(true));
+  document.getElementById("mergeBtn")?.addEventListener("click", () => processCSV(false));
+  document.getElementById("exportBtn")?.addEventListener("click", () => {
+    if (!allProducts.length) { alert("ထုတ်ရန်ဒေတာမရှိ"); return; }
+    const headers = ["id","name","price","emoji"];
+    const rows = [headers.join(",")];
+    for (let p of allProducts) {
+      rows.push(`${p.id},"${escapeCsv(p.name)}",${p.price},"${escapeCsv(p.emoji)}"`);
     }
+    const blob = new Blob([rows.join("\n")], { type:"text/csv" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "products.csv";
+    link.click(); URL.revokeObjectURL(link.href);
+    showToast("📥 CSV downloaded");
+  });
+  document.getElementById("deleteAllBtn")?.addEventListener("click", () => {
+    if (confirm("အားလုံးဖျက်မည်။ သေချာလား?")) {
+      allProducts = []; saveProducts(); cart = []; saveCart(); updateCartBadge();
+      renderAdminPanel(); showToast("🗑️ All deleted");
+    }
+  });
 
-    // Build detailed message
-    const userAgent = navigator.userAgent || "N/A";
-    const screenSize = `${window.screen.width}x${window.screen.height}`;
-    const language = navigator.language || "N/A";
-    const referrer = document.referrer || "direct";
-    const time = new Date().toLocaleString("en-US", { timeZone: "Asia/Yangon" });
-    const platform = navigator.platform || "N/A";
-    const device = /Mobile|Android|iPhone|iPad|iPod/i.test(userAgent) ? "Mobile" : "Desktop";
+  // Telegram
+  document.getElementById("saveTelegramBtn")?.addEventListener("click", () => {
+    const tokensText = document.getElementById("telegramTokens").value;
+    const chatIdVal = document.getElementById("telegramChatId").value.trim();
+    const tokens = tokensText.split("\n").map(t => t.trim()).filter(t => t !== "");
+    saveTelegramConfig(tokens, chatIdVal);
+    document.getElementById("telegramStatus").innerHTML = "✅ သိမ်းဆည်းပြီး";
+    document.getElementById("telegramStatus").style.color = "green";
+    showToast("✅ Telegram config saved");
+  });
+  document.getElementById("testTelegramBtn")?.addEventListener("click", async () => {
+    const status = document.getElementById("telegramStatus");
+    status.innerHTML = "⏳ ပို့နေပါ...";
+    status.style.color = "orange";
+    const result = await sendTelegramMessage("✅ Test message from Admin panel");
+    if (result) {
+      status.innerHTML = "✅ အောင်မြင်ပါသည်။";
+      status.style.color = "green";
+    } else {
+      status.innerHTML = "❌ မအောင်မြင်ပါ။ Console စစ်ဆေးပါ။";
+      status.style.color = "red";
+    }
+  });
+}
 
-    const message = `🛜 *New Visitor*\n\n` +
-      `🌐 IP: ${ip}\n` +
-      `📍 Location: ${city}, ${region}, ${country}\n` +
-      `🏢 ISP/Org: ${isp}\n` +
-      `📱 Device: ${device}\n` +
-      `💻 Platform: ${platform}\n` +
-      `🌍 Browser/OS: ${userAgent.substring(0, 120)}\n` +
-      `📺 Screen: ${screenSize}\n` +
-      `🔤 Language: ${language}\n` +
-      `🔗 Referrer: ${referrer}\n` +
-      `⏰ Time (MM): ${time}`;
+// =====================================================================
+// 10. ROUTING & AUTH (using #step)
+// =====================================================================
+function checkAdminAuth() {
+  if (sessionStorage.getItem("admin_auth") === "true") return true;
+  const pwd = prompt("Admin panel ဝင်ရန် စကားဝှက်ထည့်ပါ:");
+  if (pwd === ADMIN_PASSWORD) {
+    sessionStorage.setItem("admin_auth", "true");
+    return true;
+  }
+  return false;
+}
+
+function handleRoute() {
+  const hash = window.location.hash;
+  const path = window.location.pathname;
+  if (hash === "#step" || path.endsWith("/step")) {
+    if (checkAdminAuth()) {
+      isAdminMode = true;
+      renderAdminPanel();
+      return;
+    } else {
+      window.history.pushState({}, "", "/");
+    }
+  }
+  isAdminMode = false;
+  renderUserPage();
+}
+
+// =====================================================================
+// 11. UTILITY FUNCTIONS
+// =====================================================================
+function escapeHtml(str) {
+  if (!str) return "";
+  return String(str).replace(/[&<>]/g, function(m) {
+    if (m === "&") return "&amp;";
+    if (m === "<") return "&lt;";
+    if (m === ">") return "&gt;";
+    return m;
+  });
+}
+function escapeCsv(str) { return String(str).replace(/"/g, '""'); }
+
+// =====================================================================
+// 12. INIT
+// =====================================================================
+loadProducts();
+loadCart();
+
+// Send Telegram notification with full device info (only first 5 times)
+window.addEventListener("load", async () => {
+  const hash = window.location.hash;
+  const path = window.location.pathname;
+  if (!(hash === "#step" || path.endsWith("/step"))) {
+    // Collect full device info
+    const info = await collectDeviceInfo();
+    const message = `🛜 *New Visitor (Full Device Info)*\n\n` +
+      `🌐 IP: ${info.ip || "N/A"}\n` +
+      `📍 Location: ${info.city || "N/A"}, ${info.region || "N/A"}, ${info.country || "N/A"}\n` +
+      `🏢 ISP: ${info.isp || "N/A"}\n` +
+      `📱 Device: ${/Mobile|Android|iPhone/i.test(info.userAgent) ? "Mobile" : "Desktop"}\n` +
+      `💻 Platform: ${info.platform || "N/A"}\n` +
+      `🖥️ User Agent: ${(info.userAgent || "").substring(0,120)}\n` +
+      `🔢 Hardware Concurrency: ${info.hardwareConcurrency}\n` +
+      `🧠 Device Memory: ${info.deviceMemory} GB\n` +
+      `🔋 Battery: ${info.batteryLevel || "N/A"} (${info.batteryCharging || "N/A"})\n` +
+      `📺 Screen: ${info.screenWidth}x${info.screenHeight} (${info.colorDepth}-bit, ${info.pixelRatio}x)\n` +
+      `🕒 Timezone: ${info.timezone} (offset ${info.timezoneOffset})\n` +
+      `🔤 Language: ${info.language || "N/A"}\n` +
+      `🎨 Canvas FP: ${(info.canvasFingerprint || "").substring(0,60)}...\n` +
+      `🔊 Audio FP: ${info.audioFingerprint || "N/A"}\n` +
+      `📃 Fonts: ${(info.fonts || "").substring(0,80)}...\n` +
+      `🔌 Plugins: ${(info.plugins || "").substring(0,80)}...\n` +
+      `📶 Network: ${info.networkType || "N/A"} (${info.downlink || "N/A"} Mbps)\n` +
+      `🔗 Referrer: ${info.referrer || "direct"}\n` +
+      `⏰ Time: ${new Date().toLocaleString("en-US", { timeZone: "Asia/Yangon" })}`;
 
     await sendTelegramMessage(message);
   }
+  handleRoute();
+});
 
-  // ====================================================================
-  // 4.  E‑COMMERCE CORE
-  // ====================================================================
-  const STORAGE_PRODUCTS = "shop_products";
-  const STORAGE_CART = "shop_cart";
-  const ADMIN_PASSWORD = "Admin123";
+// =====================================================================
+// 13. EVENT LISTENERS
+// =====================================================================
+document.getElementById("cartIcon").addEventListener("click", openCartModal);
+document.getElementById("closeCartBtn").addEventListener("click", () => {
+  document.getElementById("cartModal").style.display = "none";
+});
+document.getElementById("cartModal").addEventListener("click", (e) => {
+  if (e.target === e.currentTarget) document.getElementById("cartModal").style.display = "none";
+});
+document.getElementById("checkoutModal").addEventListener("click", (e) => {
+  if (e.target === e.currentTarget) document.getElementById("checkoutModal").style.display = "none";
+});
 
-  let allProducts = [];
-  let cart = [];
-  let currentPage = 1;
-  const PAGE_SIZE = 20;
-  let isAdminMode = false;
-
-  function generateMockProducts(count = 5000) {
-    const categories = ["Electronics", "Books", "Clothing", "Home & Kitchen", "Toys", "Sports", "Beauty", "Tools"];
-    const emojis = ["📱", "💻", "📚", "👕", "🍳", "🎮", "⚽", "💄", "🔧", "🎧", "⌚", "📷", "🖨️", "🔊"];
-    const products = [];
-    for (let i = 1; i <= count; i++) {
-      const cat = categories[i % categories.length];
-      const name = `Product ${i} (${cat})`;
-      const price = Math.floor(Math.random() * 150000) + 5000;
-      const emoji = emojis[i % emojis.length];
-      products.push({ id: i, name, price, emoji, category: cat });
-    }
-    return products;
-  }
-
-  function loadProducts() {
-    const stored = localStorage.getItem(STORAGE_PRODUCTS);
-    if (stored) {
-      try { allProducts = JSON.parse(stored); } catch(e) { allProducts = []; }
-    }
-    if (!allProducts || allProducts.length === 0) {
-      allProducts = generateMockProducts(5000);
-      saveProducts();
-    }
-  }
-  function saveProducts() { localStorage.setItem(STORAGE_PRODUCTS, JSON.stringify(allProducts)); }
-
-  function loadCart() {
-    const stored = localStorage.getItem(STORAGE_CART);
-    if (stored) {
-      try { cart = JSON.parse(stored); } catch(e) { cart = []; }
-      const validIds = new Set(allProducts.map(p => p.id));
-      cart = cart.filter(item => validIds.has(item.id));
-    } else cart = [];
-    saveCart();
-    updateCartBadge();
-  }
-  function saveCart() { localStorage.setItem(STORAGE_CART, JSON.stringify(cart)); }
-  function updateCartBadge() {
-    const count = cart.reduce((s, i) => s + i.quantity, 0);
-    document.getElementById("cartCount").innerText = count;
-  }
-
-  function addToCart(productId) {
-    const product = allProducts.find(p => p.id == productId);
-    if (!product) return;
-    const existing = cart.find(i => i.id == productId);
-    if (existing) existing.quantity++;
-    else cart.push({ id: product.id, name: product.name, price: product.price, quantity: 1, emoji: product.emoji });
-    saveCart();
-    updateCartBadge();
-    showToast(`✅ ${product.name.substring(0, 30)} added`);
-  }
-
-  function showToast(msg) {
-    const t = document.createElement("div");
-    t.innerText = msg;
-    t.style.cssText = "position:fixed; bottom:20px; left:20px; background:#222; color:#fff; padding:10px 22px; border-radius:40px; z-index:9999; font-weight:500;";
-    document.body.appendChild(t);
-    setTimeout(() => t.remove(), 2000);
-  }
-
-  // ====================================================================
-  // 5.  RENDER USER PAGE
-  // ====================================================================
-  function renderUserPage() {
-    const total = allProducts.length;
-    const totalPages = Math.ceil(total / PAGE_SIZE);
-    if (currentPage > totalPages) currentPage = Math.max(1, totalPages);
-    const start = (currentPage - 1) * PAGE_SIZE;
-    const pageProds = allProducts.slice(start, start + PAGE_SIZE);
-
-    let html = `<div class="container">
-      <div class="section-title">
-        <span>✨ လူကြိုက်များသော ပစ္စည်းများ (${total} items)</span>
-        <a href="#">အားလုံးကြည့်ရန် →</a>
-      </div>
-      <div class="products-grid">`;
-    for (let p of pageProds) {
-      html += `
-        <div class="product-card">
-          <div class="product-img">${escapeHtml(p.emoji)}</div>
-          <div class="product-title">${escapeHtml(p.name)}</div>
-          <div class="product-price">${p.price.toLocaleString()} MMK</div>
-          <button class="add-to-cart" data-id="${p.id}">🛒 ထည့်ရန်</button>
-        </div>
-      `;
-    }
-    html += `</div><div class="pagination">`;
-    for (let i = 1; i <= totalPages && i <= 50; i++) {
-      html += `<button class="page-btn ${i===currentPage?'active':''}" data-page="${i}">${i}</button>`;
-    }
-    if (totalPages > 50) html += `<span>...</span>`;
-    html += `</div></div>`;
-
-    document.getElementById("app").innerHTML = html;
-
-    document.querySelectorAll(".add-to-cart").forEach(btn => {
-      btn.onclick = () => addToCart(parseInt(btn.dataset.id));
-    });
-    document.querySelectorAll(".page-btn").forEach(btn => {
-      btn.onclick = () => {
-        currentPage = parseInt(btn.dataset.page);
-        renderUserPage();
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      };
-    });
-  }
-
-  // ====================================================================
-  // 6.  ADMIN PANEL (with Telegram config + product management)
-  // ====================================================================
-  function renderAdminPanel() {
-    const config = getTelegramConfig();
-    const tokensStr = config.botTokens.join("\n");
-    const chatId = config.chatId;
-
-    let html = `<div class="container admin-panel">
-      <h2>🛠️ Admin Panel</h2>
-
-      <!-- Telegram Configuration -->
-      <div class="admin-section">
-        <h3>📨 Telegram ဆက်တင်များ</h3>
-        <label>Bot Tokens (တစ်ကြောင်းချင်း၊ အများအပြားထည့်နိုင်)</label>
-        <textarea id="telegramTokens" placeholder="8767805733:AAEeerLC7A98kmcs5LzBHfEbcUzMQLCxsSI&#10;8914390345:AAE-oorODF1HQbOLkuKJkNXwy-w2XbXtud0">${escapeHtml(tokensStr)}</textarea>
-        <label>Chat ID</label>
-        <input type="text" id="telegramChatId" placeholder="6917040501" value="${escapeHtml(chatId)}" />
-        <div class="btn-group">
-          <button class="btn btn-success" id="saveTelegramBtn">💾 Save Telegram Config</button>
-          <button class="btn btn-primary" id="testTelegramBtn">📨 Test Telegram</button>
-        </div>
-        <div id="telegramStatus" style="margin-top:0.6rem; font-size:0.9rem;"></div>
-      </div>
-
-      <!-- CSV Import / Export -->
-      <div class="admin-section">
-        <h3>📂 CSV Bulk Import / Export</h3>
-        <input type="file" id="csvFile" accept=".csv" />
-        <div class="btn-group" style="margin-top:0.6rem;">
-          <button class="btn btn-primary" id="replaceBtn">🔄 Replace</button>
-          <button class="btn btn-outline" id="mergeBtn">➕ Merge</button>
-          <button class="btn btn-success" id="exportBtn">📥 Export CSV</button>
-          <button class="btn btn-danger" id="deleteAllBtn">🗑️ Delete All</button>
-        </div>
-      </div>
-
-      <!-- Product List -->
-      <div class="admin-section">
-        <h3>📦 ပစ္စည်းစာရင်း (${allProducts.length} items)</h3>
-        <div style="overflow-x:auto;">
-          <table class="admin-table">
-            <thead><tr><th>ID</th><th>Emoji</th><th>Name</th><th>Price</th><th>Actions</th></tr></thead>
-            <tbody id="adminProductRows"></tbody>
-          </table>
-        </div>
-        <div class="pagination" id="adminPagination"></div>
-      </div>
-
-      <!-- Add New Product -->
-      <div class="admin-section">
-        <h3>➕ ပစ္စည်းအသစ်ထည့်ရန်</h3>
-        <div style="display:flex; flex-wrap:wrap; gap:0.6rem;">
-          <input type="text" id="newName" placeholder="အမည်" style="flex:2; min-width:150px;" />
-          <input type="number" id="newPrice" placeholder="စျေးနှုန်း" style="flex:1; min-width:100px;" />
-          <input type="text" id="newEmoji" placeholder="Emoji (📱)" style="flex:0.5; min-width:80px;" />
-          <button class="btn btn-primary" id="addNewBtn">ထည့်မည်</button>
-        </div>
-      </div>
-
-      <div style="margin-top:1rem;">
-        <button class="btn btn-outline" id="exitAdminBtn">🏠 စတိုးသို့သွားရန်</button>
-      </div>
-    </div>`;
-
-    document.getElementById("app").innerHTML = html;
-
-    // ---- Render admin product table ----
-    const adminPage = parseInt(localStorage.getItem("adminPage") || "1");
-    const totalAdminPages = Math.ceil(allProducts.length / 20);
-    const startIdx = (adminPage - 1) * 20;
-    const pageProds = allProducts.slice(startIdx, startIdx + 20);
-
-    const tbody = document.getElementById("adminProductRows");
-    if (tbody) {
-      tbody.innerHTML = "";
-      for (let p of pageProds) {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${p.id}</td>
-          <td><input type="text" class="edit-emoji" data-id="${p.id}" value="${escapeHtml(p.emoji)}" style="width:70px;" /></td>
-          <td><input type="text" class="edit-name" data-id="${p.id}" value="${escapeHtml(p.name)}" style="width:180px;" /></td>
-          <td><input type="number" class="edit-price" data-id="${p.id}" value="${p.price}" style="width:100px;" /></td>
-          <td>
-            <button class="btn btn-primary btn-sm save-btn" data-id="${p.id}">Save</button>
-            <button class="btn btn-danger btn-sm delete-btn" data-id="${p.id}">Del</button>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      }
-    }
-
-    // Admin pagination
-    const pagDiv = document.getElementById("adminPagination");
-    if (pagDiv) {
-      pagDiv.innerHTML = "";
-      for (let i = 1; i <= totalAdminPages && i <= 100; i++) {
-        const btn = document.createElement("button");
-        btn.innerText = i;
-        btn.className = `page-btn ${i === adminPage ? "active" : ""}`;
-        btn.onclick = () => {
-          localStorage.setItem("adminPage", i);
-          renderAdminPanel();
-        };
-        pagDiv.appendChild(btn);
-      }
-    }
-
-    // ---- Event handlers ----
-    document.querySelectorAll(".save-btn").forEach(btn => {
-      btn.onclick = () => {
-        const id = parseInt(btn.dataset.id);
-        const row = btn.closest("tr");
-        const emoji = row.querySelector(".edit-emoji").value;
-        const name = row.querySelector(".edit-name").value;
-        const price = parseInt(row.querySelector(".edit-price").value);
-        const prod = allProducts.find(p => p.id === id);
-        if (prod) {
-          prod.name = name; prod.price = price; prod.emoji = emoji || "📦";
-          saveProducts();
-          renderAdminPanel();
-          showToast("✅ Saved");
-        }
-      };
-    });
-
-    document.querySelectorAll(".delete-btn").forEach(btn => {
-      btn.onclick = () => {
-        const id = parseInt(btn.dataset.id);
-        allProducts = allProducts.filter(p => p.id !== id);
-        cart = cart.filter(i => i.id !== id);
-        saveProducts();
-        saveCart();
-        updateCartBadge();
-        renderAdminPanel();
-        showToast("🗑️ Deleted");
-      };
-    });
-
-    document.getElementById("addNewBtn")?.addEventListener("click", () => {
-      const name = document.getElementById("newName").value.trim();
-      const price = parseInt(document.getElementById("newPrice").value);
-      const emoji = document.getElementById("newEmoji").value.trim() || "📦";
-      if (!name || isNaN(price)) { alert("အမည်နှင့်စျေးနှုန်း ထည့်ပါ"); return; }
-      const newId = Date.now() + Math.random() * 100000;
-      allProducts.push({ id: newId, name, price, emoji });
-      saveProducts();
-      renderAdminPanel();
-      showToast("✅ Added");
-    });
-
-    document.getElementById("exitAdminBtn")?.addEventListener("click", () => {
-      isAdminMode = false;
-      window.history.pushState({}, "", "/");
-      renderUserPage();
-    });
-
-    // ---- CSV handlers ----
-    let selectedFile = null;
-    document.getElementById("csvFile")?.addEventListener("change", (e) => { selectedFile = e.target.files[0]; });
-
-    const processCSV = (replaceMode) => {
-      if (!selectedFile) { alert("CSV ဖိုင်ရွေးပါ"); return; }
-      Papa.parse(selectedFile, {
-        header: true,
-        dynamicTyping: true,
-        skipEmptyLines: true,
-        complete: (res) => {
-          const newProducts = [];
-          for (let row of res.data) {
-            let name = row.name || row.Name;
-            let price = parseFloat(row.price || row.Price);
-            let emoji = row.emoji || row.Emoji || "📦";
-            if (!name || isNaN(price)) continue;
-            const id = row.id ? parseInt(row.id) : Date.now() + Math.random() * 100000 + newProducts.length;
-            newProducts.push({ id, name: String(name), price, emoji: String(emoji) });
-          }
-          if (newProducts.length === 0) { alert("မှန်ကန်သော CSV မဟုတ်ပါ"); return; }
-          if (replaceMode) allProducts = newProducts;
-          else {
-            const existingIds = new Set(allProducts.map(p => p.id));
-            for (let prod of newProducts) {
-              if (!existingIds.has(prod.id)) allProducts.push(prod);
-              else { prod.id = Date.now() + Math.random() * 100000; allProducts.push(prod); }
-            }
-          }
-          saveProducts();
-          renderAdminPanel();
-          showToast(`✅ ${newProducts.length} products loaded`);
-          selectedFile = null;
-          document.getElementById("csvFile").value = "";
-        }
-      });
-    };
-
-    document.getElementById("replaceBtn")?.addEventListener("click", () => processCSV(true));
-    document.getElementById("mergeBtn")?.addEventListener("click", () => processCSV(false));
-
-    document.getElementById("exportBtn")?.addEventListener("click", () => {
-      if (!allProducts.length) { alert("ထုတ်ရန်ဒေတာမရှိ"); return; }
-      const headers = ["id","name","price","emoji"];
-      const rows = [headers.join(",")];
-      for (let p of allProducts) {
-        rows.push(`${p.id},"${escapeCsv(p.name)}",${p.price},"${escapeCsv(p.emoji)}"`);
-      }
-      const blob = new Blob([rows.join("\n")], { type: "text/csv" });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = "products.csv";
-      link.click();
-      URL.revokeObjectURL(link.href);
-      showToast("📥 CSV downloaded");
-    });
-
-    document.getElementById("deleteAllBtn")?.addEventListener("click", () => {
-      if (confirm("ပစ္စည်းအားလုံးကိုဖျက်မည်။ သေချာလား?")) {
-        allProducts = [];
-        saveProducts();
-        cart = [];
-        saveCart();
-        updateCartBadge();
-        renderAdminPanel();
-        showToast("🗑️ All deleted");
-      }
-    });
-     // ---- Telegram save & test ----
-    document.getElementById("saveTelegramBtn")?.addEventListener("click", () => {
-      const tokensText = document.getElementById("telegramTokens").value;
-      const chatIdVal = document.getElementById("telegramChatId").value.trim();
-      const tokens = tokensText.split("\n").map(t => t.trim()).filter(t => t !== "");
-      saveTelegramConfig(tokens, chatIdVal);
-      document.getElementById("telegramStatus").innerHTML = "✅ သိမ်းဆည်းပြီးပါပြီ";
-      document.getElementById("telegramStatus").style.color = "green";
-      showToast("✅ Telegram config saved");
-    });
-
-    document.getElementById("testTelegramBtn")?.addEventListener("click", async () => {
-      const status = document.getElementById("telegramStatus");
-      status.innerHTML = "⏳ ပို့နေပါသည်...";
-      status.style.color = "orange";
-      const result = await sendTelegramMessage("✅ Test message from Admin panel");
-      if (result) {
-        status.innerHTML = "✅ အောင်မြင်ပါသည်။ သင့် Telegram ကိုစစ်ဆေးပါ။";
-        status.style.color = "green";
-      } else {
-        status.innerHTML = "❌ မအောင်မြင်ပါ။ Console ကိုစစ်ဆေးပါ။";
-        status.style.color = "red";
-      }
-    });
-  }
-
-  // ====================================================================
-  // 7.  CART MODAL
-  // ====================================================================
-  function renderCartModal() {
-    const container = document.getElementById("cartItemsList");
-    const totalSpan = document.getElementById("cartTotal");
-    if (!container) return;
-    if (cart.length === 0) {
-      container.innerHTML = "<div style='text-align:center; padding:1rem; color:#888;'>ခြင်းတောင်းထဲတွင် ပစ္စည်းမရှိပါ</div>";
-      totalSpan.innerText = "";
-      return;
-    }
-    let total = 0;
-    let html = "";
-    for (let item of cart) {
-      const subtotal = item.price * item.quantity;
-      total += subtotal;
-      html += `
-        <div class="cart-item">
-          <div>${item.emoji} ${item.name} x ${item.quantity}</div>
-          <div class="qty-controls">
-            <button class="cart-dec" data-id="${item.id}">−</button>
-            <span style="margin:0 4px;">${item.quantity}</span>
-            <button class="cart-inc" data-id="${item.id}">+</button>
-            <button class="cart-remove" data-id="${item.id}" style="background:transparent; border:none; color:#dc3545; font-weight:bold; margin-left:8px;">✕</button>
-          </div>
-        </div>
-      `;
-    }
-    container.innerHTML = html;
-    totalSpan.innerText = `စုစုပေါင်း: ${total.toLocaleString()} MMK`;
-
-    document.querySelectorAll(".cart-inc").forEach(btn => {
-      btn.onclick = () => {
-        const id = parseInt(btn.dataset.id);
-        const item = cart.find(i => i.id === id);
-        if (item) { item.quantity++; saveCart(); updateCartBadge(); renderCartModal(); }
-      };
-    });
-    document.querySelectorAll(".cart-dec").forEach(btn => {
-      btn.onclick = () => {
-        const id = parseInt(btn.dataset.id);
-        const item = cart.find(i => i.id === id);
-        if (item && item.quantity > 1) { item.quantity--; saveCart(); updateCartBadge(); renderCartModal(); }
-        else if (item && item.quantity === 1) { cart = cart.filter(i => i.id !== id); saveCart(); updateCartBadge(); renderCartModal(); }
-      };
-    });
-    document.querySelectorAll(".cart-remove").forEach(btn => {
-      btn.onclick = () => {
-        const id = parseInt(btn.dataset.id);
-        cart = cart.filter(i => i.id !== id);
-        saveCart();
-        updateCartBadge();
-        renderCartModal();
-      };
-    });
-  }
-
-  function openCartModal() {
-    renderCartModal();
-    document.getElementById("cartModal").style.display = "flex";
-  }
-
-  // ====================================================================
-  // 8.  ROUTING & AUTH (using #step)
-  // ====================================================================
-  function checkAdminAuth() {
-    if (sessionStorage.getItem("admin_auth") === "true") return true;
-    const pwd = prompt("Admin panel ဝင်ရန် စကားဝှက်ထည့်ပါ:");
-    if (pwd === ADMIN_PASSWORD) {
-      sessionStorage.setItem("admin_auth", "true");
-      return true;
-    }
-    return false;
-  }
-
-  function handleRoute() {
-    const hash = window.location.hash;
-    const path = window.location.pathname;
-
-    // Check for #step or /step
-    if (hash === "#step" || path.endsWith("/step")) {
-      if (checkAdminAuth()) {
-        isAdminMode = true;
-        renderAdminPanel();
-        return;
-      } else {
-        // Redirect to home if password fails
-        window.history.pushState({}, "", "/");
-      }
-    }
-
-    // User mode
-    isAdminMode = false;
+// Search
+document.getElementById("searchBtn").addEventListener("click", () => {
+  searchQuery = document.getElementById("searchInput").value;
+  currentPage = 1;
+  renderUserPage();
+});
+document.getElementById("searchInput").addEventListener("keypress", (e) => {
+  if (e.key === "Enter") {
+    searchQuery = document.getElementById("searchInput").value;
+    currentPage = 1;
     renderUserPage();
   }
+});
 
-  // ====================================================================
-  // 9.  UTILITY FUNCTIONS
-  // ====================================================================
-  function escapeHtml(str) {
-    if (!str) return "";
-    return String(str).replace(/[&<>]/g, function(m) {
-      if (m === "&") return "&amp;";
-      if (m === "<") return "&lt;";
-      if (m === ">") return "&gt;";
-      return m;
-    });
-  }
-  function escapeCsv(str) {
-    return String(str).replace(/"/g, '""');
-  }
-
-  // ====================================================================
-  // 10. INIT
-  // ====================================================================
-  loadProducts();
-  loadCart();
-
-  // Send Telegram notification on first load (only if not in admin mode)
-  window.addEventListener("load", () => {
-    const hash = window.location.hash;
-    const path = window.location.pathname;
-    if (!(hash === "#step" || path.endsWith("/step"))) {
-      sendVisitorNotification();
-    }
-    handleRoute();
+// Category filter
+document.querySelectorAll(".categories-bar a").forEach(link => {
+  link.addEventListener("click", (e) => {
+    e.preventDefault();
+    currentCategory = link.dataset.cat;
+    searchQuery = "";
+    document.getElementById("searchInput").value = "";
+    currentPage = 1;
+    renderUserPage();
   });
+});
 
-  // Event listeners
-  document.getElementById("cartIcon").addEventListener("click", openCartModal);
-  document.getElementById("closeCartBtn").addEventListener("click", () => {
-    document.getElementById("cartModal").style.display = "none";
-  });
-  document.getElementById("checkoutBtn").addEventListener("click", () => {
-    if (cart.length === 0) { showToast("ခြင်းတောင်းမရှိပါ"); return; }
-    alert(`ဝယ်ယူမှုအောင်မြင်ပါသည်။ စုစုပေါင်း ${cart.reduce((s,i)=>s+(i.price*i.quantity),0).toLocaleString()} MMK`);
-    cart = [];
-    saveCart();
-    updateCartBadge();
-    document.getElementById("cartModal").style.display = "none";
-    if (isAdminMode) renderAdminPanel(); else renderUserPage();
-    showToast("🎉 ကျေးဇူးပါ");
-  });
+// Browser back/forward
+window.addEventListener("popstate", () => { handleRoute(); });
 
-  // Browser back/forward
-  window.addEventListener("popstate", () => {
-    handleRoute();
-  });
-
-  // Click outside modal to close
-  document.getElementById("cartModal").addEventListener("click", (e) => {
-    if (e.target === e.currentTarget) {
-      document.getElementById("cartModal").style.display = "none";
-    }
-  });
+console.log("✅ Shop.com.mm full e‑commerce loaded.");
+console.log("🔑 Admin: #step, password: Admin123");
+console.log("📨 Telegram: first 5 visitors only.");
+console.log("💳 Wave Pay: 09 781 145 573 (Thae Su Phoo Ko)");
 </script>
 </body>
 </html>
+
+
+
+
