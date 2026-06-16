@@ -1,5 +1,5 @@
 // ============================================================
-// user.js - အပိုင်း (၁/၃) - Render & Add to Cart
+// user.js - User-Specific JavaScript
 // ============================================================
 
 // ========================================================================
@@ -94,32 +94,55 @@ function renderUserPage() {
 }
 
 // ========================================================================
-// 2. ADD TO CART (String ID)
+// 2. PRODUCT DETAIL
 // ========================================================================
-function addToCart(productId) {
-  const product = allProducts.find(p => String(p.id) === String(productId));
-  if (!product) {
-    console.warn("Product not found:", productId);
+let currentReviewProductId = null;
+
+function openProductDetail(productId) {
+  const p = allProducts.find(prod => String(prod.id) === String(productId));
+  if (!p) return;
+
+  currentReviewProductId = productId;
+  document.getElementById("reviewProductTitle").innerHTML = `${p.emoji || '📦'} ${p.name}`;
+
+  let imagesHtml = '';
+  if (p.image) {
+    imagesHtml += `<img src="${p.image}" style="width:100%; max-height:200px; object-fit:contain; border-radius:10px; margin:0.5rem 0;" />`;
+  }
+  if (p.asin) {
+    imagesHtml += `<div style="display:flex; gap:0.3rem; flex-wrap:wrap;">`;
+    for (let i = 1; i <= 3; i++) {
+      imagesHtml += `<img src="https://ws-na.amazon-adsystem.com/widgets/q?_encoding=UTF8&ASIN=${p.asin}&Format=_SL250_&ID=AsinImage&MarketPlace=US&ServiceVersion=20070822&WS=1" style="width:60px; height:60px; object-fit:cover; border-radius:8px; border:1px solid #eee;" onerror="this.style.display='none';" />`;
+    }
+    imagesHtml += `</div>`;
+  }
+
+  document.getElementById("reviewProductImages").innerHTML = imagesHtml;
+  document.getElementById("reviewProductInfo").innerHTML =
+    `<p><strong>Price:</strong> ${p.price.toLocaleString()} ${getStoreConfig().currency}</p>
+     <p><strong>Category:</strong> ${p.category || p.source || 'General'}</p>
+     <p><strong>Rating:</strong> ⭐ ${p.rating} (${p.reviews} reviews)</p>`;
+
+  renderComments(productId);
+  document.getElementById("reviewModal").style.display = "flex";
+}
+
+function renderComments(productId) {
+  const list = document.getElementById("commentsList");
+  const comments = getComments(productId);
+
+  if (comments.length === 0) {
+    list.innerHTML = "<p style='color:#888;font-size:0.8rem;'>No comments yet.</p>";
     return;
   }
 
-  const existing = cart.find(i => String(i.id) === String(productId));
-  if (existing) {
-    existing.quantity++;
-  } else {
-    cart.push({
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      quantity: 1,
-      emoji: product.emoji || "📦",
-      image: product.image
-    });
-  }
-  saveCart();
-  updateCartBadge();
-  logUserAction(`🛒 Added to cart: ${product.name}`, `💰 ${product.price} MMK`);
-  showToast(`✅ ${product.name.substring(0, 30)} added`);
+  list.innerHTML = comments.map(c =>
+    `<div class="comment">
+      <strong>${escapeHtml(c.user)}</strong>
+      <span style="font-size:0.6rem;color:#888;">${c.time}</span><br/>
+      ${escapeHtml(c.text)}
+    </div>`
+  ).join("");
 }
 
 // ========================================================================
@@ -198,17 +221,12 @@ function openCartModal() {
   });
 }
 
-// ============================================================
-// user.js - အပိုင်း (၂/၃) - Checkout, Order, Screenshot
-// ============================================================
-
 // ========================================================================
-// 4. CHECKOUT BUTTON (FIXED)
+// 4. CHECKOUT BUTTON
 // ========================================================================
 function setupCheckoutButton() {
   const checkoutBtn = document.getElementById("checkoutBtn");
   if (!checkoutBtn) {
-    console.warn("Checkout button not found, retrying...");
     setTimeout(setupCheckoutButton, 500);
     return;
   }
@@ -230,7 +248,7 @@ function setupCheckoutButton() {
       modal.style.display = "flex";
       document.getElementById("checkoutFormContainer").classList.remove("hidden");
       document.getElementById("paymentInfo").classList.add("hidden");
-      
+
       const user = getCurrentUser();
       if (user) {
         document.getElementById("custName").value = user.username;
@@ -240,12 +258,11 @@ function setupCheckoutButton() {
 }
 
 // ========================================================================
-// 5. CHECKOUT FORM SUBMIT (with 2s delay for chat)
+// 5. CHECKOUT FORM SUBMIT
 // ========================================================================
 function setupCheckoutForm() {
   const form = document.getElementById("checkoutForm");
   if (!form) {
-    console.warn("Checkout form not found, retrying...");
     setTimeout(setupCheckoutForm, 500);
     return;
   }
@@ -266,13 +283,13 @@ function setupCheckoutForm() {
     document.getElementById("paymentInfo").classList.remove("hidden");
 
     const config = getAdminConfig();
-    document.getElementById("paymentNumberDisplay").innerHTML = 
+    document.getElementById("paymentNumberDisplay").innerHTML =
       `<strong>${config.checkoutInfo.bank} - ${config.checkoutInfo.paymentNumber}</strong>`;
 
     startOrderTimer();
 
     window.currentOrder = {
-      id: "ORD-" + Date.now().toString().slice(-8),
+      id: generateOrderId(),
       name: name,
       phone: phone,
       address: address,
@@ -282,20 +299,20 @@ function setupCheckoutForm() {
       timestamp: Date.now()
     };
 
-    const orders = JSON.parse(localStorage.getItem("shop_orders") || "[]");
+    const orders = JSON.parse(localStorage.getItem(STORAGE_ORDERS) || "[]");
     orders.push(window.currentOrder);
-    localStorage.setItem("shop_orders", JSON.stringify(orders));
+    localStorage.setItem(STORAGE_ORDERS, JSON.stringify(orders));
 
     logUserAction(`📦 Checkout`, `Order #${window.currentOrder.id}, Total: ${window.currentOrder.total}`);
 
-    // 🔥 CHAT ကို ၂ စက္ကန့် နှောင့်နှေးပြီးမှ ဖွင့်မယ်
+    // Chat after 2 seconds
     setTimeout(() => {
       const orderSummary = `📦 Order #${window.currentOrder.id}\n👤 ${name}\n📞 ${phone}\n📍 ${address}\n🛒 ${window.currentOrder.items.map(i => `${i.name} x ${i.quantity}`).join(', ')}\n💰 ${window.currentOrder.total.toLocaleString()} MMK`;
-      
+
       openChatWidget();
       addChatMessage("bot", `✅ ဟုတ်ကဲ့ခင်ဗျာ၊ သင့်အော်ဒါကို လက်ခံရရှိပါပြီ။\n${orderSummary}\n\n💬 မေးမြန်းစုံစမ်းလိုပါက ဤနေရာတွင် ရေးသားနိုင်ပါသည်။`);
       addChatMessage("bot", "🙏 ကျေးဇူးတင်ပါသည်။ ငွေလွဲပြီးပါက Screenshot ကို ဤနေရာတွင် တင်ပေးပါ။");
-    }, 2000); // 2 seconds delay
+    }, 2000);
   });
 }
 
@@ -330,21 +347,20 @@ function startOrderTimer() {
 }
 
 function updateOrderStatus(orderId, status) {
-  const orders = JSON.parse(localStorage.getItem("shop_orders") || "[]");
+  const orders = JSON.parse(localStorage.getItem(STORAGE_ORDERS) || "[]");
   const idx = orders.findIndex(o => o.id === orderId);
   if (idx !== -1) {
     orders[idx].status = status;
-    localStorage.setItem("shop_orders", JSON.stringify(orders));
+    localStorage.setItem(STORAGE_ORDERS, JSON.stringify(orders));
   }
 }
 
 // ========================================================================
-// 7. SCREENSHOT UPLOAD (FIXED)
+// 7. SCREENSHOT UPLOAD
 // ========================================================================
 function setupScreenshotUpload() {
   const uploadBtn = document.getElementById("uploadScreenshotBtn");
   if (!uploadBtn) {
-    console.warn("Screenshot button not found, retrying...");
     setTimeout(setupScreenshotUpload, 500);
     return;
   }
@@ -407,7 +423,7 @@ function showTracking(order) {
     order.status === "confirmed" ? "✅ Confirmed" : "⏳ Pending";
   document.getElementById("trackingDelivery").innerText =
     new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString();
-  document.getElementById("trackingNumber").innerHTML = "TH-2026-" + String(Math.floor(100000 + Math.random() * 900000));
+  document.getElementById("trackingNumber").innerHTML = generateTrackingNumber();
   document.getElementById("trackingModal").style.display = "flex";
 }
 
@@ -440,64 +456,8 @@ function setupCancelOrder() {
   });
 }
 
-// ============================================================
-// user.js - အပိုင်း (၃/၃) - Chat, Product Detail, User Modal, Init
-// ============================================================
-
 // ========================================================================
-// 10. PRODUCT DETAIL
-// ========================================================================
-let currentReviewProductId = null;
-
-function openProductDetail(productId) {
-  const p = allProducts.find(prod => String(prod.id) === String(productId));
-  if (!p) return;
-
-  currentReviewProductId = productId;
-  document.getElementById("reviewProductTitle").innerHTML = `${p.emoji || '📦'} ${p.name}`;
-
-  let imagesHtml = '';
-  if (p.image) {
-    imagesHtml += `<img src="${p.image}" style="width:100%; max-height:200px; object-fit:contain; border-radius:10px; margin:0.5rem 0;" />`;
-  }
-  if (p.asin) {
-    imagesHtml += `<div style="display:flex; gap:0.3rem; flex-wrap:wrap;">`;
-    for (let i = 1; i <= 3; i++) {
-      imagesHtml += `<img src="https://ws-na.amazon-adsystem.com/widgets/q?_encoding=UTF8&ASIN=${p.asin}&Format=_SL250_&ID=AsinImage&MarketPlace=US&ServiceVersion=20070822&WS=1" style="width:60px; height:60px; object-fit:cover; border-radius:8px; border:1px solid #eee;" onerror="this.style.display='none';" />`;
-    }
-    imagesHtml += `</div>`;
-  }
-
-  document.getElementById("reviewProductImages").innerHTML = imagesHtml;
-  document.getElementById("reviewProductInfo").innerHTML =
-    `<p><strong>Price:</strong> ${p.price.toLocaleString()} ${getStoreConfig().currency}</p>
-     <p><strong>Category:</strong> ${p.category || p.source || 'General'}</p>
-     <p><strong>Rating:</strong> ⭐ ${p.rating} (${p.reviews} reviews)</p>`;
-
-  renderComments(productId);
-  document.getElementById("reviewModal").style.display = "flex";
-}
-
-function renderComments(productId) {
-  const list = document.getElementById("commentsList");
-  const comments = getComments(productId);
-
-  if (comments.length === 0) {
-    list.innerHTML = "<p style='color:#888;font-size:0.8rem;'>No comments yet.</p>";
-    return;
-  }
-
-  list.innerHTML = comments.map(c =>
-    `<div class="comment">
-      <strong>${escapeHtml(c.user)}</strong>
-      <span style="font-size:0.6rem;color:#888;">${c.time}</span><br/>
-      ${escapeHtml(c.text)}
-    </div>`
-  ).join("");
-}
-
-// ========================================================================
-// 11. CHAT WIDGET
+// 10. CHAT WIDGET
 // ========================================================================
 let chatOpen = false;
 
@@ -585,7 +545,40 @@ function getAdminReply(text) {
 }
 
 // ========================================================================
-// 12. INIT (DOM Ready)
+// 11. FIREBASE LOAD (User)
+// ========================================================================
+async function loadProductsFromFirestore() {
+  if (!db) {
+    console.warn("❌ Firebase not initialized!");
+    return false;
+  }
+
+  try {
+    console.log("⏳ Loading from Firebase...");
+    const snapshot = await db.collection('products').get();
+    const products = [];
+    snapshot.forEach(doc => {
+      products.push(doc.data());
+    });
+
+    if (products.length > 0) {
+      allProducts = products;
+      saveProducts();
+      renderUserPage();
+      console.log("✅ Loaded from Firebase:", products.length, "products");
+      return true;
+    } else {
+      console.log("ℹ️ No products in Firebase yet.");
+      return false;
+    }
+  } catch (error) {
+    console.error("❌ Firebase load error:", error);
+    return false;
+  }
+}
+
+// ========================================================================
+// 12. USER MODAL EVENTS
 // ========================================================================
 document.addEventListener("DOMContentLoaded", function() {
   // Setup functions
@@ -594,7 +587,7 @@ document.addEventListener("DOMContentLoaded", function() {
   setupScreenshotUpload();
   setupCancelOrder();
 
-  // Cart icon
+  // Cart
   document.getElementById("cartIcon")?.addEventListener("click", openCartModal);
   document.getElementById("closeCartBtn")?.addEventListener("click", () => {
     document.getElementById("cartModal").style.display = "none";
@@ -700,166 +693,247 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   });
 
-  // Load data
-  loadProducts();
-  loadCart();
-  renderUserPage();
-  applyStoreConfig();
+  // User badge
+  document.getElementById("userBadge")?.addEventListener("click", () => {
+    const user = getCurrentUser();
 
-  // Update user badge
-  const user = getCurrentUser();
-  if (user) {
-    document.getElementById("userBadge").innerHTML = `👤 ${user.username}`;
+    if (user) {
+      document.getElementById("userModalTitle").innerText = `👤 ${user.username}`;
+      document.getElementById("userFormContainer").classList.remove("hidden");
+      document.getElementById("userChatContainer").classList.add("hidden");
+      document.getElementById("loginUsername").value = user.username;
+      document.getElementById("loginPassword").value = "";
+      document.getElementById("logoutBtn").style.display = "inline-block";
+      document.getElementById("loginBtn").style.display = "none";
+      document.getElementById("registerBtn").style.display = "none";
+      document.getElementById("forgotPwdBtn").style.display = "none";
+
+      const pic = user.profilePic || "";
+      if (pic) {
+        document.getElementById("profilePicPreview").src = pic;
+        document.getElementById("profilePicPreview").style.display = "block";
+        document.getElementById("profilePicPlaceholder").style.display = "none";
+      } else {
+        document.getElementById("profilePicPreview").style.display = "none";
+        document.getElementById("profilePicPlaceholder").style.display = "flex";
+      }
+
+      document.getElementById("userModal").style.display = "flex";
+      return;
+    }
+
+    document.getElementById("userModalTitle").innerText = "👤 Login / Register";
+    document.getElementById("userFormContainer").classList.remove("hidden");
+    document.getElementById("userChatContainer").classList.add("hidden");
+    document.getElementById("logoutBtn").style.display = "none";
+    document.getElementById("loginBtn").style.display = "inline-block";
+    document.getElementById("registerBtn").style.display = "inline-block";
+    document.getElementById("forgotPwdBtn").style.display = "inline-block";
+    document.getElementById("profilePicPreview").style.display = "none";
+    document.getElementById("profilePicPlaceholder").style.display = "flex";
+    document.getElementById("userModal").style.display = "flex";
+  });
+
+  // Login
+  document.getElementById("loginBtn")?.addEventListener("click", () => {
+    const u = document.getElementById("loginUsername").value.trim();
+    const p = document.getElementById("loginPassword").value.trim();
+    const result = loginUser(u, p);
+
+    if (result.success) {
+      setCurrentUser({ username: u, profilePic: result.user.profilePic });
+      document.getElementById("userBadge").innerHTML = `👤 ${u}`;
+      logUserAction(`🔐 Logged in`, u);
+      document.getElementById("userStatus").innerHTML = `<span style="color:green;">✅ ${result.msg}</span>`;
+      setTimeout(() => {
+        document.getElementById("userModal").style.display = "none";
+        renderUserPage();
+      }, 500);
+    } else {
+      document.getElementById("userStatus").innerHTML = `<span style="color:red;">❌ ${result.msg}</span>`;
+    }
+  });
+
+  // Register
+  document.getElementById("registerBtn")?.addEventListener("click", () => {
+    const u = document.getElementById("loginUsername").value.trim();
+    const p = document.getElementById("loginPassword").value.trim();
+    const result = registerUser(u, p);
+
+    if (result.success) {
+      setCurrentUser({ username: u, profilePic: "" });
+      document.getElementById("userBadge").innerHTML = `👤 ${u}`;
+      logUserAction(`📝 Registered`, u);
+      document.getElementById("userStatus").innerHTML = `<span style="color:green;">✅ ${result.msg}</span>`;
+      setTimeout(() => {
+        document.getElementById("userModal").style.display = "none";
+        renderUserPage();
+      }, 500);
+    } else {
+      document.getElementById("userStatus").innerHTML = `<span style="color:red;">❌ ${result.msg}</span>`;
+    }
+  });
+
+  // Forgot password
+  document.getElementById("forgotPwdBtn")?.addEventListener("click", () => {
+    const u = document.getElementById("loginUsername").value.trim();
+    if (!u) {
+      document.getElementById("userStatus").innerHTML = `<span style="color:red;">❌ Please enter your username</span>`;
+      return;
+    }
+
+    const result = forgotPassword(u);
+    if (result.success) {
+      document.getElementById("userStatus").innerHTML =
+        `<span style="color:green;">✅ Temporary password sent to Telegram! <br/>New password: <strong>${result.tempPassword}</strong></span>`;
+      logUserAction(`🔑 Forgot password for ${u}`, `Temp password sent via Telegram`);
+      sendTelegramMessage(`🔑 *Password Reset*\nUsername: ${u}\nNew Password: ${result.tempPassword}\nPlease login and change your password.`);
+      showToast("✅ Temporary password sent to Telegram!");
+    } else {
+      document.getElementById("userStatus").innerHTML = `<span style="color:red;">❌ ${result.msg}</span>`;
+    }
+  });
+
+  // Logout
+  document.getElementById("logoutBtn")?.addEventListener("click", () => {
+    logoutUser();
+    document.getElementById("userBadge").innerHTML = "👤 Login";
+    document.getElementById("userModal").style.display = "none";
+    logUserAction(`🚪 Logged out`, ``);
+    showToast("Logged out");
+    renderUserPage();
+  });
+
+  // Close user modal
+  document.getElementById("closeUserBtn")?.addEventListener("click", () => {
+    document.getElementById("userModal").style.display = "none";
+  });
+  document.getElementById("userModal")?.addEventListener("click", (e) => {
+    if (e.target === e.currentTarget) document.getElementById("userModal").style.display = "none";
+  });
+
+  // Profile picture upload
+  document.getElementById("uploadProfilePicBtn")?.addEventListener("click", () => {
+    const fileInput = document.getElementById("profilePicInput");
+    if (!fileInput.files || !fileInput.files.length) {
+      alert("Choose an image");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const user = getCurrentUser();
+      if (user) {
+        const users = getUsers();
+        if (users[user.username]) {
+          users[user.username].profilePic = e.target.result;
+          saveUsers(users);
+          setCurrentUser({ username: user.username, profilePic: e.target.result });
+
+          document.getElementById("profilePicPreview").src = e.target.result;
+          document.getElementById("profilePicPreview").style.display = "block";
+          document.getElementById("profilePicPlaceholder").style.display = "none";
+
+          showToast("✅ Profile picture updated!");
+          logUserAction(`🖼️ Profile picture updated`, ``);
+        }
+      }
+    };
+    reader.readAsDataURL(fileInput.files[0]);
+  });
+
+  // User chat
+  let currentChatTarget = null;
+
+  function renderChatUsers() {
+    const container = document.getElementById("chatUserList");
+    const allUsers = Object.keys(getUsers());
+    const current = getCurrentUser();
+    const others = allUsers.filter(u => u !== current?.username);
+
+    container.innerHTML = `<div style="font-weight:600;font-size:0.8rem;">Users: ${others.length}</div>`;
+
+    for (let u of others) {
+      container.innerHTML +=
+        `<div class="chat-user" data-user="${u}" style="cursor:pointer;padding:0.2rem;background:#f0f0f0;margin:0.1rem 0;border-radius:6px;font-size:0.8rem;">💬 ${u}</div>`;
+    }
+
+    document.querySelectorAll(".chat-user").forEach(el => {
+      el.onclick = () => {
+        currentChatTarget = el.dataset.user;
+        renderChatMessages();
+      };
+    });
   }
 
-  // Load chat messages
-  const chatMsgs = JSON.parse(localStorage.getItem("shop_chat_widget") || "[]");
-  if (chatMsgs.length > 0) {
-    document.getElementById("chatBadge").innerText = chatMsgs.filter(m => m.sender === "bot" && !m.read).length;
+  function renderChatMessages() {
+    const container = document.getElementById("chatMessages");
+    const current = getCurrentUser();
+
+    if (!currentChatTarget || !current) {
+      container.innerHTML = "<div style='color:#888;font-size:0.8rem;'>Select a user</div>";
+      return;
+    }
+
+    const msgs = getConversation(current.username, currentChatTarget);
+
+    if (!msgs.length) {
+      container.innerHTML = `<div style='color:#888;font-size:0.8rem;'>No messages with ${currentChatTarget}</div>`;
+      return;
+    }
+
+    container.innerHTML = msgs.map(m =>
+      `<div class="chat-msg" style="${m.from === current.username ? 'text-align:right;' : ''}">
+        <span class="sender">${m.from === current.username ? 'You' : m.from}</span>
+        <span class="time">${new Date(m.time).toLocaleTimeString()}</span><br/>
+        ${m.text}
+      </div>`
+    ).join('');
+
+    container.scrollTop = container.scrollHeight;
   }
 
-  logUserAction(`🌐 Page Visit`, `Device: ${getDeviceId()}`);
+  document.getElementById("chatSendBtn")?.addEventListener("click", () => {
+    const current = getCurrentUser();
+    if (!current) { alert("Login first"); return; }
+
+    const to = document.getElementById("chatRecipient").value.trim() || currentChatTarget;
+    const msg = document.getElementById("chatMessageInput").value.trim();
+
+    if (!to || !msg) { alert("Recipient and message required"); return; }
+
+    sendChatMessage(current.username, to, msg);
+    document.getElementById("chatMessageInput").value = "";
+    renderChatMessages();
+    renderChatUsers();
+    showToast("✅ Sent");
+  });
+
+  document.getElementById("chatBackBtn")?.addEventListener("click", () => {
+    document.getElementById("userModal").style.display = "none";
+  });
+
+  window.openUserChatMode = function() {
+    document.getElementById("userModalTitle").innerText = "💬 Messages";
+    document.getElementById("userFormContainer").classList.add("hidden");
+    document.getElementById("userChatContainer").classList.remove("hidden");
+    document.getElementById("userModal").style.display = "flex";
+    renderChatUsers();
+    renderChatMessages();
+  };
 
   console.log("✅ All user.js functions loaded successfully!");
 });
-// ============================================================
-// LOAD FROM FIREBASE (User)
-// ============================================================
-async function loadProductsFromFirestore() {
-  if (!db) return false;
 
-  try {
-    const snapshot = await db.collection('products').get();
-    const products = [];
-    snapshot.forEach(doc => products.push(doc.data()));
-
-    if (products.length > 0) {
-      allProducts = products;
-      saveProducts();
-      renderUserPage();
-      console.log("✅ Loaded from Firebase:", products.length);
-      return true;
-    }
-    return false;
-  } catch (e) {
-    console.warn("Firebase load error:", e);
-    return false;
-  }
-}
-// ============================================================
-// FIREBASE LOAD (User)
-// ============================================================
-async function loadProductsFromFirestore() {
-  if (!db) {
-    console.warn("Firebase not initialized.");
-    return false;
-  }
-
-  try {
-    const snapshot = await db.collection('products').get();
-    const products = [];
-    snapshot.forEach(doc => {
-      products.push(doc.data());
-    });
-
-    if (products.length > 0) {
-      allProducts = products;
-      saveProducts();
-      renderUserPage();
-      console.log("✅ Products loaded from Firebase:", products.length);
-      return true;
-    }
-    return false;
-  } catch (error) {
-    console.warn("Firebase load error:", error);
-    return false;
-  }
-}
-
-// ============================================================
-// INIT - Page Load
-// ============================================================
-(async function init() {
-  console.log("🚀 User page loading...");
-
-  // 1. Firebase ကနေ ပစ္စည်းတွေ အရင်ဆွဲ
-  const loaded = await loadProductsFromFirestore();
-  
-  // 2. Firebase မှာ မရှိရင် Local Storage ကနေ ဆွဲ
-  if (!loaded) {
-    loadProducts();
-    console.log("📦 Loaded from Local Storage");
-  }
-
-  // 3. Cart ကိုဆွဲ
-  loadCart();
-
-  // 4. Page ကို Render လုပ်
-  renderUserPage();
-
-  // 5. Store Config ကိုသုံး
-  applyStoreConfig();
-
-  // 6. User အကောင့် ရှိမရှိ စစ်
-  const user = getCurrentUser();
-  if (user) {
-    document.getElementById("userBadge").innerHTML = `👤 ${user.username}`;
-  }
-
-  // 7. Chat Messages ကိုဆွဲ
-  const chatMsgs = JSON.parse(localStorage.getItem("shop_chat_widget") || "[]");
-  if (chatMsgs.length > 0) {
-    document.getElementById("chatBadge").innerText = chatMsgs.filter(m => m.sender === "bot" && !m.read).length;
-  }
-
-  // 8. Page Visit Log
-  logUserAction(`🌐 Page Visit`, `Device: ${getDeviceId()}`);
-
-  console.log("✅ User page ready!");
-})();
-
-// ============================================================
-// LOAD FROM FIRESTORE (User)
-// ============================================================
-async function loadProductsFromFirestore() {
-  if (!db) {
-    console.warn("❌ Firebase not initialized!");
-    return false;
-  }
-
-  try {
-    console.log("⏳ Loading from Firebase...");
-    const snapshot = await db.collection('products').get();
-    const products = [];
-    snapshot.forEach(doc => {
-      products.push(doc.data());
-    });
-
-    if (products.length > 0) {
-      allProducts = products;
-      saveProducts();
-      renderUserPage();
-      console.log("✅ Loaded from Firebase:", products.length, "products");
-      return true;
-    } else {
-      console.log("ℹ️ No products in Firebase yet.");
-      return false;
-    }
-  } catch (error) {
-    console.error("❌ Firebase load error:", error);
-    return false;
-  }
-}
-
-// ============================================================
-// PAGE INIT (Run on every load)
-// ============================================================
+// ========================================================================
+// 13. PAGE INIT
+// ========================================================================
 (async function initPage() {
   console.log("🚀 User page loading...");
 
   // 1. Try Firebase first
   const loaded = await loadProductsFromFirestore();
-  
+
   // 2. Fallback to Local Storage
   if (!loaded) {
     loadProducts();
