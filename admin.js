@@ -1,14 +1,9 @@
 // ============================================================
-// admin.js - Admin-Specific JavaScript (FULLY FIXED)
+// admin.js - Admin-Specific JavaScript
 // ============================================================
 
 // ============================================================
-// 1. GLOBAL STATE & CONFIG
-// ============================================================
-let syncMode = "merge";
-
-// ============================================================
-// 2. CHECK ADMIN AUTH
+// 1. CHECK ADMIN AUTH
 // ============================================================
 function checkAdminAuth() {
     const session = sessionStorage.getItem("admin_authenticated");
@@ -29,7 +24,7 @@ function adminLogout() {
 }
 
 // ============================================================
-// 3. RENDER ADMIN PANEL
+// 2. RENDER ADMIN PANEL
 // ============================================================
 function renderAdminPanel() {
     loadProducts();
@@ -41,6 +36,25 @@ function renderAdminPanel() {
 
     document.getElementById("productCount").innerText = allProducts.length;
     document.getElementById("adminStatus").innerHTML = "🔐 Secured - " + new Date().toLocaleString();
+
+    // Load grid layout
+    loadGridLayoutForAdmin();
+}
+
+// ============================================================
+// 3. GRID LAYOUT CONTROLLER (Admin)
+// ============================================================
+async function loadGridLayoutForAdmin() {
+    const cols = await loadGridLayout();
+    document.getElementById("currentGridDisplay").innerText = cols;
+    document.querySelectorAll('.grid-col-btn').forEach(btn => {
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-outline');
+        if (parseInt(btn.dataset.cols) === cols) {
+            btn.classList.remove('btn-outline');
+            btn.classList.add('btn-primary');
+        }
+    });
 }
 
 // ============================================================
@@ -59,24 +73,55 @@ function renderAdminProducts() {
 
     tbody.innerHTML = "";
     for (let p of pageProds) {
+        const imgHtml = p.image ?
+            `<img src="${p.image}" style="width:40px;height:40px;object-fit:contain;border-radius:4px;background:#fafafa;" />` :
+            `<span style="font-size:1.5rem;">${p.emoji || '📦'}</span>`;
+
+        const statusHtml = p.stock_total && p.stock_total > 0 ?
+            `<span style="color:#28a745;font-weight:600;font-size:0.75rem;">✅ In Stock</span>` :
+            `<span style="color:#dc3545;font-weight:600;font-size:0.75rem;">❌ Out of Stock</span>`;
+
         const tr = document.createElement("tr");
         tr.innerHTML = `
             <td>${p.id}</td>
-            <td>${p.source || 'default'}</td>
+            <td>${imgHtml}</td>
             <td><input type="text" class="edit-name" data-id="${p.id}" value="${escapeHtml(p.name)}" /></td>
             <td><input type="number" class="edit-price" data-id="${p.id}" value="${p.price}" /></td>
+            <td>${statusHtml}</td>
             <td>
-                <button class="btn btn-primary btn-sm save-product-btn" data-id="${p.id}">Save</button>
-                <button class="btn btn-danger btn-sm delete-product-btn" data-id="${p.id}">Del</button>
+                <button class="btn btn-primary btn-sm save-product-btn" data-id="${p.id}">💾</button>
+                <button class="btn btn-danger btn-sm delete-product-btn" data-id="${p.id}">🗑️</button>
             </td>
         `;
         tbody.appendChild(tr);
     }
 
+    // Pagination
     const pagDiv = document.getElementById("adminPagination");
     if (pagDiv) {
         pagDiv.innerHTML = "";
-        for (let i = 1; i <= totalPages && i <= 100; i++) {
+        const maxShow = 10;
+        for (let i = 1; i <= totalPages && i <= 50; i++) {
+            if (i > 1 && i < adminPage - 3) {
+                if (pagDiv.querySelector('.page-dots') === null) {
+                    const dots = document.createElement("span");
+                    dots.className = "page-dots";
+                    dots.innerText = "...";
+                    dots.style.padding = "0 0.3rem";
+                    pagDiv.appendChild(dots);
+                }
+                continue;
+            }
+            if (i < totalPages && i > adminPage + 3) {
+                if (pagDiv.querySelector('.page-dots-end') === null) {
+                    const dots = document.createElement("span");
+                    dots.className = "page-dots-end";
+                    dots.innerText = "...";
+                    dots.style.padding = "0 0.3rem";
+                    pagDiv.appendChild(dots);
+                }
+                continue;
+            }
             const btn = document.createElement("button");
             btn.innerText = i;
             btn.className = `page-btn ${i === adminPage ? "active" : ""}`;
@@ -88,6 +133,7 @@ function renderAdminProducts() {
         }
     }
 
+    // Events
     document.querySelectorAll(".save-product-btn").forEach(btn => {
         btn.onclick = () => {
             const id = btn.dataset.id;
@@ -305,8 +351,10 @@ function saveRapidAPILimit(limit) {
 }
 
 // ============================================================
-// 10. AMAZON SYNC (FIXED)
+// 10. AMAZON SYNC
 // ============================================================
+let syncMode = "merge";
+
 async function syncAmazonProducts(searchTerm, maxPages = 10) {
     if (!searchTerm || searchTerm.trim() === "") {
         alert("Please enter a search term");
@@ -315,18 +363,17 @@ async function syncAmazonProducts(searchTerm, maxPages = 10) {
 
     let allFetched = [];
     let totalPages = Math.min(maxPages, 50);
-    let rapidLimit = null;
 
     for (let p = 1; p <= totalPages; p++) {
         try {
             const result = await fetchAmazonProducts(searchTerm, "US", p);
-            
             if (result && result.data && result.data.products && result.data.products.length > 0) {
                 const products = result.data.products;
                 const newProducts = products.map((item, idx) => ({
                     id: item.asin || (Date.now() + idx + p * 1000 + Math.random() * 100000),
                     name: item.product_title || item.title || "Unknown Product",
                     price: item.price || item.unit_price || Math.floor(Math.random() * 100000) + 5000,
+                    original_price: item.original_price || item.price * 1.3 || Math.floor(Math.random() * 150000) + 10000,
                     emoji: "📦",
                     category: "Amazon",
                     rating: item.rating || "4.0",
@@ -334,8 +381,10 @@ async function syncAmazonProducts(searchTerm, maxPages = 10) {
                     image: item.product_photo || item.main_image || item.thumbnail || "",
                     source: "Amazon",
                     isVideo: false,
-                    originalPrice: item.original_price || null,
-                    asin: item.asin || null
+                    discount_badge: "",
+                    is_flash_sale: false,
+                    stock_total: Math.floor(Math.random() * 100) + 10,
+                    sold_count: Math.floor(Math.random() * 50)
                 }));
                 allFetched = allFetched.concat(newProducts);
             } else {
@@ -357,60 +406,16 @@ async function syncAmazonProducts(searchTerm, maxPages = 10) {
             allProducts = allProducts.concat(allFetched);
             showToast(`✅ ${allFetched.length} products replaced! (Total: ${allProducts.length})`);
         }
-        
         saveProducts();
         logUserAction(`📦 Synced ${allFetched.length} Amazon products (${syncMode} mode)`, `Search: "${searchTerm}"`);
         renderAdminPanel();
-        
-        if (rapidLimit) {
-            saveRapidAPILimit(rapidLimit);
-        }
-        displayAPILimits();
-        
         return allFetched.length;
     }
     return 0;
 }
 
 // ============================================================
-// 11. FETCH AMAZON PRODUCTS (FIXED)
-// ============================================================
-async function fetchAmazonProducts(query, country = "US", page = 1) {
-    const config = getAmazonApiConfig();
-    const url = `https://${config.host}/search?query=${encodeURIComponent(query)}&country=${country}&page=${page}`;
-    
-    console.log("🔍 Fetching:", url);
-    console.log("🔑 Using API Key:", config.apiKey.substring(0, 10) + "...");
-    
-    try {
-        const res = await fetch(url, {
-            headers: {
-                "x-rapidapi-key": config.apiKey,
-                "x-rapidapi-host": config.host,
-                "Content-Type": "application/json"
-            }
-        });
-        
-        console.log("📡 Response status:", res.status);
-        
-        if (!res.ok) {
-            const errorText = await res.text();
-            console.error("❌ API Error:", errorText);
-            throw new Error(`API returned ${res.status}: ${errorText.substring(0, 100)}`);
-        }
-        
-        const data = await res.json();
-        console.log("✅ Data received:", data.data?.products?.length || 0, "products");
-        return data;
-    } catch (e) {
-        console.error("❌ Amazon fetch error:", e);
-        alert(`❌ API Error: ${e.message}\n\nCheck:\n1. API Key is correct\n2. Internet connection\n3. RapidAPI subscription is active`);
-        return null;
-    }
-}
-
-// ============================================================
-// 12. FIREBASE SYNC
+// 11. FIREBASE SYNC
 // ============================================================
 async function syncProductsToFirestore() {
     if (!db) {
@@ -466,7 +471,7 @@ async function syncProductsToFirestore() {
 }
 
 // ============================================================
-// 13. FIREBASE SYNC BUTTON
+// 12. FIREBASE SYNC BUTTON
 // ============================================================
 let firebaseButtonAdded = false;
 
@@ -490,7 +495,7 @@ function addFirebaseSyncButton() {
 }
 
 // ============================================================
-// 14. ADMIN EVENT LISTENERS
+// 13. ADMIN EVENT LISTENERS
 // ============================================================
 document.addEventListener("DOMContentLoaded", function() {
     if (!checkAdminAuth()) {
@@ -501,7 +506,24 @@ document.addEventListener("DOMContentLoaded", function() {
     renderAdminPanel();
     setTimeout(addFirebaseSyncButton, 1000);
 
-    // Admin Route
+    // ===== GRID LAYOUT CONTROLLER =====
+    document.querySelectorAll('.grid-col-btn').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const cols = parseInt(this.dataset.cols);
+            await saveGridLayout(cols);
+            document.getElementById("currentGridDisplay").innerText = cols;
+            document.querySelectorAll('.grid-col-btn').forEach(b => {
+                b.classList.remove('btn-primary');
+                b.classList.add('btn-outline');
+            });
+            this.classList.remove('btn-outline');
+            this.classList.add('btn-primary');
+            showToast(`✅ Grid changed to ${cols} columns`);
+            logUserAction(`📐 Grid layout changed`, `${cols} columns`);
+        });
+    });
+
+    // ===== ADMIN ROUTE =====
     document.getElementById("saveAdminRouteBtn")?.addEventListener("click", function() {
         const newRoute = document.getElementById("adminRouteInput").value.trim();
         const newPage = document.getElementById("adminPageInput").value.trim();
@@ -525,10 +547,10 @@ document.addEventListener("DOMContentLoaded", function() {
         logUserAction(`🔗 Admin route changed`, `Route: ${route}, Page: ${newPage}`);
     });
 
-    // Admin Logout
+    // ===== ADMIN LOGOUT =====
     document.getElementById("adminLogoutBtn")?.addEventListener("click", adminLogout);
 
-    // Store Config
+    // ===== STORE CONFIG =====
     document.getElementById("saveStoreConfigBtn")?.addEventListener("click", () => {
         const config = {
             storeName: document.getElementById("adminStoreName").value.trim() || "Shop",
@@ -542,7 +564,7 @@ document.addEventListener("DOMContentLoaded", function() {
         logUserAction(`🏪 Store branding updated`, ``);
     });
 
-    // Checkout Config
+    // ===== CHECKOUT CONFIG =====
     document.getElementById("adminSaveCheckoutBtn")?.addEventListener("click", () => {
         const config = getAdminConfig();
         config.checkoutLabels = {
@@ -560,7 +582,7 @@ document.addEventListener("DOMContentLoaded", function() {
         logUserAction(`📦 Checkout settings updated`, ``);
     });
 
-    // Admin Password
+    // ===== ADMIN PASSWORD =====
     document.getElementById("adminChangePwdBtn")?.addEventListener("click", () => {
         const current = document.getElementById("adminCurrentPwd").value.trim();
         const newPwd = document.getElementById("adminNewPwd").value.trim();
@@ -583,7 +605,7 @@ document.addEventListener("DOMContentLoaded", function() {
         document.getElementById("adminNewPwd").value = "";
     });
 
-    // Telegram Config
+    // ===== TELEGRAM CONFIG =====
     document.getElementById("saveTelegramBtn")?.addEventListener("click", () => {
         const tokensText = document.getElementById("telegramTokens").value;
         const chatId = document.getElementById("telegramChatId").value.trim();
@@ -608,7 +630,7 @@ document.addEventListener("DOMContentLoaded", function() {
         showStatus("telegramStatus", "🔄 Rate limit reset.", "info");
     });
 
-    // Broadcast
+    // ===== BROADCAST =====
     document.getElementById("broadcastBtn")?.addEventListener("click", async () => {
         const recipient = document.getElementById("broadcastRecipient").value.trim();
         const subject = document.getElementById("broadcastSubject").value.trim();
@@ -635,8 +657,7 @@ document.addEventListener("DOMContentLoaded", function() {
             showStatus("broadcastStatus", "❌ Failed to send. Check Telegram config.", "error");
         }
     });
-
-    // Admin Chat Reply
+    // ===== ADMIN CHAT REPLY =====
     document.getElementById("adminChatReplyBtn")?.addEventListener("click", () => {
         const to = document.getElementById("adminChatReplyTo").value.trim();
         const msg = document.getElementById("adminChatReplyMsg").value.trim();
@@ -660,7 +681,7 @@ document.addEventListener("DOMContentLoaded", function() {
         logUserAction(`💬 Admin replied to ${to}`, msg.substring(0, 50));
     });
 
-    // Amazon API - Save Config
+    // ===== AMAZON API =====
     document.getElementById("saveApiConfigBtn")?.addEventListener("click", () => {
         const key = document.getElementById("adminApiKey").value.trim();
         const host = document.getElementById("adminApiHost").value.trim();
@@ -669,7 +690,6 @@ document.addEventListener("DOMContentLoaded", function() {
         logUserAction(`🔑 Amazon API config updated`, ``);
     });
 
-    // Amazon API - Sync
     const savedMode = localStorage.getItem("shop_sync_mode") || "merge";
     syncMode = savedMode;
     document.querySelectorAll('input[name="syncMode"]').forEach(el => {
@@ -698,7 +718,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 showStatus("syncStatus", `✅ Synced ${count} products from Amazon!`, "success");
                 renderAdminPanel();
             } else {
-                showStatus("syncStatus", "❌ No products found. Check:\n1. Search term\n2. API Key\n3. Internet connection", "error");
+                showStatus("syncStatus", "❌ No products found. Check search term or API key.", "error");
             }
         } catch (error) {
             console.error("Sync error:", error);
@@ -706,7 +726,7 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 
-    // Google Sheets Sync
+    // ===== GOOGLE SHEETS =====
     document.getElementById("syncSheetBtn")?.addEventListener("click", async () => {
         const url = document.getElementById("adminSheetUrl").value.trim();
 
@@ -727,7 +747,7 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 
-    // Bulk Discount
+    // ===== BULK DISCOUNT =====
     document.getElementById("applyBulkDiscountBtn")?.addEventListener("click", () => {
         const amount = parseInt(document.getElementById("bulkDiscountAmount").value);
 
@@ -747,7 +767,7 @@ document.addEventListener("DOMContentLoaded", function() {
         renderAdminPanel();
     });
 
-    // User Search
+    // ===== USER SEARCH =====
     document.getElementById("adminUserSearchBtn")?.addEventListener("click", () => {
         const search = document.getElementById("adminUserSearch").value;
         renderAdminUsers(search);
@@ -760,7 +780,7 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 
-    // CSV
+    // ===== CSV =====
     let csvFile = null;
     document.getElementById("csvFile")?.addEventListener("change", (e) => {
         csvFile = e.target.files[0];
@@ -780,8 +800,13 @@ document.addEventListener("DOMContentLoaded", function() {
                 for (let row of results.data) {
                     let name = row.name || row.Name || row.title || row.Title;
                     let price = parseFloat(row.price || row.Price || row.unit_price);
+                    let original_price = parseFloat(row.original_price || row.OriginalPrice || price * 1.3);
                     let emoji = row.emoji || row.Emoji || "📦";
                     let category = row.category || row.Category || "CSV";
+                    let discount_badge = row.discount_badge || row.DiscountBadge || "";
+                    let is_flash_sale = row.is_flash_sale || row.IsFlashSale || false;
+                    let stock_total = parseInt(row.stock_total || row.StockTotal || 100);
+                    let sold_count = parseInt(row.sold_count || row.SoldCount || 0);
 
                     if (!name || isNaN(price)) continue;
 
@@ -790,13 +815,18 @@ document.addEventListener("DOMContentLoaded", function() {
                         id: id,
                         name: String(name),
                         price: price,
+                        original_price: original_price,
                         emoji: String(emoji),
                         category: String(category),
                         rating: "4.0",
                         reviews: 0,
                         image: row.image || row.Image || "",
                         source: "CSV",
-                        isVideo: false
+                        isVideo: false,
+                        discount_badge: String(discount_badge),
+                        is_flash_sale: is_flash_sale === true || is_flash_sale === "TRUE",
+                        stock_total: stock_total,
+                        sold_count: sold_count
                     });
                 }
 
@@ -833,11 +863,11 @@ document.addEventListener("DOMContentLoaded", function() {
             return;
         }
 
-        const headers = ["id", "name", "price", "emoji", "category", "source"];
+        const headers = ["id", "name", "price", "original_price", "emoji", "category", "source", "discount_badge", "is_flash_sale", "stock_total", "sold_count"];
         const rows = [headers.join(",")];
 
         for (let p of allProducts) {
-            rows.push(`${p.id},"${escapeCsv(p.name)}",${p.price},"${escapeCsv(p.emoji)}","${escapeCsv(p.category)}","${escapeCsv(p.source || '')}"`);
+            rows.push(`${p.id},"${escapeCsv(p.name)}",${p.price},${p.original_price || p.price},"${escapeCsv(p.emoji)}","${escapeCsv(p.category)}","${escapeCsv(p.source || '')}","${escapeCsv(p.discount_badge || '')}",${p.is_flash_sale || false},${p.stock_total || 0},${p.sold_count || 0}`);
         }
 
         const blob = new Blob([rows.join("\n")], { type: "text/csv" });
@@ -866,18 +896,18 @@ document.addEventListener("DOMContentLoaded", function() {
         renderAdminPanel();
     });
 
-    // Refresh Limits
+    // ===== REFRESH LIMITS =====
     document.getElementById("refreshLimitsBtn")?.addEventListener("click", function() {
         displayAPILimits();
         showToast("🔄 Limits refreshed!");
     });
 
-    // Exit
+    // ===== EXIT =====
     document.getElementById("exitAdminBtn")?.addEventListener("click", () => {
         window.location.href = "/";
     });
 
-    // Firebase Auth State
+    // ===== FIREBASE AUTH STATE =====
     firebase.auth().onAuthStateChanged((user) => {
         if (user) {
             console.log("✅ Firebase Auth: Logged in as", user.email);
