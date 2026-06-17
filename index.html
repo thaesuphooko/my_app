@@ -1,207 +1,241 @@
 <!DOCTYPE html>
 <html lang="my" data-theme="light">
 <head>
-    <!-- Meta Tags များ - မြန်မာဘာသာ အပြည့်အဝထောက်ပံ့ -->
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="theme-color" content="#e11b1b">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="description" content="Premium Myanmar E-Commerce SPA - အကောင်းဆုံးဈေးနှုန်းများ၊ မြန်မာနိုင်ငံအနှံ့ ပို့ဆောင်ပေးသည်">
-    <meta name="keywords" content="Myanmar, Shopping, Online, Wave Pay, Ecommerce">
-    
-    <!-- Title - Admin မှပြောင်းလဲနိုင်သော -->
-    <title>ShopNow Myanmar | Premium Online Shopping</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>ShopNow Myanmar</title>
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+Myanmar:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    /* ========== CSS Variables & Reset ========== */
+    :root {
+      --primary: #e11b1b; --primary-dark: #b71c1c; --secondary: #ff6b00;
+      --bg-start: #fce4ec; --bg-end: #f3e5f5;
+      --glass-bg: rgba(255,255,255,0.7); --glass-blur: blur(10px);
+      --text: #212121; --text-light: #616161; --border: #e0e0e0;
+      --header-h: 56px; --nav-h: 60px; --radius: 16px;
+    }
+    [data-theme="dark"] {
+      --bg-start: #1a1a2e; --bg-end: #16213e;
+      --glass-bg: rgba(30,30,40,0.7); --text: #f5f5f5; --text-light: #bdbdbd; --border: #424242;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family: 'Inter','Noto Sans Myanmar',sans-serif;
+      background: linear-gradient(135deg, var(--bg-start), var(--bg-end));
+      color: var(--text); min-height:100vh; padding-top:var(--header-h);
+      padding-bottom:calc(var(--nav-h) + 20px); transition: background 0.3s, color 0.3s;
+    }
+    /* Header */
+    #header {
+      position:fixed; top:0; left:0; right:0; height:var(--header-h);
+      background:var(--glass-bg); backdrop-filter:var(--glass-blur);
+      border-bottom:1px solid rgba(255,255,255,0.4); z-index:1000;
+      display:flex; align-items:center; padding:0 16px; justify-content:space-between;
+    }
+    .brand { font-weight:800; font-size:20px; color:var(--primary); cursor:pointer; }
+    .header-actions { display:flex; gap:12px; align-items:center; }
+    .icon-btn { background:none; border:none; color:var(--text); font-size:20px; cursor:pointer; }
+    .theme-toggle { display:flex; align-items:center; gap:4px; cursor:pointer; background:var(--glass-bg); padding:4px 10px; border-radius:20px; }
+    .toggle-slider { width:36px; height:20px; background:var(--border); border-radius:10px; position:relative; transition:0.2s; }
+    .toggle-slider::after { content:''; width:16px; height:16px; background:white; border-radius:50%; position:absolute; top:2px; left:2px; transition:0.2s; }
+    #dark-check:checked + .toggle-slider { background:var(--secondary); }
+    #dark-check:checked + .toggle-slider::after { left:18px; }
 
-    <!-- Favicon & Web App Icons -->
-    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛒</text></svg>">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛒</text></svg>">
+    /* Bottom Nav */
+    #bottom-nav {
+      position:fixed; bottom:0; left:0; right:0; height:var(--nav-h);
+      background:var(--glass-bg); backdrop-filter:var(--glass-blur);
+      border-top:1px solid rgba(255,255,255,0.4); display:flex;
+      justify-content:space-around; align-items:center; z-index:999;
+    }
+    .nav-item { display:flex; flex-direction:column; align-items:center; text-decoration:none; color:var(--text-light); font-size:11px; gap:2px; }
+    .nav-item i { font-size:20px; }
+    .nav-item.active { color:var(--primary); font-weight:700; }
 
-    <!-- Google Fonts - Primary: Inter / Display: Myanmar Unicode -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Myanmar:wght@400;500;700&display=swap" rel="stylesheet">
+    /* Product Card */
+    .products-grid { display:grid; grid-template-columns: repeat(2,1fr); gap:12px; padding:16px; }
+    .product-card {
+      background:var(--glass-bg); backdrop-filter:var(--glass-blur);
+      border-radius:var(--radius); overflow:hidden; box-shadow:0 8px 20px rgba(0,0,0,0.08);
+      position:relative; cursor:pointer; transition:0.2s;
+    }
+    .product-card:hover { transform:translateY(-2px); }
+    .discount-badge {
+      position:absolute; top:8px; right:8px; background:var(--primary); color:white;
+      font-size:11px; font-weight:700; padding:2px 8px; border-radius:12px;
+    }
+    .product-img { width:100%; aspect-ratio:1/1; object-fit:cover; }
+    .card-body { padding:10px; }
+    .price-row { display:flex; gap:6px; align-items:baseline; }
+    .new-price { font-weight:800; color:var(--primary); }
+    .old-price { font-size:13px; text-decoration:line-through; color:var(--text-light); }
+    .stars { color:#f59e0b; font-size:12px; }
 
-    <!-- Font Awesome 6 CDN - Icons များအတွက် -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    
-    <!-- Leaflet.js CSS - မြေပုံအတွက် -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    
-    <!-- Papa Parse - CSV ဖိုင်တွက်ချက်ရန် -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    /* Floating Chat */
+    #chat-widget {
+      position:fixed; bottom:80px; right:20px; width:50px; height:50px; border-radius:50%;
+      background:var(--secondary); color:white; display:flex; align-items:center; justify-content:center;
+      font-size:22px; box-shadow:0 4px 12px rgba(0,0,0,0.2); cursor:pointer; z-index:998;
+    }
+    .hidden { display:none !important; }
 
-    <!-- Firebase SDKs (CDN) -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
-
-    <!-- Custom CSS (Style System) -->
-    <link rel="stylesheet" href="style.css">
-
-    <!-- Firebase Config & Init (သီးသန့်ဖိုင်) -->
-    <script src="firebase-config.js" defer></script>
-    
-    <!-- Main App JavaScript (အဆင့်မြင့်စနစ်များ) -->
-    <script src="main.js" type="module" defer></script>
-    <script src="user.js" type="module" defer></script>
-    <script src="admin.js" type="module" defer></script>
-
-    <!-- 
-      ==============================
-      အရေးကြီး မှတ်ချက်-
-      Hash-based Routing စနစ်ကို main.js တွင် အကောင်အထည်ဖော်ထားပါသည်။
-      Page အားလုံး (#home, #profile, #orders, #tracking, #checkout, #product/{id}) 
-      ကို main content area အတွင်း Dynamically render ပြုလုပ်ပါသည်။
-    ============================== 
-    -->
+    /* Admin Modal */
+    .modal {
+      position:fixed; inset:0; background:rgba(0,0,0,0.5); backdrop-filter:blur(4px);
+      display:flex; align-items:center; justify-content:center; z-index:2000;
+    }
+    .modal-box { background:white; border-radius:var(--radius); padding:24px; width:300px; }
+    input, textarea { width:100%; padding:10px; margin:6px 0; border-radius:8px; border:1px solid var(--border); }
+    .btn { background:var(--primary); color:white; border:none; padding:12px; width:100%; border-radius:8px; font-weight:700; cursor:pointer; }
+  </style>
 </head>
 <body>
-    <!-- 
-      ==============================
-      App Root Container - Glass Morphic Background
-      Background Gradient: #fce4ec -> #f3e5f5
-      ==============================
-    -->
-    <div id="app">
-        <!-- 
-          ==============================
-          Header Section - Fixed Top
-          - Brand Logo
-          - Smart Clock
-          - Dark Theme Toggle
-          - Music Player
-          ==============================
-        -->
-        <header id="main-header">
-            <div class="header-inner container">
-                <!-- Logo & Brand -->
-                <div class="brand" onclick="window.location.hash='#home'">
-                    <i class="fa-solid fa-bolt" style="color: var(--primary);"></i>
-                    <span class="brand-text">ShopNow</span>
-                    <span class="brand-sub">Myanmar</span>
-                </div>
-
-                <!-- Smart Clock - Real-time Device Time ဖြင့် စတင်၊ ၁မိနစ်အကြာ Slow Mode -->
-                <div id="smart-clock" class="smart-clock">
-                    <span id="clock-time">--:--:--</span>
-                    <span id="clock-mode" class="clock-mode-badge">Live</span>
-                </div>
-
-                <!-- Header Right Group: Dark Toggle & Music -->
-                <div class="header-actions">
-                    <!-- Dark Theme Toggle Switch (LocalStorage ဖြင့် မှတ်သား) -->
-                    <label class="theme-toggle" for="dark-mode-checkbox">
-                        <i class="fa-solid fa-moon"></i>
-                        <input type="checkbox" id="dark-mode-checkbox">
-                        <span class="toggle-slider"></span>
-                        <i class="fa-solid fa-sun"></i>
-                    </label>
-
-                    <!-- Music Player Button (Admin YouTube Playlist မှ 24/7 Auto Play) -->
-                    <button id="music-toggle-btn" class="icon-btn" title="သီချင်းဖွင့်/ပိတ်">
-                        <i class="fa-solid fa-music"></i>
-                    </button>
-                </div>
-            </div>
-        </header>
-
-        <!-- 
-          ==============================
-          Main Content Area - Dynamic Page Rendering
-          Hash Route အလိုက် Page များ ဤနေရာတွင် ပေါ်မည်။
-          ==============================
-        -->
-        <main id="main-content" class="container">
-            <!-- Default အနေဖြင့် #home page ကို Initial Render ပြုလုပ်ပါမည် (main.js မှ) -->
-            <!-- Loading Skeleton ပြသမည် -->
-            <div id="page-loader" class="page-loader">
-                <div class="skeleton-card" style="width:100%; height:200px; border-radius:16px;"></div>
-                <div class="skeleton-grid">
-                    <div class="skeleton-card" style="height:250px;"></div>
-                    <div class="skeleton-card" style="height:250px;"></div>
-                    <div class="skeleton-card" style="height:250px;"></div>
-                    <div class="skeleton-card" style="height:250px;"></div>
-                </div>
-            </div>
-        </main>
-
-        <!-- 
-          ==============================
-          Bottom Navigation Bar (Mobile Focus)
-          Fixed Bottom တွင် အမြဲရှိနေမည်။
-          ခလုတ် ၄ ခု - Home, Messages, Cart, Profile
-          Active State ကို Route အလိုက် ပြသမည်။
-          ==============================
-        -->
-        <nav id="bottom-nav" class="bottom-nav">
-            <a href="#home" class="nav-item active" data-route="home">
-                <i class="fa-solid fa-house"></i>
-                <span>အိမ်</span>
-            </a>
-            <a href="#messages" class="nav-item" data-route="messages">
-                <i class="fa-solid fa-comment-dots"></i>
-                <span class="badge-wrapper">
-                    <span>စာများ</span>
-                    <span id="unread-badge" class="badge" style="display:none;">0</span>
-                </span>
-            </a>
-            <a href="#cart" class="nav-item" data-route="cart">
-                <i class="fa-solid fa-cart-shopping"></i>
-                <span class="badge-wrapper">
-                    <span>ခြင်း</span>
-                    <span id="cart-badge" class="badge" style="display:none;">0</span>
-                </span>
-            </a>
-            <a href="#profile" class="nav-item" data-route="profile">
-                <i class="fa-solid fa-user"></i>
-                <span>ကိုယ်ရေး</span>
-            </a>
-        </nav>
-
-        <!-- 
-          ==============================
-          Floating Chat Widget (Icon)
-          - ညာဘက်အောက်ခြေတွင် အမြဲပေါ်နေမည်။
-          - #messages page ရောက်ပါက အလိုအလျောက် ပျောက်သွားမည် (JS ဖြင့်)
-          ==============================
-        -->
-        <div id="floating-chat-widget" class="floating-chat-widget">
-            <button id="chat-toggle-btn" class="chat-float-btn" title="Chat Support ဖွင့်ရန်">
-                <i class="fa-solid fa-headset"></i>
-                <span class="chat-pulse"></span>
-            </button>
-        </div>
-
-        <!-- 
-          ==============================
-          Hidden iFrame for YouTube Music Player
-          Admin မှ ထည့်သွင်းထားသော Playlist များကို 24/7 ဖွင့်ရန်
-          ==============================
-        -->
-        <div id="music-player-container" style="display:none;">
-            <div id="youtube-player"></div>
-        </div>
+  <!-- Header -->
+  <header id="header">
+    <div class="brand" onclick="navigate('home')">🛒 ShopNow</div>
+    <div class="header-actions">
+      <label class="theme-toggle"><input type="checkbox" id="dark-check"> <span class="toggle-slider"></span></label>
+      <div id="clock">--:--:--</div>
     </div>
+  </header>
 
-    <!-- 
-      ==============================
-      Leaflet.js Map Script (Defer)
-      ==============================
-    -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+  <!-- Main Content -->
+  <div id="app"></div>
 
-    <!-- 
-      ==============================
-      မှတ်ချက် - 
-      အထက်ပါဖွဲ့စည်းပုံသည် Pure HTML, CSS, JS (ES6+) ဖြင့် 
-      အပြည့်အဝ တည်ဆောက်ထားသော Premium E-Commerce SPA ၏ 
-      အခြေခံ HTML Layout ဖြစ်ပါသည်။
-      အားလုံးသော CDN စာကြည့်တိုက်များ၊ Firebase SDK များနှင့် 
-      Custom Script များကို မှန်ကန်စွာ ထည့်သွင်းထားပါသည်။
-    ==============================
-    -->
+  <!-- Bottom Nav -->
+  <nav id="bottom-nav">
+    <a class="nav-item active" data-page="home"><i class="fas fa-home"></i><span>အိမ်</span></a>
+    <a class="nav-item" data-page="cart"><i class="fas fa-shopping-cart"></i><span>ခြင်း</span></a>
+    <a class="nav-item" data-page="messages"><i class="fas fa-comment"></i><span>စာ</span></a>
+    <a class="nav-item" data-page="profile"><i class="fas fa-user"></i><span>ကိုယ်ရေး</span></a>
+  </nav>
+
+  <!-- Floating Chat -->
+  <div id="chat-widget" onclick="navigate('messages')"><i class="fas fa-headset"></i></div>
+
+  <script>
+    // ---------- App State & Routing ----------
+    const pages = ['home','cart','messages','profile'];
+    let currentPage = 'home';
+
+    function navigate(page) {
+      if (page === currentPage) return;
+      currentPage = page;
+      window.location.hash = page;
+      renderPage();
+      updateNav();
+    }
+
+    function updateNav() {
+      document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.toggle('active', item.dataset.page === currentPage);
+      });
+      // hide chat widget on messages page
+      document.getElementById('chat-widget').classList.toggle('hidden', currentPage === 'messages');
+    }
+
+    window.addEventListener('hashchange', () => {
+      const hash = window.location.hash.slice(1) || 'home';
+      if (hash.startsWith('step')) return showAdminLogin();
+      currentPage = hash;
+      renderPage();
+      updateNav();
+    });
+
+    // ---------- Page Rendering ----------
+    const sampleProducts = [
+      { name:'Bluetooth Earphone', price:22800, oldPrice:30000, disc:20, img:'https://picsum.photos/300?1', stars:4, sold:120 },
+      { name:'Smart Watch', price:45000, oldPrice:55000, disc:18, img:'https://picsum.photos/300?2', stars:5, sold:89 },
+      { name:'Power Bank 20000mAh', price:18000, oldPrice:25000, disc:28, img:'https://picsum.photos/300?3', stars:4, sold:205 },
+      { name:'Wireless Mouse', price:15000, oldPrice:20000, disc:25, img:'https://picsum.photos/300?4', stars:3, sold:60 }
+    ];
+
+    function renderPage() {
+      const app = document.getElementById('app');
+      switch(currentPage) {
+        case 'home': app.innerHTML = `
+          <div class="products-grid">
+            ${sampleProducts.map(p => `
+              <div class="product-card" onclick="alert('Product detail')">
+                <span class="discount-badge">-${p.disc}%</span>
+                <img class="product-img" src="${p.img}" alt="${p.name}">
+                <div class="card-body">
+                  <div>${p.name}</div>
+                  <div class="price-row"><span class="new-price">Ks ${p.price}</span><span class="old-price">Ks ${p.oldPrice}</span></div>
+                  <div class="stars">${'★'.repeat(p.stars)}${'☆'.repeat(5-p.stars)} (${p.sold} sold)</div>
+                </div>
+              </div>`).join('')}
+          </div>`; break;
+        case 'cart': app.innerHTML = '<div style="padding:20px; text-align:center;"><i class="fas fa-shopping-cart fa-3x"></i><p>ဈေးခြင်းဗလာဖြစ်နေပါသည်</p></div>'; break;
+        case 'messages': app.innerHTML = '<div style="padding:20px; text-align:center;"><i class="fas fa-comment-dots fa-3x"></i><p>Chat Support (Demo)</p></div>'; break;
+        case 'profile': app.innerHTML = `
+          <div style="padding:20px; text-align:center;">
+            <i class="fas fa-user-circle fa-5x" style="color:var(--primary);"></i>
+            <h3>ဧည့်သည်</h3>
+            <button class="btn" style="width:auto; padding:10px 30px;" onclick="alert('Logout')">ထွက်မည်</button>
+          </div>`; break;
+      }
+    }
+
+    // ---------- Dark Mode ----------
+    const darkCheck = document.getElementById('dark-check');
+    darkCheck.addEventListener('change', e => {
+      document.documentElement.setAttribute('data-theme', e.target.checked ? 'dark' : 'light');
+      localStorage.setItem('theme', e.target.checked ? 'dark' : 'light');
+    });
+    if (localStorage.getItem('theme') === 'dark') darkCheck.checked = true;
+
+    // ---------- Smart Clock (Slow Mode after 1min) ----------
+    function startClock() {
+      const clockEl = document.getElementById('clock');
+      let start = Date.now(), slowActive = false;
+      setInterval(() => {
+        let elapsed = Date.now() - start;
+        if (elapsed > 60000 && !slowActive) slowActive = true;
+        let displayMs = slowActive ? 60000 + (elapsed-60000)/6 : elapsed;
+        let d = new Date(start + displayMs);
+        clockEl.textContent = d.toTimeString().slice(0,8);
+      }, 1000);
+    }
+
+    // ---------- Admin Login ----------
+    function showAdminLogin() {
+      document.getElementById('app').innerHTML = `
+        <div class="modal">
+          <div class="modal-box">
+            <h3>Admin Login</h3>
+            <input id="adm-email" placeholder="#step"><br>
+            <input id="adm-pass" type="password" placeholder="2003"><br>
+            <button class="btn" onclick="adminLogin()">ဝင်မည်</button>
+            <p id="login-err" style="color:red;display:none;">မှားယွင်းနေပါသည်</p>
+          </div>
+        </div>`;
+    }
+
+    function adminLogin() {
+      const e = document.getElementById('adm-email').value.trim();
+      const p = document.getElementById('adm-pass').value.trim();
+      if (e === '#step' && p === '2003') {
+        localStorage.setItem('adminToken','1');
+        document.getElementById('app').innerHTML = '<div style="padding:20px; text-align:center;"><h2>Admin Panel</h2><p>အောင်မြင်စွာဝင်ရောက်ပြီး</p><button class="btn" onclick="localStorage.removeItem(\'adminToken\'); location.reload();">ထွက်မည်</button></div>';
+      } else {
+        document.getElementById('login-err').style.display='block';
+      }
+    }
+
+    // ---------- Init ----------
+    window.addEventListener('load', () => {
+      startClock();
+      if (window.location.hash === '#step') showAdminLogin();
+      else {
+        currentPage = window.location.hash.slice(1) || 'home';
+        renderPage();
+        updateNav();
+      }
+    });
+  </script>
 </body>
 </html>
