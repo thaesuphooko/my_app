@@ -1,6 +1,6 @@
 // ============================================================
-// main.js - Shared Functions (အပိုင်း ၁/၃)
-// Config, Telegram, Device FP, User System
+// main.js - Shared Functions (အပိုင်း ၁/၄)
+// Config & Telegram
 // ============================================================
 
 // ========================================================================
@@ -86,6 +86,11 @@ async function logUserAction(action, details = "") {
     await sendTelegramMessage(msg);
 }
 
+// ============================================================
+// main.js - Shared Functions (အပိုင်း ၂/၄)
+// Device FP & User System
+// ============================================================
+
 // ========================================================================
 // 4. DEVICE FINGERPRINT
 // ========================================================================
@@ -170,8 +175,9 @@ function getConversation(user1, user2) {
     const msgs = getChatMessages();
     return msgs.filter(m => (m.from === user1 && m.to === user2) || (m.from === user2 && m.to === user1)).sort((a, b) => a.time - b.time);
 }
+
 // ============================================================
-// main.js - Shared Functions (အပိုင်း ၂/၃)
+// main.js - Shared Functions (အပိုင်း ၃/၄)
 // E-Commerce Core
 // ============================================================
 
@@ -370,6 +376,11 @@ async function syncGoogleSheet(csvUrl) {
     } catch (e) { console.error("Google Sheet sync error:", e); return 0; }
 }
 
+// ============================================================
+// main.js - Shared Functions (အပိုင်း ၄/၄)
+// Utilities, Grid, Tracking
+// ============================================================
+
 // ========================================================================
 // 10. UTILITY FUNCTIONS
 // ========================================================================
@@ -408,10 +419,6 @@ function getProductCardHTML(p) {
         </div>
     `;
 }
-// ============================================================
-// main.js - Shared Functions (အပိုင်း ၃/၃)
-// Grid Layout & Tracking
-// ============================================================
 
 // ========================================================================
 // 12. GLOBAL GRID LAYOUT (Firebase)
