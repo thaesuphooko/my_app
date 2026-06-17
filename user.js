@@ -1,6 +1,6 @@
 // ============================================================
-// user.js - User JavaScript (အပိုင်း ၁/၃)
-// Render, Product Detail, Cart
+// user.js - User JavaScript (အပိုင်း ၁/၄)
+// Render & Product Detail
 // ============================================================
 
 // ============================================================
@@ -104,6 +104,11 @@ function renderComments(productId) {
 }
 
 // ============================================================
+// user.js - User JavaScript (အပိုင်း ၂/၄)
+// Cart & Checkout
+// ============================================================
+
+// ============================================================
 // 3. CART MODAL
 // ============================================================
 function openCartModal() {
@@ -149,10 +154,6 @@ function openCartModal() {
         };
     });
 }
-// ============================================================
-// user.js - User JavaScript (အပိုင်း ၂/၃)
-// Checkout, Order, Screenshot, Tracking
-// ============================================================
 
 // ============================================================
 // 4. CHECKOUT BUTTON
@@ -239,6 +240,11 @@ function updateOrderStatus(orderId, status) {
 }
 
 // ============================================================
+// user.js - User JavaScript (အပိုင်း ၃/၄)
+// Screenshot, Tracking, Map
+// ============================================================
+
+// ============================================================
 // 7. SCREENSHOT UPLOAD (Chat opens AFTER modal closes)
 // ============================================================
 function setupScreenshotUpload() {
@@ -323,13 +329,96 @@ function setupCancelOrder() {
         }
     });
 }
+
 // ============================================================
-// user.js - User JavaScript (အပိုင်း ၃/၃)
-// Chat, Firebase Load, User Modal, Map, Init
+// 11. ORDER TRACKING WITH MAP
+// ============================================================
+let mapInstance = null;
+let markerInstance = null;
+let animationInterval = null;
+
+function initTrackingMap(containerId, shopLat = 16.8661, shopLng = 96.1951, userLat = 16.8731, userLng = 96.1961) {
+    if (typeof L === 'undefined') { console.warn('Leaflet.js not loaded'); return; }
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    if (mapInstance) { mapInstance.remove(); mapInstance = null; }
+    mapInstance = L.map(containerId).setView([shopLat, shopLng], 15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors' }).addTo(mapInstance);
+    const shopIcon = L.divIcon({ html: '🛍️', className: 'custom-div-icon', iconSize: [30, 30], iconAnchor: [15, 30] });
+    L.marker([shopLat, shopLng], { icon: shopIcon }).addTo(mapInstance).bindPopup('🛍️ ဆိုင်');
+    const homeIcon = L.divIcon({ html: '🏠', className: 'custom-div-icon', iconSize: [30, 30], iconAnchor: [15, 30] });
+    L.marker([userLat, userLng], { icon: homeIcon }).addTo(mapInstance).bindPopup('🏠 သင့်အိမ်');
+    L.polyline([[shopLat, shopLng], [userLat, userLng]], { color: '#007bff', weight: 3, opacity: 0.6, dashArray: '8, 8' }).addTo(mapInstance);
+    const bikeIcon = L.divIcon({ html: '🏍️', className: 'custom-div-icon bike-marker', iconSize: [35, 35], iconAnchor: [17, 35] });
+    markerInstance = L.marker([shopLat, shopLng], { icon: bikeIcon }).addTo(mapInstance);
+    mapInstance.fitBounds([[shopLat, shopLng], [userLat, userLng]], { padding: [50, 50] });
+    return { shopLat, shopLng, userLat, userLng };
+}
+
+function updateBikePosition(progress, shopLat, shopLng, userLat, userLng) {
+    if (!markerInstance) return;
+    const lat = shopLat + (userLat - shopLat) * progress;
+    const lng = shopLng + (userLng - shopLng) * progress;
+    markerInstance.setLatLng([lat, lng]);
+}
+
+function getBikeProgress(statusKey) {
+    switch(statusKey) {
+        case 'order_received': return 0;
+        case 'processing': return 0.1;
+        case 'shipped': return 0.5;
+        case 'delivered': return 1;
+        default: return 0;
+    }
+}
+
+function openOrderTracking(orderId) {
+    const orders = JSON.parse(localStorage.getItem(STORAGE_ORDERS) || "[]");
+    const order = orders.find(o => o.id === orderId);
+    if (!order) { showToast("❌ Order not found"); return; }
+    window.currentTrackingOrder = order;
+    const config = getTrackingConfig();
+    const container = document.getElementById("orderTrackingContent");
+    if (container) { container.innerHTML = renderTrackingUI(order.id, order.timestamp || order.createdAt || Date.now(), config); }
+    document.getElementById("orderTrackingModal").style.display = "flex";
+    setTimeout(() => {
+        const shopLat = 16.8661, shopLng = 96.1951, userLat = 16.8731, userLng = 96.1961;
+        const coords = initTrackingMap("orderTrackingMapContainer", shopLat, shopLng, userLat, userLng);
+        if (!coords) return;
+        const status = getTrackingStatus(order.timestamp || order.createdAt || Date.now(), config);
+        const progress = getBikeProgress(status.key);
+        updateBikePosition(progress, coords.shopLat, coords.shopLng, coords.userLat, coords.userLng);
+        if (status.key !== 'delivered') {
+            if (animationInterval) clearInterval(animationInterval);
+            animationInterval = setInterval(() => {
+                const newStatus = getTrackingStatus(order.timestamp || order.createdAt || Date.now(), config);
+                const newProgress = getBikeProgress(newStatus.key);
+                updateBikePosition(newProgress, coords.shopLat, coords.shopLng, coords.userLat, coords.userLng);
+                if (newStatus.key === 'delivered') { clearInterval(animationInterval); animationInterval = null; }
+            }, 3000);
+        } else { updateBikePosition(1, coords.shopLat, coords.shopLng, coords.userLat, coords.userLng); }
+    }, 300);
+}
+
+function renderUserOrders() {
+    const orders = JSON.parse(localStorage.getItem(STORAGE_ORDERS) || "[]");
+    const user = getCurrentUser();
+    const userOrders = user ? orders.filter(o => o.name === user.username || o.phone === user.username) : [];
+    if (userOrders.length === 0) { return `<div style="text-align:center;padding:1rem;color:#888;">No orders found</div>`; }
+    return userOrders.map(o => {
+        const status = getTrackingStatus(o.timestamp || o.createdAt || Date.now());
+        const statusLabel = TRACKING_STATUSES.find(s => s.key === status.key)?.label || status.key;
+        return `<div style="display:flex;justify-content:space-between;padding:0.5rem;border-bottom:1px solid #eee;align-items:center;font-size:0.85rem;"><div><strong>${o.id}</strong> <span style="color:#888;font-size:0.7rem;">${new Date(o.timestamp || o.createdAt || Date.now()).toLocaleString()}</span></div><div><span style="color:${status.key === 'delivered' ? '#28a745' : '#007bff'};">${statusLabel}</span> <button class="btn btn-outline btn-sm" style="font-size:0.7rem;padding:0.1rem 0.5rem;" onclick="openOrderTracking('${o.id}')">👁️</button></div></div>`;
+    }).join('');
+}
+
+// ============================================================
+// user.js - User JavaScript (အပိုင်း ၄/၄)
+// Chat, Firebase Load, User Modal, Init
 // ============================================================
 
 // ============================================================
-// 11. CHAT WIDGET
+// 12. CHAT WIDGET
 // ============================================================
 let chatOpen = false;
 
@@ -385,7 +474,7 @@ function getAdminReply(text) {
 }
 
 // ============================================================
-// 12. FIREBASE LOAD (User)
+// 13. FIREBASE LOAD (User)
 // ============================================================
 async function loadProductsFromFirestore() {
     if (!db) { console.warn("❌ Firebase not initialized!"); return false; }
@@ -403,83 +492,331 @@ async function loadProductsFromFirestore() {
 }
 
 // ============================================================
-// 13. ORDER TRACKING WITH MAP
+// 14. USER MODAL EVENTS
 // ============================================================
-let mapInstance = null;
-let markerInstance = null;
-let animationInterval = null;
+document.addEventListener("DOMContentLoaded", function() {
+    // Setup functions
+    setupCheckoutButton();
+    setupCheckoutForm();
+    setupScreenshotUpload();
+    setupCancelOrder();
 
-function initTrackingMap(containerId, shopLat = 16.8661, shopLng = 96.1951, userLat = 16.8731, userLng = 96.1961) {
-    if (typeof L === 'undefined') { console.warn('Leaflet.js not loaded'); return; }
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    if (mapInstance) { mapInstance.remove(); mapInstance = null; }
-    mapInstance = L.map(containerId).setView([shopLat, shopLng], 15);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors' }).addTo(mapInstance);
-    const shopIcon = L.divIcon({ html: '🛍️', className: 'custom-div-icon', iconSize: [30, 30], iconAnchor: [15, 30] });
-    L.marker([shopLat, shopLng], { icon: shopIcon }).addTo(mapInstance).bindPopup('🛍️ ဆိုင်');
-    const homeIcon = L.divIcon({ html: '🏠', className: 'custom-div-icon', iconSize: [30, 30], iconAnchor: [15, 30] });
-    L.marker([userLat, userLng], { icon: homeIcon }).addTo(mapInstance).bindPopup('🏠 သင့်အိမ်');
-    L.polyline([[shopLat, shopLng], [userLat, userLng]], { color: '#007bff', weight: 3, opacity: 0.6, dashArray: '8, 8' }).addTo(mapInstance);
-    const bikeIcon = L.divIcon({ html: '🏍️', className: 'custom-div-icon bike-marker', iconSize: [35, 35], iconAnchor: [17, 35] });
-    markerInstance = L.marker([shopLat, shopLng], { icon: bikeIcon }).addTo(mapInstance);
-    mapInstance.fitBounds([[shopLat, shopLng], [userLat, userLng]], { padding: [50, 50] });
-    return { shopLat, shopLng, userLat, userLng };
-}
+    // Cart
+    document.getElementById("cartIcon")?.addEventListener("click", openCartModal);
+    document.getElementById("closeCartBtn")?.addEventListener("click", () => { document.getElementById("cartModal").style.display = "none"; });
+    document.getElementById("cartModal")?.addEventListener("click", (e) => { if (e.target === e.currentTarget) document.getElementById("cartModal").style.display = "none"; });
 
-function updateBikePosition(progress, shopLat, shopLng, userLat, userLng) {
-    if (!markerInstance) return;
-    const lat = shopLat + (userLat - shopLat) * progress;
-    const lng = shopLng + (userLng - shopLng) * progress;
-    markerInstance.setLatLng([lat, lng]);
-}
+    // Checkout modal close
+    document.getElementById("checkoutModal")?.addEventListener("click", (e) => { if (e.target === e.currentTarget) document.getElementById("checkoutModal").style.display = "none"; });
 
-function getBikeProgress(statusKey) {
-    switch(statusKey) {
-        case 'order_received': return 0;
-        case 'processing': return 0.1;
-        case 'shipped': return 0.5;
-        case 'delivered': return 1;
-        default: return 0;
+    // Tracking modal close
+    document.getElementById("closeTrackingBtn")?.addEventListener("click", () => { document.getElementById("trackingModal").style.display = "none"; });
+    document.getElementById("trackingModal")?.addEventListener("click", (e) => { if (e.target === e.currentTarget) document.getElementById("trackingModal").style.display = "none"; });
+
+    // Tracking detail modal close
+    document.getElementById("closeTrackingDetailBtn")?.addEventListener("click", function() {
+        document.getElementById("orderTrackingModal").style.display = "none";
+        if (animationInterval) { clearInterval(animationInterval); animationInterval = null; }
+    });
+    document.getElementById("orderTrackingModal")?.addEventListener("click", function(e) {
+        if (e.target === this) {
+            this.style.display = "none";
+            if (animationInterval) { clearInterval(animationInterval); animationInterval = null; }
+        }
+    });
+    document.getElementById("refreshTrackingBtn")?.addEventListener("click", function() {
+        if (window.currentTrackingOrder) { openOrderTracking(window.currentTrackingOrder.id); }
+    });
+
+    // Review modal
+    document.getElementById("closeReviewBtn")?.addEventListener("click", () => { document.getElementById("reviewModal").style.display = "none"; });
+    document.getElementById("reviewModal")?.addEventListener("click", (e) => { if (e.target === e.currentTarget) document.getElementById("reviewModal").style.display = "none"; });
+
+    // Add comment
+    document.getElementById("addCommentBtn")?.addEventListener("click", () => {
+        if (currentReviewProductId === null) return;
+        const text = document.getElementById("newComment").value.trim();
+        if (!text) return;
+        const user = getCurrentUser() ? getCurrentUser().username : "Guest";
+        saveComment(currentReviewProductId, user, text);
+        document.getElementById("newComment").value = "";
+        renderComments(currentReviewProductId);
+        showToast("✅ Comment added!");
+    });
+
+    // Chat widget
+    document.getElementById("chatToggle")?.addEventListener("click", () => { if (!chatOpen) openChatWidget(); });
+    document.getElementById("closeChatBtn")?.addEventListener("click", closeChatWidget);
+
+    document.getElementById("chatSendWidgetBtn")?.addEventListener("click", () => {
+        const input = document.getElementById("chatInputWidget");
+        const text = input.value.trim();
+        if (!text) return;
+        addChatMessage("user", text);
+        input.value = "";
+        setTimeout(() => { const reply = getAdminReply(text); addChatMessage("bot", reply); }, 600);
+    });
+
+    document.getElementById("chatInputWidget")?.addEventListener("keypress", (e) => { if (e.key === "Enter") document.getElementById("chatSendWidgetBtn").click(); });
+
+    // Search
+    document.getElementById("searchBtn")?.addEventListener("click", () => {
+        searchQuery = document.getElementById("searchInput").value;
+        currentPage = 1;
+        logUserAction(`🔍 Searched`, `"${searchQuery}"`);
+        renderUserPage();
+    });
+
+    document.getElementById("searchInput")?.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") {
+            searchQuery = document.getElementById("searchInput").value;
+            currentPage = 1;
+            logUserAction(`🔍 Searched`, `"${searchQuery}"`);
+            renderUserPage();
+        }
+    });
+
+    // Logo
+    document.getElementById("logoHome")?.addEventListener("click", () => {
+        currentCategory = "all"; searchQuery = ""; document.getElementById("searchInput").value = ""; currentPage = 1; renderUserPage();
+    });
+
+    // Categories
+    document.querySelectorAll(".categories-bar a")?.forEach(link => {
+        link.addEventListener("click", (e) => {
+            e.preventDefault();
+            currentCategory = link.dataset.cat;
+            searchQuery = "";
+            document.getElementById("searchInput").value = "";
+            currentPage = 1;
+            logUserAction(`📂 Category filter`, currentCategory);
+            renderUserPage();
+        });
+    });
+
+    // User badge
+    document.getElementById("userBadge")?.addEventListener("click", () => {
+        const user = getCurrentUser();
+        if (user) {
+            document.getElementById("userModalTitle").innerText = `👤 ${user.username}`;
+            document.getElementById("userFormContainer").classList.remove("hidden");
+            document.getElementById("userChatContainer").classList.add("hidden");
+            document.getElementById("loginUsername").value = user.username;
+            document.getElementById("loginPassword").value = "";
+            document.getElementById("logoutBtn").style.display = "inline-block";
+            document.getElementById("loginBtn").style.display = "none";
+            document.getElementById("registerBtn").style.display = "none";
+            document.getElementById("forgotPwdBtn").style.display = "none";
+            const pic = user.profilePic || "";
+            if (pic) {
+                document.getElementById("profilePicPreview").src = pic;
+                document.getElementById("profilePicPreview").style.display = "block";
+                document.getElementById("profilePicPlaceholder").style.display = "none";
+            } else {
+                document.getElementById("profilePicPreview").style.display = "none";
+                document.getElementById("profilePicPlaceholder").style.display = "flex";
+            }
+            document.getElementById("userModal").style.display = "flex";
+            return;
+        }
+        document.getElementById("userModalTitle").innerText = "👤 Login / Register";
+        document.getElementById("userFormContainer").classList.remove("hidden");
+        document.getElementById("userChatContainer").classList.add("hidden");
+        document.getElementById("logoutBtn").style.display = "none";
+        document.getElementById("loginBtn").style.display = "inline-block";
+        document.getElementById("registerBtn").style.display = "inline-block";
+        document.getElementById("forgotPwdBtn").style.display = "inline-block";
+        document.getElementById("profilePicPreview").style.display = "none";
+        document.getElementById("profilePicPlaceholder").style.display = "flex";
+        document.getElementById("userModal").style.display = "flex";
+    });
+
+    // Login
+    document.getElementById("loginBtn")?.addEventListener("click", () => {
+        const u = document.getElementById("loginUsername").value.trim();
+        const p = document.getElementById("loginPassword").value.trim();
+        const result = loginUser(u, p);
+        if (result.success) {
+            setCurrentUser({ username: u, profilePic: result.user.profilePic });
+            document.getElementById("userBadge").innerHTML = `👤 ${u}`;
+            logUserAction(`🔐 Logged in`, u);
+            document.getElementById("userStatus").innerHTML = `<span style="color:green;">✅ ${result.msg}</span>`;
+            setTimeout(() => { document.getElementById("userModal").style.display = "none"; renderUserPage(); }, 500);
+        } else {
+            document.getElementById("userStatus").innerHTML = `<span style="color:red;">❌ ${result.msg}</span>`;
+        }
+    });
+
+    // Register
+    document.getElementById("registerBtn")?.addEventListener("click", () => {
+        const u = document.getElementById("loginUsername").value.trim();
+        const p = document.getElementById("loginPassword").value.trim();
+        const result = registerUser(u, p);
+        if (result.success) {
+            setCurrentUser({ username: u, profilePic: "" });
+            document.getElementById("userBadge").innerHTML = `👤 ${u}`;
+            logUserAction(`📝 Registered`, u);
+            document.getElementById("userStatus").innerHTML = `<span style="color:green;">✅ ${result.msg}</span>`;
+            setTimeout(() => { document.getElementById("userModal").style.display = "none"; renderUserPage(); }, 500);
+        } else {
+            document.getElementById("userStatus").innerHTML = `<span style="color:red;">❌ ${result.msg}</span>`;
+        }
+    });
+
+    // Forgot password
+    document.getElementById("forgotPwdBtn")?.addEventListener("click", () => {
+        const u = document.getElementById("loginUsername").value.trim();
+        if (!u) { document.getElementById("userStatus").innerHTML = `<span style="color:red;">❌ Please enter your username</span>`; return; }
+        const result = forgotPassword(u);
+        if (result.success) {
+            document.getElementById("userStatus").innerHTML = `<span style="color:green;">✅ Temporary password sent to Telegram! <br/>New password: <strong>${result.tempPassword}</strong></span>`;
+            logUserAction(`🔑 Forgot password for ${u}`, `Temp password sent via Telegram`);
+            sendTelegramMessage(`🔑 *Password Reset*\nUsername: ${u}\nNew Password: ${result.tempPassword}\nPlease login and change your password.`);
+            showToast("✅ Temporary password sent to Telegram!");
+        } else {
+            document.getElementById("userStatus").innerHTML = `<span style="color:red;">❌ ${result.msg}</span>`;
+        }
+    });
+
+    // Logout
+    document.getElementById("logoutBtn")?.addEventListener("click", () => {
+        logoutUser();
+        document.getElementById("userBadge").innerHTML = "👤 Login";
+        document.getElementById("userModal").style.display = "none";
+        logUserAction(`🚪 Logged out`, ``);
+        showToast("Logged out");
+        renderUserPage();
+    });
+
+    // Close user modal
+    document.getElementById("closeUserBtn")?.addEventListener("click", () => { document.getElementById("userModal").style.display = "none"; });
+    document.getElementById("userModal")?.addEventListener("click", (e) => { if (e.target === e.currentTarget) document.getElementById("userModal").style.display = "none"; });
+
+    // Profile picture upload
+    document.getElementById("uploadProfilePicBtn")?.addEventListener("click", () => {
+        const fileInput = document.getElementById("profilePicInput");
+        if (!fileInput.files || !fileInput.files.length) { alert("Choose an image"); return; }
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const user = getCurrentUser();
+            if (user) {
+                const users = getUsers();
+                if (users[user.username]) {
+                    users[user.username].profilePic = e.target.result;
+                    saveUsers(users);
+                    setCurrentUser({ username: user.username, profilePic: e.target.result });
+                    document.getElementById("profilePicPreview").src = e.target.result;
+                    document.getElementById("profilePicPreview").style.display = "block";
+                    document.getElementById("profilePicPlaceholder").style.display = "none";
+                    showToast("✅ Profile picture updated!");
+                    logUserAction(`🖼️ Profile picture updated`, ``);
+                }
+            }
+        };
+        reader.readAsDataURL(fileInput.files[0]);
+    });
+
+    // User chat (in modal)
+    let currentChatTarget = null;
+
+    function renderChatUsers() {
+        const container = document.getElementById("chatUserList");
+        const allUsers = Object.keys(getUsers());
+        const current = getCurrentUser();
+        const others = allUsers.filter(u => u !== current?.username);
+        container.innerHTML = `<div style="font-weight:600;font-size:0.8rem;">Users: ${others.length}</div>`;
+        for (let u of others) {
+            container.innerHTML += `<div class="chat-user" data-user="${u}" style="cursor:pointer;padding:0.2rem;background:#f0f0f0;margin:0.1rem 0;border-radius:6px;font-size:0.8rem;">💬 ${u}</div>`;
+        }
+        document.querySelectorAll(".chat-user").forEach(el => {
+            el.onclick = () => { currentChatTarget = el.dataset.user; renderChatMessages(); };
+        });
     }
-}
 
-function openOrderTracking(orderId) {
-    const orders = JSON.parse(localStorage.getItem(STORAGE_ORDERS) || "[]");
-    const order = orders.find(o => o.id === orderId);
-    if (!order) { showToast("❌ Order not found"); return; }
-    window.currentTrackingOrder = order;
-    const config = getTrackingConfig();
-    const container = document.getElementById("orderTrackingContent");
-    if (container) { container.innerHTML = renderTrackingUI(order.id, order.timestamp || order.createdAt || Date.now(), config); }
-    document.getElementById("orderTrackingModal").style.display = "flex";
-    setTimeout(() => {
-        const shopLat = 16.8661, shopLng = 16.1951, userLat = 16.8731, userLng = 16.1961;
-        const coords = initTrackingMap("orderTrackingMapContainer", shopLat, shopLng, userLat, userLng);
-        if (!coords) return;
-        const status = getTrackingStatus(order.timestamp || order.createdAt || Date.now(), config);
-        const progress = getBikeProgress(status.key);
-        updateBikePosition(progress, coords.shopLat, coords.shopLng, coords.userLat, coords.userLng);
-        if (status.key !== 'delivered') {
-            if (animationInterval) clearInterval(animationInterval);
-            animationInterval = setInterval(() => {
-                const newStatus = getTrackingStatus(order.timestamp || order.createdAt || Date.now(), config);
-                const newProgress = getBikeProgress(newStatus.key);
-                updateBikePosition(newProgress, coords.shopLat, coords.shopLng, coords.userLat, coords.userLng);
-                if (newStatus.key === 'delivered') { clearInterval(animationInterval); animationInterval = null; }
-            }, 3000);
-        } else { updateBikePosition(1, coords.shopLat, coords.shopLng, coords.userLat, coords.userLng); }
-    }, 300);
-}
+    function renderChatMessages() {
+        const container = document.getElementById("chatMessages");
+        const current = getCurrentUser();
+        if (!currentChatTarget || !current) { container.innerHTML = "<div style='color:#888;font-size:0.8rem;'>Select a user</div>"; return; }
+        const msgs = getConversation(current.username, currentChatTarget);
+        if (!msgs.length) { container.innerHTML = `<div style='color:#888;font-size:0.8rem;'>No messages with ${currentChatTarget}</div>`; return; }
+        container.innerHTML = msgs.map(m => `<div class="chat-msg" style="${m.from === current.username ? 'text-align:right;' : ''}"><span class="sender">${m.from === current.username ? 'You' : m.from}</span> <span class="time">${new Date(m.time).toLocaleTimeString()}</span><br/>${m.text}</div>`).join('');
+        container.scrollTop = container.scrollHeight;
+    }
 
-function renderUserOrders() {
-    const orders = JSON.parse(localStorage.getItem(STORAGE_ORDERS) || "[]");
+    document.getElementById("chatSendBtn")?.addEventListener("click", () => {
+        const current = getCurrentUser();
+        if (!current) { alert("Login first"); return; }
+        const to = document.getElementById("chatRecipient").value.trim() || currentChatTarget;
+        const msg = document.getElementById("chatMessageInput").value.trim();
+        if (!to || !msg) { alert("Recipient and message required"); return; }
+        sendChatMessage(current.username, to, msg);
+        document.getElementById("chatMessageInput").value = "";
+        renderChatMessages();
+        renderChatUsers();
+        showToast("✅ Sent");
+    });
+
+    document.getElementById("chatBackBtn")?.addEventListener("click", () => { document.getElementById("userModal").style.display = "none"; });
+
+        // Orders view
+    document.getElementById("ordersViewBtn")?.addEventListener("click", function() {
+        const container = document.getElementById("userChatContainer");
+        if (container) {
+            const ordersHtml = renderUserOrders();
+            container.innerHTML = `<h3>📦 ကျွန်ုပ်၏ အော်ဒါများ</h3>${ordersHtml}<button class="btn btn-outline" id="ordersBackBtn" style="margin-top:0.5rem;">Back</button>`;
+            document.getElementById("ordersBackBtn")?.addEventListener("click", function() {
+                document.getElementById("userChatContainer").innerHTML = `
+                    <h3 id="userChatTitle">💬 Messages</h3>
+                    <div id="chatUserList"></div>
+                    <div id="chatMessages"></div>
+                    <div style="display:flex; gap:0.3rem;">
+                        <input type="text" id="chatRecipient" placeholder="To" style="flex:1; padding:0.3rem; border:1px solid #ddd; border-radius:6px;" />
+                        <input type="text" id="chatMessageInput" placeholder="Message" style="flex:2; padding:0.3rem; border:1px solid #ddd; border-radius:6px;" />
+                        <button class="btn btn-primary" id="chatSendBtn" style="font-size:0.7rem; padding:0.2rem 0.6rem;">Send</button>
+                    </div>
+                    <button class="btn btn-outline" id="chatBackBtn" style="margin-top:0.3rem;">Back</button>
+                    <button class="btn btn-outline" id="ordersViewBtn" style="margin-top:0.3rem;font-size:0.7rem;">📦 ကျွန်ုပ်၏ အော်ဒါများ</button>
+                `;
+                // Re-attach events
+                document.getElementById("ordersViewBtn")?.addEventListener("click", function() { document.getElementById("ordersViewBtn").click(); });
+                document.getElementById("chatBackBtn")?.addEventListener("click", function() { document.getElementById("userModal").style.display = "none"; });
+                renderChatUsers();
+                renderChatMessages();
+            });
+        }
+    });
+
+    window.openUserChatMode = function() {
+        document.getElementById("userModalTitle").innerText = "💬 Messages";
+        document.getElementById("userFormContainer").classList.add("hidden");
+        document.getElementById("userChatContainer").classList.remove("hidden");
+        document.getElementById("userModal").style.display = "flex";
+        renderChatUsers();
+        renderChatMessages();
+    };
+
+    console.log("✅ All user.js functions loaded successfully!");
+});
+
+// ============================================================
+// 15. PAGE INIT
+// ============================================================
+(async function initPage() {
+    console.log("🚀 User page loading...");
+    const cols = await loadGridLayout();
+    globalGridColumns = cols;
+    applyGlobalGrid(cols);
+    const loaded = await loadProductsFromFirestore();
+    if (!loaded) { loadProducts(); console.log("📦 Loaded from Local Storage"); }
+    loadCart();
+    renderUserPage();
+    applyStoreConfig();
     const user = getCurrentUser();
-    const userOrders = user ? orders.filter(o => o.name === user.username || o.phone === user.username) : [];
-    if (userOrders.length === 0) { return `<div style="text-align:center;padding:1rem;color:#888;">No orders found</div>`; }
-    return userOrders.map(o => {
-        const status = getTrackingStatus(o.timestamp || o.createdAt || Date.now());
-        const statusLabel = TRACKING_STATUSES.find(s => s.key === status.key)?.label || status.key;
-        return `<div style="display:flex;justify-content:space-between;padding:0.5rem;border-bottom:1px solid #eee;align-items:center;font-size:0.85rem;"><div><strong>${o.id}</strong> <span style="color:#888;font-size:0.7rem;">${new Date(o.timestamp || o.createdAt || Date.now()).toLocaleString()}</span></div><div><span style="color:${status.key === 'delivered' ? '#28a745' : '#007bff'};">${statusLabel}</span> <button class="btn btn-outline btn-sm" style="font-size:0.7rem;padding:0.1rem 0.5rem;" onclick="openOrderTracking('${o.id}')">👁️</button></div></div>`;
-    }).join('');
-}
+    if (user) { document.getElementById("userBadge").innerHTML = `👤 ${user.username}`; }
+    const chatMsgs = JSON.parse(localStorage.getItem("shop_chat_widget") || "[]");
+    if (chatMsgs.length > 0) {
+        document.getElementById("chatBadge").innerText = chatMsgs.filter(m => m.sender === "bot" && !m.read).length;
+    }
+    logUserAction(`🌐 Page Visit`, `Device: ${getDeviceId()}`);
+    console.log("✅ User page ready!");
+})();
