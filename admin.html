@@ -20,9 +20,6 @@
     </script>
 
     <script>
-        // ============================================================
-        // FIREBASE CONFIG (Project: app-my-caee3)
-        // ============================================================
         const firebaseConfig = {
             apiKey: "AIzaSyDSu2XksfUZ6mAfktUpBqFtNxrgj96h1l4",
             authDomain: "app-my-caee3.firebaseapp.com",
@@ -32,7 +29,6 @@
             appId: "1:169669907659:web:8fba75e7aed449e3ffb74e",
             measurementId: "G-RTM9J8L6R1"
         };
-
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         console.log("✅ Firebase connected!");
@@ -40,126 +36,30 @@
 
     <link rel="stylesheet" href="style.css">
     <style>
-        .admin-panel {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 1rem;
-        }
-        .admin-section {
-            background: #fff;
-            padding: 1.2rem;
-            border-radius: 12px;
-            margin-bottom: 1.2rem;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-            border: 1px solid #eee;
-        }
-        .admin-section h3 {
-            font-size: 1.1rem;
-            margin-bottom: 0.8rem;
-            color: #222;
-            border-bottom: 2px solid #e11b1b;
-            padding-bottom: 0.4rem;
-        }
-        .admin-section label {
-            display: block;
-            font-weight: 600;
-            font-size: 0.85rem;
-            margin-top: 0.5rem;
-            color: #555;
-        }
-        .admin-section input,
-        .admin-section textarea {
-            width: 100%;
-            padding: 0.5rem 0.8rem;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            margin-top: 0.2rem;
-        }
-        .admin-section textarea {
-            height: 70px;
-            resize: vertical;
-        }
-        .admin-section .btn-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            margin-top: 0.8rem;
-        }
-        .admin-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.85rem;
-            margin-top: 0.5rem;
-        }
-        .admin-table th {
-            background: #f8f8f8;
-            padding: 0.5rem 0.6rem;
-            text-align: left;
-            border-bottom: 2px solid #eee;
-        }
-        .admin-table td {
-            padding: 0.4rem 0.6rem;
-            border-bottom: 1px solid #eee;
-            vertical-align: middle;
-        }
-        .admin-table input {
-            width: 100%;
-            padding: 0.2rem 0.4rem;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 0.8rem;
-        }
-        .admin-table .btn-sm {
-            padding: 0.15rem 0.6rem;
-            font-size: 0.7rem;
-            border-radius: 20px;
-        }
-        .admin-header {
-            background: #e11b1b;
-            color: #fff;
-            padding: 0.8rem 1.5rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-radius: 12px 12px 0 0;
-        }
-        .admin-header h1 {
-            font-size: 1.2rem;
-            margin: 0;
-        }
-        .admin-header .admin-user {
-            font-size: 0.85rem;
-            opacity: 0.9;
-        }
-        .admin-grid-2 {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
-        }
-        .status-msg {
-            padding: 0.5rem;
-            border-radius: 8px;
-            margin-top: 0.5rem;
-            font-weight: 500;
-        }
-        .status-msg.success {
-            background: #d4edda;
-            color: #155724;
-        }
-        .status-msg.error {
-            background: #f8d7da;
-            color: #721c24;
-        }
-        .status-msg.info {
-            background: #d1ecf1;
-            color: #0c5460;
-        }
-        @media (max-width: 768px) {
-            .admin-grid-2 {
-                grid-template-columns: 1fr;
-            }
-        }
+        .admin-panel { max-width: 1200px; margin: 0 auto; padding: 1rem; }
+        .admin-section { background: #fff; padding: 1.2rem; border-radius: 12px; margin-bottom: 1.2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #eee; }
+        .admin-section h3 { font-size: 1.1rem; margin-bottom: 0.8rem; color: #222; border-bottom: 2px solid #e11b1b; padding-bottom: 0.4rem; }
+        .admin-section label { display: block; font-weight: 600; font-size: 0.85rem; margin-top: 0.5rem; color: #555; }
+        .admin-section input, .admin-section textarea { width: 100%; padding: 0.5rem 0.8rem; border: 1px solid #ddd; border-radius: 8px; font-size: 0.9rem; margin-top: 0.2rem; }
+        .admin-section textarea { height: 70px; resize: vertical; }
+        .admin-section .btn-group { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.8rem; }
+        .admin-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 0.5rem; }
+        .admin-table th { background: #f8f8f8; padding: 0.5rem 0.6rem; text-align: left; border-bottom: 2px solid #eee; }
+        .admin-table td { padding: 0.4rem 0.6rem; border-bottom: 1px solid #eee; vertical-align: middle; }
+        .admin-table input { width: 100%; padding: 0.2rem 0.4rem; border: 1px solid #ddd; border-radius: 4px; font-size: 0.8rem; }
+        .admin-table .btn-sm { padding: 0.15rem 0.6rem; font-size: 0.7rem; border-radius: 20px; }
+        .admin-header { background: #e11b1b; color: #fff; padding: 0.8rem 1.5rem; display: flex; justify-content: space-between; align-items: center; border-radius: 12px 12px 0 0; }
+        .admin-header h1 { font-size: 1.2rem; margin: 0; }
+        .admin-header .admin-user { font-size: 0.85rem; opacity: 0.9; }
+        .admin-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .status-msg { padding: 0.5rem; border-radius: 8px; margin-top: 0.5rem; font-weight: 500; }
+        .status-msg.success { background: #d4edda; color: #155724; }
+        .status-msg.error { background: #f8d7da; color: #721c24; }
+        .status-msg.info { background: #d1ecf1; color: #0c5460; }
+        @media (max-width: 768px) { .admin-grid-2 { grid-template-columns: 1fr; } }
+        .grid-col-btn { min-width: 80px; }
+        .grid-col-btn.btn-primary { background: #e11b1b; color: #fff; border-color: #e11b1b; }
+        .grid-col-btn.btn-primary:hover { background: #c00; }
     </style>
 </head>
 <body>
@@ -170,6 +70,23 @@
             <div class="admin-user">
                 <span id="adminStatus">🔐 Secured</span>
                 <button class="btn btn-outline" id="adminLogoutBtn" style="background:rgba(255,255,255,0.2);color:#fff;margin-left:0.5rem;padding:0.2rem 0.8rem;font-size:0.7rem;">Logout</button>
+            </div>
+        </div>
+
+        <!-- ===== GRID LAYOUT CONTROLLER (NEW) ===== -->
+        <div class="admin-section">
+            <h3>📐 Product Grid Layout</h3>
+            <p style="font-size:0.85rem;color:#888;margin-bottom:0.5rem;">
+                ပစ္စည်းများ၏ အရွယ်အစားကို Admin မှ ချိန်ညှိနိုင်ပါသည်။
+            </p>
+            <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
+                <button class="btn grid-col-btn" data-cols="2">2 Columns</button>
+                <button class="btn grid-col-btn" data-cols="3">3 Columns</button>
+                <button class="btn grid-col-btn" data-cols="4">4 Columns</button>
+                <button class="btn grid-col-btn" data-cols="5">5 Columns</button>
+            </div>
+            <div id="gridStatus" style="margin-top:0.5rem;font-size:0.85rem;color:#888;">
+                Current: <span id="currentGridDisplay">4</span> columns
             </div>
         </div>
 
@@ -302,9 +219,7 @@
             <div id="broadcastStatus" class="status-msg" style="display:none;"></div>
         </div>
 
-        <!-- ========================================================== -->
-        <!-- ✅ API LIMITS DISPLAY                                       -->
-        <!-- ========================================================== -->
+        <!-- ===== API LIMITS DISPLAY ===== -->
         <div class="admin-section">
             <h3>📊 API Limits & Usage</h3>
             <div id="apiLimitDisplay">
@@ -318,18 +233,11 @@
         <!-- ===== AMAZON API SYNC ===== -->
         <div class="admin-section">
             <h3>🛒 Amazon API Sync</h3>
-            <!-- Sync Mode Selector -->
             <div style="margin:0.5rem 0;padding:0.5rem;background:#f8f9fa;border-radius:8px;">
                 <label style="font-weight:600;font-size:0.9rem;">🔄 Sync Mode:</label>
                 <div style="display:flex;gap:1rem;margin-top:0.3rem;">
-                    <label>
-                        <input type="radio" name="syncMode" value="merge" checked /> 
-                        Merge (Keep old + Add new)
-                    </label>
-                    <label>
-                        <input type="radio" name="syncMode" value="replace" /> 
-                        Replace (Delete old + Add new)
-                    </label>
+                    <label><input type="radio" name="syncMode" value="merge" checked /> Merge (Keep old + Add new)</label>
+                    <label><input type="radio" name="syncMode" value="replace" /> Replace (Delete old + Add new)</label>
                 </div>
             </div>
             <div class="admin-grid-2">
@@ -432,11 +340,12 @@
                 <table class="admin-table">
                     <thead>
                         <tr>
-                            <th style="width:60px;">ID</th>
-                            <th style="width:80px;">Source</th>
+                            <th style="width:50px;">ID</th>
+                            <th style="width:60px;">Image</th>
                             <th>Name</th>
-                            <th style="width:120px;">Price</th>
-                            <th style="width:150px;">Actions</th>
+                            <th style="width:100px;">Price</th>
+                            <th style="width:120px;">Status</th>
+                            <th style="width:100px;">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="adminProductRows"></tbody>
