@@ -1,0 +1,2727 @@
+```html
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Shop.com.mm</title>
+
+    <!-- ===== FIREBASE SDK ===== -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js">
+    </script>
+
+    <!-- ===== PAPA PARSE (CSV) ===== -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js">
+    </script>
+
+    <style>
+        /* ===== RESET & BASE ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+        body {
+            background: #fce4ec;
+            color: #333;
+            min-height: 100vh;
+            padding-bottom: 70px;
+        }
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+        .hidden {
+            display: none !important;
+        }
+
+        /* ===== HEADER ===== */
+        .header {
+            background: #fff;
+            padding: 0.5rem 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .logo {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: #e11b1b;
+            cursor: pointer;
+        }
+        .logo span {
+            color: #ff6b00;
+        }
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+        }
+
+        /* ===== SEARCH BAR ===== */
+        .search-bar {
+            display: flex;
+            align-items: center;
+            gap: 0.2rem;
+            background: #f0f0f0;
+            border-radius: 30px;
+            padding: 0.1rem 0.4rem 0.1rem 0.8rem;
+        }
+        .search-bar input {
+            border: none;
+            background: transparent;
+            padding: 0.3rem 0;
+            outline: none;
+            font-size: 0.8rem;
+            width: 100px;
+        }
+        .search-bar button {
+            background: #e11b1b;
+            color: #fff;
+            border: none;
+            border-radius: 30px;
+            padding: 0.2rem 0.6rem;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.7rem;
+        }
+        .search-bar button:hover {
+            background: #c00;
+        }
+
+        /* ===== MUSIC PLAYER ===== */
+        .music-player {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 0.1rem 0.5rem;
+            border-radius: 30px;
+            border: 1px solid #eee;
+        }
+        .music-player .play-btn {
+            background: none;
+            border: none;
+            font-size: 1rem;
+            cursor: pointer;
+            color: #e11b1b;
+            padding: 0.1rem;
+        }
+        .music-player .play-btn:hover {
+            transform: scale(1.1);
+        }
+        .music-player .volume-slider {
+            width: 40px;
+            height: 3px;
+            accent-color: #e11b1b;
+            cursor: pointer;
+        }
+        .music-player .music-time {
+            font-size: 0.6rem;
+            color: #888;
+            min-width: 35px;
+            font-variant-numeric: tabular-nums;
+        }
+        .music-player .music-label {
+            font-size: 0.55rem;
+            color: #999;
+            max-width: 50px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* ===== CLOCK ===== */
+        .clock-display {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #555;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 0.1rem 0.4rem;
+            border-radius: 20px;
+            min-width: 55px;
+            text-align: center;
+            border: 1px solid #eee;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* ===== CART & USER ===== */
+        .cart-icon {
+            background: #f0f0f0;
+            padding: 0.2rem 0.6rem;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.2rem;
+        }
+        .cart-icon:hover {
+            background: #e0e0e0;
+        }
+        .user-badge {
+            background: #e11b1b;
+            color: #fff;
+            padding: 0.15rem 0.6rem;
+            border-radius: 30px;
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+        .user-badge:hover {
+            background: #c00;
+        }
+
+        /* ===== CATEGORIES BAR ===== */
+        .categories-bar {
+            background: #fff;
+            padding: 0.3rem 1rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            border-bottom: 1px solid #eee;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+        .categories-bar a {
+            font-size: 0.75rem;
+            color: #555;
+            font-weight: 500;
+            padding: 0.15rem 0;
+            border-bottom: 2px solid transparent;
+            transition: 0.2s;
+            cursor: pointer;
+        }
+        .categories-bar a:hover {
+            border-bottom-color: #e11b1b;
+            color: #e11b1b;
+        }
+        .categories-bar a.active {
+            border-bottom-color: #e11b1b;
+            color: #e11b1b;
+        }
+
+        /* ===== PAGE CONTAINERS ===== */
+        .page-container {
+            display: none;
+            padding: 1rem 0.8rem 80px 0.8rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .page-container.active {
+            display: block;
+        }
+
+        /* ===== PRODUCT GRID ===== */
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 0.8rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 0.8rem;
+            margin-top: 0.3rem;
+        }
+        .product-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 0.6rem;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+            transition: 0.3s;
+            text-align: center;
+            border: 1px solid #f0f0f0;
+            cursor: pointer;
+        }
+        .product-card:hover {
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+            transform: translateY(-2px);
+        }
+        .product-img {
+            width: 100%;
+            height: 120px;
+            object-fit: contain;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+        .product-img-placeholder {
+            font-size: 2.5rem;
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f0f0f0;
+            border-radius: 8px;
+        }
+        .product-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            height: 2.2rem;
+            margin-top: 0.3rem;
+        }
+        .product-price {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #e11b1b;
+            margin: 0.2rem 0;
+        }
+        .product-rating {
+            font-size: 0.65rem;
+            color: #f5a623;
+        }
+        .add-to-cart {
+            background: #e11b1b;
+            color: #fff;
+            border: none;
+            padding: 0.25rem 0.6rem;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: 0.2s;
+            width: 100%;
+            margin-top: 0.3rem;
+        }
+                .add-to-cart:hover {
+            background: #c00;
+            transform: scale(0.97);
+        }
+
+        /* ===== PAGINATION ===== */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 0.3rem;
+            margin: 1.5rem 0;
+        }
+        .page-btn {
+            background: #fff;
+            border: 1px solid #ddd;
+            padding: 0.15rem 0.6rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.8rem;
+        }
+        .page-btn.active {
+            background: #e11b1b;
+            color: #fff;
+            border-color: #e11b1b;
+        }
+
+        /* ===== BOTTOM NAV ===== */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #fff;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 0.3rem 0;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+            z-index: 999;
+            border-top: 1px solid #eee;
+        }
+        .bottom-nav .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 0.6rem;
+            color: #888;
+            cursor: pointer;
+            padding: 0.15rem 0.4rem;
+            transition: 0.2s;
+            border: none;
+            background: transparent;
+        }
+        .bottom-nav .nav-item:hover {
+            color: #e11b1b;
+        }
+        .bottom-nav .nav-item.active {
+            color: #e11b1b;
+        }
+        .bottom-nav .nav-item .nav-icon {
+            font-size: 1.2rem;
+        }
+        .bottom-nav .nav-item .nav-label {
+            margin-top: 0.05rem;
+        }
+
+        /* ===== MODALS ===== */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+        }
+        .modal-content {
+            background: #fff;
+            width: 92%;
+            max-width: 480px;
+            border-radius: 20px;
+            padding: 1.2rem;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-content h2 {
+            margin-bottom: 0.8rem;
+            font-size: 1.1rem;
+        }
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.3rem 0;
+            border-bottom: 1px solid #eee;
+            align-items: center;
+            font-size: 0.85rem;
+        }
+        .cart-item .qty-controls button {
+            background: #f0f0f0;
+            border: none;
+            border-radius: 30px;
+            width: 24px;
+            height: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .cart-total {
+            font-size: 1rem;
+            font-weight: 700;
+            text-align: right;
+            margin-top: 0.8rem;
+        }
+
+        /* ===== BUTTONS ===== */
+        .btn {
+            padding: 0.3rem 1rem;
+            border: none;
+            border-radius: 30px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 0.8rem;
+        }
+        .btn-primary {
+            background: #e11b1b;
+            color: #fff;
+        }
+        .btn-primary:hover {
+            background: #c00;
+        }
+        .btn-success {
+            background: #0f7b3e;
+            color: #fff;
+        }
+        .btn-success:hover {
+            background: #0b6a33;
+        }
+        .btn-danger {
+            background: #dc3545;
+            color: #fff;
+        }
+        .btn-danger:hover {
+            background: #b02a37;
+        }
+        .btn-outline {
+            background: #f0f0f0;
+            color: #333;
+        }
+        .btn-outline:hover {
+            background: #e0e0e0;
+        }
+
+        /* ===== PROFILE PAGE ===== */
+        .profile-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 1.5rem;
+            text-align: center;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+        .profile-avatar {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: #e11b1b;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin: 0 auto 0.5rem;
+        }
+        .profile-name {
+            font-size: 1rem;
+            font-weight: 700;
+        }
+        .profile-email {
+            font-size: 0.8rem;
+            color: #888;
+        }
+        .profile-menu {
+            background: #fff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+        .profile-menu-item {
+            display: flex;
+            align-items: center;
+            padding: 0.6rem 1rem;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+            transition: 0.2s;
+            background: #fff;
+            border: none;
+            width: 100%;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+        .profile-menu-item:hover {
+            background: #f8f8f8;
+        }
+        .profile-menu-item .icon {
+            font-size: 1.1rem;
+            margin-right: 0.6rem;
+        }
+        .profile-menu-item .arrow {
+            margin-left: auto;
+            color: #ccc;
+        }
+        .profile-menu-item.danger {
+            color: #dc3545;
+        }
+
+        /* ===== ORDERS ===== */
+        .order-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 0.8rem;
+            margin-bottom: 0.8rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.3rem;
+        }
+        .order-id {
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+        .order-date {
+            font-size: 0.7rem;
+            color: #888;
+        }
+        .order-status {
+            font-size: 0.65rem;
+            padding: 0.15rem 0.5rem;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        .order-status.delivered {
+            background: #d4edda;
+            color: #155724;
+        }
+        .order-status.transit {
+            background: #cce5ff;
+            color: #004085;
+        }
+        .order-status.pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .order-total {
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: #e11b1b;
+        }
+
+                /* ===== CHECKOUT ===== */
+        .checkout-address {
+            background: #fff;
+            border-radius: 12px;
+            padding: 0.8rem;
+            margin-bottom: 0.8rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+        .checkout-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.4rem 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .checkout-summary {
+            background: #fff;
+            border-radius: 12px;
+            padding: 0.8rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+        .checkout-summary .row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.2rem 0;
+        }
+        .checkout-summary .total {
+            font-weight: 700;
+            font-size: 1rem;
+            border-top: 2px solid #eee;
+            padding-top: 0.4rem;
+            margin-top: 0.4rem;
+        }
+
+        /* ===== TRACKING ===== */
+        .tracking-container {
+            padding: 0.5rem 0;
+        }
+        .tracking-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            position: relative;
+            padding-left: 1.8rem;
+        }
+        .tracking-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.8rem;
+            position: relative;
+            padding: 0.3rem 0;
+            border-left: 3px solid #e9ecef;
+            padding-left: 1rem;
+            transition: all 0.3s ease;
+        }
+        .tracking-step.active {
+            border-left-color: #28a745;
+        }
+        .tracking-step.completed {
+            border-left-color: #28a745;
+        }
+        .tracking-step .step-icon {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.65rem;
+            color: #888;
+            flex-shrink: 0;
+            transition: all 0.3s ease;
+            position: absolute;
+            left: -1.1rem;
+            top: 0.2rem;
+        }
+        .tracking-step.active .step-icon {
+            background: #28a745;
+            color: #fff;
+            box-shadow: 0 0 0 4px rgba(40, 167, 69, 0.2);
+            animation: pulse-green 1.5s infinite;
+        }
+        .tracking-step.completed .step-icon {
+            background: #28a745;
+            color: #fff;
+        }
+        .tracking-step .step-title {
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+        .tracking-step .step-desc {
+            font-size: 0.7rem;
+            color: #888;
+        }
+        .tracking-step .step-time {
+            font-size: 0.65rem;
+            color: #aaa;
+        }
+
+        @keyframes pulse-green {
+            0%,
+            100% {
+                box-shadow: 0 0 0 4px rgba(40, 167, 69, 0.2);
+            }
+            50% {
+                box-shadow: 0 0 0 8px rgba(40, 167, 69, 0.1);
+            }
+        }
+
+        /* ===== CHAT WIDGET ===== */
+        #chatWidget {
+            position: fixed;
+            bottom: 70px;
+            right: 10px;
+            z-index: 1000;
+            width: 320px;
+            max-width: 90vw;
+            background: #fff;
+            border-radius: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            display: none;
+            flex-direction: column;
+            max-height: 450px;
+            border: 1px solid #eee;
+        }
+        #chatWidget.active {
+            display: flex;
+        }
+        #chatWidget .chat-header {
+            background: #e11b1b;
+            color: #fff;
+            padding: 0.5rem 1rem;
+            border-radius: 24px 24px 0 0;
+            font-weight: 700;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            flex-shrink: 0;
+            font-size: 0.9rem;
+        }
+        #chatWidget .chat-header button {
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+        #chatWidget .chat-messages {
+            flex: 1;
+            padding: 0.6rem;
+            overflow-y: auto;
+            max-height: 280px;
+            background: #fafafa;
+            min-height: 80px;
+            font-size: 0.8rem;
+        }
+        #chatWidget .chat-msg {
+            margin-bottom: 0.4rem;
+            display: flex;
+            flex-direction: column;
+        }
+        #chatWidget .chat-msg.user {
+            align-items: flex-end;
+        }
+        #chatWidget .chat-msg.user .bubble {
+            background: #e11b1b;
+            color: #fff;
+            border-radius: 18px 18px 0 18px;
+            padding: 0.3rem 0.6rem;
+            max-width: 85%;
+            word-wrap: break-word;
+        }
+        #chatWidget .chat-msg.bot .bubble {
+            background: #f0f0f0;
+            color: #333;
+            border-radius: 18px 18px 18px 0;
+            padding: 0.3rem 0.6rem;
+            max-width: 85%;
+            word-wrap: break-word;
+        }
+        #chatWidget .chat-msg .time {
+            font-size: 0.55rem;
+            color: #888;
+            margin: 0.1rem 0.3rem;
+        }
+        #chatWidget .chat-input {
+            display: flex;
+            border-top: 1px solid #eee;
+            padding: 0.3rem;
+            gap: 0.3rem;
+            background: #fff;
+            border-radius: 0 0 24px 24px;
+            flex-shrink: 0;
+        }
+        #chatWidget .chat-input input {
+            flex: 1;
+            border: none;
+            padding: 0.3rem 0.6rem;
+            border-radius: 30px;
+            background: #f0f0f0;
+            outline: none;
+            font-size: 0.8rem;
+        }
+        #chatWidget .chat-input button {
+            background: #e11b1b;
+            color: #fff;
+            border: none;
+            padding: 0.2rem 0.8rem;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+        #chatToggle {
+            position: fixed;
+            bottom: 70px;
+            right: 10px;
+            z-index: 999;
+            background: #e11b1b;
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 1.4rem;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #chatToggle:hover {
+            background: #c00;
+        }
+        #chatToggle .badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            background: #ff6b00;
+            color: #fff;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 0.6rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 640px) {
+            .products-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+            .search-bar input {
+                width: 70px;
+                font-size: 0.7rem;
+            }
+            .music-player .music-label {
+                max-width: 30px;
+            }
+            .music-player .volume-slider {
+                width: 30px;
+            }
+            .clock-display {
+                font-size: 0.6rem;
+                min-width: 45px;
+            }
+            .header {
+                padding: 0.3rem 0.5rem;
+            }
+            .logo {
+                font-size: 1rem;
+            }
+            .bottom-nav .nav-item .nav-icon {
+                font-size: 1rem;
+            }
+            .bottom-nav .nav-item .nav-label {
+                font-size: 0.5rem;
+            }
+        }
+
+        /* ===== ADMIN STYLES (admin.html အတွက်) ===== */
+        .admin-panel {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+        .admin-section {
+            background: #fff;
+            padding: 1rem;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            border: 1px solid #eee;
+        }
+        .admin-section h3 {
+            font-size: 1rem;
+            margin-bottom: 0.6rem;
+            color: #222;
+            border-bottom: 2px solid #e11b1b;
+            padding-bottom: 0.3rem;
+        }
+        .admin-section label {
+            display: block;
+            font-weight: 600;
+            font-size: 0.8rem;
+            margin-top: 0.4rem;
+            color: #555;
+        }
+        .admin-section input,
+        .admin-section textarea,
+        .admin-section select {
+            width: 100%;
+            padding: 0.4rem 0.6rem;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            margin-top: 0.1rem;
+            margin-bottom: 0.3rem;
+        }
+        .admin-section textarea {
+            height: 60px;
+            resize: vertical;
+        }
+        .admin-section .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin-top: 0.4rem;
+        }
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+            margin-top: 0.3rem;
+        }
+        .admin-table th {
+            background: #f8f8f8;
+            padding: 0.3rem 0.5rem;
+            text-align: left;
+            border-bottom: 2px solid #eee;
+        }
+        .admin-table td {
+            padding: 0.3rem 0.5rem;
+            border-bottom: 1px solid #eee;
+            vertical-align: middle;
+        }
+        .admin-table input {
+            width: 100%;
+            padding: 0.15rem 0.3rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.75rem;
+        }
+        .admin-table .btn-sm {
+            padding: 0.1rem 0.4rem;
+            font-size: 0.6rem;
+            border-radius: 20px;
+        }
+        .admin-header {
+            background: #e11b1b;
+            color: #fff;
+            padding: 0.5rem 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 12px 12px 0 0;
+            margin: -1rem -1rem 1rem -1rem;
+        }
+        .admin-header h1 {
+            font-size: 1.1rem;
+        }
+        .admin-header .admin-user {
+            font-size: 0.8rem;
+            opacity: 0.9;
+        }
+        .admin-grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+        }
+        .status-msg {
+            padding: 0.4rem;
+            border-radius: 8px;
+            margin-top: 0.4rem;
+            font-weight: 500;
+            font-size: 0.8rem;
+        }
+        .status-msg.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status-msg.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .status-msg.info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        .color-picker-group {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        .color-picker-group input[type="color"] {
+            width: 35px;
+            height: 35px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            padding: 0;
+        }
+        .toggle-switch {
+            position: relative;
+            width: 44px;
+            height: 22px;
+            background: #ccc;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: 0.3s;
+            display: inline-block;
+        }
+        .toggle-switch.active {
+            background: #28a745;
+        }
+        .toggle-switch .toggle-knob {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 18px;
+            height: 18px;
+            background: #fff;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+        .toggle-switch.active .toggle-knob {
+            left: 24px;
+        }
+        .admin-bulk-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            margin-bottom: 0.8rem;
+            flex-wrap: wrap;
+            padding: 0.4rem 0.6rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .admin-bulk-actions label {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+        .music-link-input-group {
+            display: flex;
+            gap: 0.3rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .music-link-input-group input {
+            flex: 1;
+            min-width: 120px;
+        }
+        .music-list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.2rem 0.4rem;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 0.8rem;
+        }
+        .music-list-item .music-index {
+            font-weight: 600;
+            color: #888;
+            min-width: 24px;
+        }
+        .music-list-item .music-link {
+            flex: 1;
+            margin: 0 0.3rem;
+            color: #007bff;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .music-list-item .music-actions button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 0.8rem;
+            padding: 0 0.2rem;
+            color: #dc3545;
+        }
+        @media (max-width: 640px) {
+            .admin-grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ===== HEADER ===== -->
+    <header class="header" id="mainHeader">
+        <div class="logo" id="logoHome">🛒 <span id="storeNameDisplay">Shop</span>.com.mm</div>
+        <div class="header-actions">
+            <div class="search-bar" id="searchBarContainer">
+                <input type="text" id="searchInput" placeholder="ရှာမည်..." />
+                <button id="searchBtn">🔍</button>
+            </div>
+
+            <!-- ===== MUSIC PLAYER + CLOCK ===== -->
+            <div class="music-player" id="musicPlayer">
+                <button class="play-btn" id="musicPlayBtn">▶️</button>
+                <span class="music-label" id="musicTitle">No music</span>
+                <input type="range" class="volume-slider" id="musicVolume" min="0" max="100" value="50" />
+                <span class="music-time" id="musicTime">0:00</span>
+                <span class="clock-display" id="clockDisplay">00:00:00</span>
+            </div>
+
+            <span class="cart-icon" id="cartIcon">🛍️ (<span id="cartCount">0</span>)</span>
+            <span class="user-badge" id="userBadge">👤 Login</span>
+        </div>
+    </header>
+
+    <!-- ===== CATEGORIES BAR ===== -->
+    <div class="categories-bar" id="categoriesBar"></div>
+
+    <!-- ========================================================== -->
+    <!-- PAGE CONTAINERS                                           -->
+    <!-- ========================================================== -->
+
+    <!-- HOME -->
+    <div id="page-home" class="page-container active">
+        <div id="app"></div>
+    </div>
+
+    <!-- MESSAGES -->
+    <div id="page-messages" class="page-container">
+        <h2 style="font-size:1.1rem;margin-bottom:0.8rem;">💬 Messages</h2>
+        <div id="messagesContent">
+            <div style="text-align:center;padding:2rem;color:#888;font-size:0.9rem;">
+                <p style="font-size:2rem;">💬</p>
+                <p>No messages yet</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- CART -->
+    <div id="page-cart" class="page-container">
+        <h2 style="font-size:1.1rem;margin-bottom:0.8rem;">🛒 My Cart</h2>
+        <div id="cartPageContent"></div>
+    </div>
+
+    <!-- PROFILE -->
+    <div id="page-profile" class="page-container">
+        <h2 style="font-size:1.1rem;margin-bottom:0.8rem;">👤 My Profile</h2>
+        <div id="profilePageContent"></div>
+    </div>
+
+    <!-- ORDERS -->
+    <div id="page-orders" class="page-container">
+        <h2 style="font-size:1.1rem;margin-bottom:0.8rem;">📦 My Orders</h2>
+        <div id="ordersPageContent"></div>
+    </div>
+
+    <!-- TRACKING -->
+    <div id="page-tracking" class="page-container">
+        <h2 style="font-size:1.1rem;margin-bottom:0.8rem;">🚚 Order Tracking</h2>
+        <div id="trackingPageContent"></div>
+    </div>
+
+    <!-- CHECKOUT -->
+    <div id="page-checkout" class="page-container">
+        <h2 style="font-size:1.1rem;margin-bottom:0.8rem;">📦 Checkout</h2>
+        <div id="checkoutPageContent"></div>
+    </div>
+
+    <!-- ========================================================== -->
+    <!-- BOTTOM NAVIGATION                                         -->
+    <!-- ========================================================== -->
+    <nav class="bottom-nav" id="bottomNav">
+        <button class="nav-item active" data-page="home">
+            <span class="nav-icon">🏠</span>
+            <span class="nav-label">Home</span>
+        </button>
+        <button class="nav-item" data-page="messages">
+            <span class="nav-icon">💬</span>
+            <span class="nav-label">Messages</span>
+        </button>
+        <button class="nav-item" data-page="cart">
+            <span class="nav-icon">🛒</span>
+            <span class="nav-label">Cart</span>
+        </button>
+        <button class="nav-item" data-page="profile">
+            <span class="nav-icon">👤</span>
+            <span class="nav-label">Profile</span>
+        </button>
+    </nav>
+
+    <!-- ========================================================== -->
+    <!-- MODALS                                                    -->
+    <!-- ========================================================== -->
+
+    <!-- CART MODAL -->
+    <div id="cartModal" class="modal">
+        <div class="modal-content">
+            <h2>🛒 ခြင်းတောင်း</h2>
+            <div id="cartItemsList"></div>
+            <div id="cartTotal" class="cart-total"></div>
+            <div style="display:flex; gap:0.4rem; justify-content:flex-end; margin-top:0.8rem; flex-wrap:wrap;">
+                <button class="btn btn-outline" id="closeCartBtn">ပိတ်ရန်</button>
+                <button class="btn btn-success" id="checkoutBtn">ဝယ်ယူမည်</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CHECKOUT MODAL -->
+    <div id="checkoutModal" class="modal">
+        <div class="modal-content">
+            <h2>📦 ဝယ်ယူမှု</h2>
+            <div id="checkoutFormContainer">
+                <form id="checkoutForm" class="checkout-form" style="margin-top:0.5rem;">
+                    <label style="font-weight:600;font-size:0.8rem;display:block;margin-top:0.4rem;">အမည်</label>
+                    <input type="text" id="custName" placeholder="သင့်အမည်" style="width:100%;padding:0.4rem;border:1px solid #ddd;border-radius:8px;font-size:0.85rem;" required />
+                    <label style="font-weight:600;font-size:0.8rem;display:block;margin-top:0.4rem;">ဖုန်းနံပါတ်</label>
+                    <input type="text" id="custPhone" placeholder="09xxxxxxxx" style="width:100%;padding:0.4rem;border:1px solid #ddd;border-radius:8px;font-size:0.85rem;" required />
+                    <label style="font-weight:600;font-size:0.8rem;display:block;margin-top:0.4rem;">လိပ်စာ</label>
+                    <textarea id="custAddress" placeholder="ပို့ဆောင်မည့်လိပ်စာ" rows="2" style="width:100%;padding:0.4rem;border:1px solid #ddd;border-radius:8px;font-size:0.85rem;" required></textarea>
+                    <button type="submit" class="btn btn-success" style="margin-top:0.6rem;width:100%;">ဆက်လုပ်ရန်</button>
+                </form>
+            </div>
+            <div id="paymentInfo" class="hidden">
+                <h3>💳 ငွေလွဲရန်</h3>
+                <p id="paymentNumberDisplay" style="font-weight:700;margin:0.5rem 0;"><strong>Wave Pay - 09 781 145 573</strong></p>
+                <div style="background:#f8f9fa;border-radius:12px;padding:0.8rem;">
+                    <p>⏳ ကျန်အချိန်: <span style="font-size:1.4rem;font-weight:700;color:#e11b1b;" id="orderTimer">60:00</span></p>
+                    <input type="file" id="screenshotInput" accept="image/*" style="margin:0.5rem 0;" />
+                    <button class="btn btn-primary" id="uploadScreenshotBtn" style="width:100%;margin-top:0.3rem;">📤 Screenshot ပို့မည်</button>
+                    <div id="orderStatusMsg" style="margin-top:0.4rem;font-weight:600;"></div>
+                </div>
+                <button class="btn btn-outline" id="cancelOrderBtn" style="margin-top:0.5rem;">ပယ်ဖျက်မည်</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TRACKING MODAL -->
+    <div id="trackingModal" class="modal">
+        <div class="modal-content">
+            <h2>📦 Order Tracking</h2>
+            <div id="trackingInfo">
+                <p><strong>Order ID:</strong> <span id="trackingOrderId"></span></p>
+                <p><strong>Status:</strong> <span id="trackingStatus"></span></p>
+                <p><strong>Estimated Delivery:</strong> <span id="trackingDelivery"></span></p>
+                <div style="margin:0.5rem 0;padding:0.5rem;background:#f8f9fa;border-radius:12px;">
+                    <p>✅ ကျေးဇူးတင်ပါသည်။</p>
+                    <p>🚚 Tracking: <span id="trackingNumber">TH-2026-</span></p>
+                </div>
+                <button class="btn btn-outline" id="closeTrackingBtn">ပိတ်ရန်</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ORDER TRACKING DETAIL MODAL -->
+    <div id="orderTrackingModal" class="modal">
+        <div class="modal-content" style="max-width:700px;">
+            <h2>📦 သင့်အော်ဒါ အခြေအနေ</h2>
+            <div id="orderTrackingContent">
+                <div style="text-align:center;padding:1rem;color:#888;">Loading tracking...</div>
+            </div>
+            <button class="btn btn-outline" id="closeTrackingDetailBtn" style="margin-top:0.8rem;">ပိတ်ရန်</button>
+        </div>
+    </div>
+
+    <!-- USER MODAL -->
+    <div id="userModal" class="modal">
+        <div class="modal-content">
+            <h2 id="userModalTitle">👤 Profile</h2>
+            <div id="userFormContainer">
+                <div style="text-align:center;margin-bottom:0.8rem;">
+                    <div id="profilePicPlaceholder" style="width:60px;height:60px;border-radius:50%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;margin:0 auto;font-size:1.8rem;border:2px solid #ddd;">👤</div>
+                    <input type="file" id="profilePicInput" accept="image/*" style="margin-top:0.3rem;font-size:0.75rem;" />
+                    <button class="btn btn-outline" id="uploadProfilePicBtn" style="font-size:0.6rem;padding:0.1rem 0.6rem;">ပုံတင်မည်</button>
+                </div>
+                <label style="font-weight:600;font-size:0.8rem;display:block;margin-top:0.3rem;">Username</label>
+                <input type="text" id="loginUsername" style="width:100%;padding:0.4rem;border:1px solid #ddd;border-radius:8px;font-size:0.85rem;" />
+                <label style="font-weight:600;font-size:0.8rem;display:block;margin-top:0.3rem;">Password</label>
+                <input type="password" id="loginPassword" style="width:100%;padding:0.4rem;border:1px solid #ddd;border-radius:8px;font-size:0.85rem;" />
+                <div style="display:flex;gap:0.4rem;margin-top:0.6rem;flex-wrap:wrap;">
+                    <button class="btn btn-primary" id="loginBtn" style="flex:1;">Login</button>
+                    <button class="btn btn-success" id="registerBtn" style="flex:1;">Register</button>
+                    <button class="btn btn-outline" id="forgotPwdBtn" style="flex:1;">Forgot</button>
+                    <button class="btn btn-outline" id="logoutBtn" style="flex:1;display:none;">Logout</button>
+                    <button class="btn btn-outline" id="closeUserBtn">ပိတ်ရန်</button>
+                </div>
+                <div id="userStatus" style="margin-top:0.4rem;font-size:0.8rem;"></div>
+            </div>
+            <div id="userChatContainer" class="hidden">
+                <h3 style="font-size:1rem;">💬 Messages</h3>
+                <div id="chatUserList" style="max-height:80px;overflow-y:auto;border:1px solid #eee;border-radius:8px;padding:0.2rem;margin-bottom:0.4rem;"></div>
+                <div id="chatMessages" style="max-height:120px;overflow-y:auto;border:1px solid #eee;border-radius:8px;padding:0.2rem;margin-bottom:0.4rem;font-size:0.8rem;"></div>
+                <div style="display:flex;gap:0.3rem;">
+                    <input type="text" id="chatRecipient" placeholder="To" style="flex:1;padding:0.3rem;border:1px solid #ddd;border-radius:6px;font-size:0.8rem;" />
+                    <input type="text" id="chatMessageInput" placeholder="Message" style="flex:2;padding:0.3rem;border:1px solid #ddd;border-radius:6px;font-size:0.8rem;" />
+                    <button class="btn btn-primary" id="chatSendBtn" style="font-size:0.7rem;padding:0.1rem 0.6rem;">Send</button>
+                </div>
+                <button class="btn btn-outline" id="chatBackBtn" style="margin-top:0.3rem;font-size:0.7rem;padding:0.1rem 0.6rem;">Back</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- REVIEW MODAL -->
+    <div id="reviewModal" class="modal">
+        <div class="modal-content">
+            <h2 id="reviewProductTitle">Product</h2>
+            <div id="reviewProductInfo" style="font-size:0.85rem;margin:0.3rem 0;"></div>
+            <div id="reviewProductImages" style="display:flex;flex-wrap:wrap;gap:0.3rem;margin:0.3rem 0;"></div>
+            <div style="margin-top:0.5rem;">
+                <h4 style="font-size:0.9rem;">💬 Reviews</h4>
+                <div id="commentsList" style="max-height:100px;overflow-y:auto;margin-bottom:0.3rem;"></div>
+                <textarea id="newComment" placeholder="သင့်အမြင်ရေးပါ..." rows="2" style="width:100%;padding:0.3rem;border:1px solid #ddd;border-radius:8px;font-size:0.8rem;"></textarea>
+                <button class="btn btn-primary" id="addCommentBtn" style="margin-top:0.3rem;font-size:0.7rem;padding:0.2rem 0.8rem;">Comment</button>
+            </div>
+            <button class="btn btn-outline" id="closeReviewBtn" style="margin-top:0.6rem;">ပိတ်ရန်</button>
+        </div>
+    </div>
+
+    <!-- CHAT WIDGET -->
+    <button id="chatToggle">💬 <span class="badge" id="chatBadge">0</span></button>
+    <div id="chatWidget">
+        <div class="chat-header">
+            <span>💬 Support Chat</span>
+            <button id="closeChatBtn">✕</button>
+        </div>
+        <div class="chat-messages" id="chatMessagesWidget"></div>
+        <div class="chat-input">
+            <input type="text" id="chatInputWidget" placeholder="စာရိုက်ပါ..." />
+            <button id="chatSendWidgetBtn">ပို့မည်</button>
+        </div>
+    </div>
+
+    <!-- ========================================================== -->
+    <!-- SCRIPTS                                                    -->
+    <!-- ========================================================== -->
+    <script>
+        // ============================================================
+        // FIREBASE CONFIG
+        // ============================================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyDSu2XksfUZ6mAfktUpBqFtNxrgj96h1l4",
+            authDomain: "app-my-caee3.firebaseapp.com",
+            projectId: "app-my-caee3",
+            storageBucket: "app-my-caee3.firebasestorage.app",
+            messagingSenderId: "169669907659",
+            appId: "1:169669907659:web:8fba75e7aed449e3ffb74e",
+            measurementId: "G-RTM9J8L6R1"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+        console.log("✅ Firebase connected!");
+
+        // ============================================================
+        // STORE CONFIG
+        // ============================================================
+        const STORAGE_STORE_CONFIG = "shop_store_config";
+
+        function getStoreConfig() {
+            const raw = localStorage.getItem(STORAGE_STORE_CONFIG);
+            if (raw) { try { return JSON.parse(raw); } catch (e) {} }
+            return { storeName: "Shop", headerTitle: "🛒 Shop.com.mm", footerText: "© 2026 Shop.com.mm", currency: "MMK",
+                chatTitle: "💬 Support Chat" };
+        }
+
+        function applyStoreConfig() {
+            const config = getStoreConfig();
+            const nameEl = document.getElementById("storeNameDisplay");
+            if (nameEl) nameEl.innerText = config.storeName;
+            document.title = config.headerTitle;
+        }
+        applyStoreConfig();
+
+        // ============================================================
+        // TELEGRAM CONFIG
+        // ============================================================
+        const STORAGE_TELEGRAM = "shop_telegram_config";
+
+        function getTelegramConfig() {
+            const raw = localStorage.getItem(STORAGE_TELEGRAM);
+            if (raw) { try { return JSON.parse(raw); } catch (e) {} }
+            return { botTokens: [], chatId: "" };
+        }
+
+        async function sendTelegramMessage(text) {
+            const config = getTelegramConfig();
+            const tokens = config.botTokens.filter(t => t.trim() !== "");
+            const chatId = config.chatId.trim();
+            if (!tokens.length || !chatId) return false;
+            let idx = parseInt(localStorage.getItem("telegram_bot_idx") || "0");
+            const token = tokens[idx % tokens.length];
+            localStorage.setItem("telegram_bot_idx", (idx + 1) % tokens.length);
+            try {
+                const url = `https://api.telegram.org/bot${token}/sendMessage`;
+                const res = await fetch(url, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ chat_id: chatId, text: text.substring(0, 4000), parse_mode: "Markdown" })
+                });
+                const result = await res.json();
+                return result.ok;
+            } catch (e) { return false; }
+        }
+
+        // ============================================================
+        // MUSIC PLAYER
+        // ============================================================
+        let musicPlaylist = [];
+        let musicIndex = 0;
+        let isMusicPlaying = false;
+        let musicIframe = null;
+
+        function getMusicLinks() {
+            const raw = localStorage.getItem('shop_music_links');
+            if (raw) { try { return JSON.parse(raw); } catch (e) {} }
+            return [];
+        }
+
+        function extractYouTubeId(url) {
+            if (!url) return null;
+            const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
+            const match = url.match(regExp);
+            return (match && match[7] && match[7].length === 11) ? match[7] : null;
+        }
+
+        function initMusicPlayer() {
+            const playlist = getMusicLinks();
+            if (playlist.length === 0) {
+                document.getElementById('musicTitle').innerText = 'No music';
+                document.getElementById('musicTime').innerText = '0:00';
+                return;
+            }
+            musicPlaylist = playlist;
+            // Load first track
+            loadMusicTrack(0);
+        }
+
+        function loadMusicTrack(index) {
+            if (musicPlaylist.length === 0) return;
+            musicIndex = index % musicPlaylist.length;
+            const link = musicPlaylist[musicIndex];
+            const videoId = extractYouTubeId(link);
+            if (!videoId) {
+                document.getElementById('musicTitle').innerText = 'Invalid link';
+                return;
+            }
+
+            // Remove old iframe
+            if (musicIframe) {
+                musicIframe.remove();
+                musicIframe = null;
+            }
+
+            // Create new iframe
+            musicIframe = document.createElement('iframe');
+            musicIframe.id = 'musicIframe';
+            musicIframe.src =
+                `https://www.youtube.com/embed/${videoId}?autoplay=0&enablejsapi=1&loop=1&playlist=${videoId}&controls=0&modestbranding=1&rel=0`;
+            musicIframe.style.cssText =
+                'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;border:none;visibility:hidden;';
+            document.body.appendChild(musicIframe);
+
+            document.getElementById('musicTitle').innerText = `Track ${musicIndex + 1}`;
+            document.getElementById('musicPlayBtn').innerText = '▶️';
+            isMusicPlaying = false;
+
+            // Start playing after load
+            setTimeout(() => {
+                if (musicIframe) {
+                    musicIframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}',
+                    '*');
+                    document.getElementById('musicPlayBtn').innerText = '⏸️';
+                    isMusicPlaying = true;
+                }
+            }, 1000);
+
+            // Update time
+            updateMusicTime();
+        }
+
+        function updateMusicTime() {
+            if (musicIframe) {
+                // Try to get current time from YouTube iframe
+                try {
+                    musicIframe.contentWindow.postMessage('{"event":"command","func":"getCurrentTime","args":""}',
+                    '*');
+                } catch (e) {}
+            }
+            // Simple timer for display
+            if (isMusicPlaying) {
+                let currentTime = parseInt(localStorage.getItem('music_current_time') || '0');
+                currentTime++;
+                localStorage.setItem('music_current_time', currentTime);
+                const mins = Math.floor(currentTime / 60);
+                const secs = currentTime % 60;
+                document.getElementById('musicTime').innerText = `${mins}:${String(secs).padStart(2, '0')}`;
+                setTimeout(updateMusicTime, 1000);
+            } else {
+                setTimeout(updateMusicTime, 2000);
+            }
+        }
+
+        function toggleMusic() {
+            if (!musicIframe) {
+                initMusicPlayer();
+                return;
+            }
+            if (isMusicPlaying) {
+                musicIframe.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+                document.getElementById('musicPlayBtn').innerText = '▶️';
+                isMusicPlaying = false;
+            } else {
+                musicIframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+                document.getElementById('musicPlayBtn').innerText = '⏸️';
+                isMusicPlaying = true;
+                updateMusicTime();
+            }
+        }
+
+        // Volume control
+        document.getElementById('musicVolume')?.addEventListener('input', function() {
+            if (musicIframe) {
+                const vol = parseInt(this.value);
+                musicIframe.contentWindow.postMessage(`{"event":"command","func":"setVolume","args":[${vol}]}`, '*');
+            }
+        });
+
+        // Play button
+        document.getElementById('musicPlayBtn')?.addEventListener('click', toggleMusic);
+
+        // ============================================================
+        // CLOCK (Slowing down after 3 minutes)
+        // ============================================================
+        let clockStartTime = Date.now();
+        let clockInterval = null;
+
+        function initClock() {
+            clockStartTime = Date.now();
+            if (clockInterval) clearInterval(clockInterval);
+            updateClockDisplay();
+            clockInterval = setInterval(() => {
+                const elapsed = (Date.now() - clockStartTime) / 1000;
+                // After 3 minutes (180 seconds), slow down to 1/6 speed
+                let speed = 1;
+                if (elapsed > 180) {
+                    speed = 0.1667;
+                }
+                const displaySeconds = elapsed * speed;
+                const h = String(Math.floor(displaySeconds / 3600)).padStart(2, '0');
+                const m = String(Math.floor((displaySeconds % 3600) / 60)).padStart(2, '0');
+                const s = String(Math.floor(displaySeconds % 60)).padStart(2, '0');
+                document.getElementById('clockDisplay').innerText = `${h}:${m}:${s}`;
+            }, 200);
+        }
+
+        function updateClockDisplay() {
+            const now = new Date();
+            const h = String(now.getHours()).padStart(2, '0');
+            const m = String(now.getMinutes()).padStart(2, '0');
+            const s = String(now.getSeconds()).padStart(2, '0');
+            document.getElementById('clockDisplay').innerText = `${h}:${m}:${s}`;
+        }
+
+        // ============================================================
+        // USER SYSTEM
+        // ============================================================
+        const STORAGE_USERS = "shop_users";
+        const STORAGE_SESSION = "shop_session";
+
+        function getUsers() { const raw = localStorage.getItem(STORAGE_USERS); return raw ? JSON.parse(raw) : {}; }
+
+        function saveUsers(users) { localStorage.setItem(STORAGE_USERS, JSON.stringify(users)); }
+
+        function getCurrentUser() { const raw = localStorage.getItem(STORAGE_SESSION); return raw ? JSON.parse(raw) : null; }
+
+        function setCurrentUser(user) { localStorage.setItem(STORAGE_SESSION, JSON.stringify(user)); }
+
+        function logoutUser() { localStorage.removeItem(STORAGE_SESSION);
+            document.getElementById("userBadge").innerHTML = "👤 Login"; }
+
+        function registerUser(username, password) {
+            const users = getUsers();
+            if (users[username]) return { success: false, msg: "Username exists" };
+            users[username] = { password, created: Date.now(), profilePic: "" };
+            saveUsers(users);
+            return { success: true, msg: "Registered" };
+        }
+
+        function loginUser(username, password) {
+            const users = getUsers();
+            if (!users[username]) return { success: false, msg: "User not found" };
+            if (users[username].password !== password) return { success: false, msg: "Wrong password" };
+            return { success: true, msg: "Login success", user: { username, profilePic: users[username].profilePic ||
+                        "" } };
+        }
+
+        function forgotPassword(username) {
+            const users = getUsers();
+            if (!users[username]) return { success: false, msg: "User not found" };
+            const tempPassword = Math.random().toString(36).slice(-8);
+            users[username].password = tempPassword;
+            saveUsers(users);
+            return { success: true, msg: "Temporary password sent", tempPassword: tempPassword };
+        }
+
+        // ============================================================
+        // CHAT SYSTEM
+        // ============================================================
+        const STORAGE_CHAT = "shop_chat_messages";
+
+        function getChatMessages() { const raw = localStorage.getItem(STORAGE_CHAT); return raw ? JSON.parse(raw) : []; }
+
+        function saveChatMessages(msgs) { localStorage.setItem(STORAGE_CHAT, JSON.stringify(msgs)); }
+
+        function sendChatMessage(from, to, text) {
+            const msgs = getChatMessages();
+            msgs.push({ from, to, text, time: Date.now() });
+            saveChatMessages(msgs);
+            return msgs;
+        }
+
+        function getConversation(user1, user2) {
+            const msgs = getChatMessages();
+            return msgs.filter(m => (m.from === user1 && m.to === user2) || (m.from === user2 && m.to === user1)).sort((a,
+                b) => a.time - b.time);
+        }
+
+        // ============================================================
+        // E-COMMERCE CORE
+        // ============================================================
+        const STORAGE_PRODUCTS = "shop_products";
+        const STORAGE_CART = "shop_cart";
+        const STORAGE_COMMENTS = "shop_comments";
+        const STORAGE_ORDERS = "shop_orders";
+        const STORAGE_ADMIN_CONFIG = "shop_admin_config";
+
+        function getAdminConfig() {
+            const raw = localStorage.getItem(STORAGE_ADMIN_CONFIG);
+            if (raw) { try { return JSON.parse(raw); } catch (e) {} }
+            return {
+                password: "2003",
+                adminRoute: "#step",
+                adminPage: "admin.html",
+                checkoutInfo: { bank: "Wave Pay", paymentNumber: "09 781 145 573 (Thae Su Phoo Ko)" }
+            };
+        }
+
+        let allProducts = [];
+        let cart = [];
+        let currentPage = 1;
+        const PAGE_SIZE = 20;
+        let currentCategory = "all";
+        let searchQuery = "";
+
+        function loadProducts() {
+            const stored = localStorage.getItem(STORAGE_PRODUCTS);
+            if (stored) {
+                try { allProducts = JSON.parse(stored); } catch (e) { allProducts = []; }
+            }
+            if (!allProducts || allProducts.length === 0) {
+                allProducts = generateMockProducts(20);
+                saveProducts();
+            }
+        }
+
+        function saveProducts() { localStorage.setItem(STORAGE_PRODUCTS, JSON.stringify(allProducts)); }
+
+        function generateMockProducts(count = 20) {
+            const products = [];
+            const categories = ["Electronics", "Books", "Clothing", "Home", "Toys", "Sports", "Beauty", "Tools"];
+            const emojis = ["📱", "💻", "📚", "👕", "🍳", "🎮", "⚽", "💄", "🔧", "🎧", "⌚", "📷"];
+            for (let i = 1; i <= count; i++) {
+                products.push({
+                    id: i,
+                    name: `Product ${i} (${categories[i % categories.length]})`,
+                    price: Math.floor(Math.random() * 150000) + 5000,
+                    emoji: emojis[i % emojis.length],
+                    category: categories[i % categories.length],
+                    rating: (3 + Math.random() * 2).toFixed(1),
+                    reviews: Math.floor(Math.random() * 200),
+                    image: "",
+                    source: "default"
+                });
+            }
+            return products;
+        }
+
+        function loadCart() {
+            const stored = localStorage.getItem(STORAGE_CART);
+            if (stored) {
+                try { cart = JSON.parse(stored); } catch (e) { cart = []; }
+                const validIds = new Set(allProducts.map(p => p.id));
+                cart = cart.filter(item => validIds.has(item.id));
+            } else cart = [];
+            saveCart();
+            updateCartBadge();
+        }
+
+        function saveCart() { localStorage.setItem(STORAGE_CART, JSON.stringify(cart)); }
+
+        function updateCartBadge() {
+            const count = cart.reduce((s, i) => s + i.quantity, 0);
+            const badge = document.getElementById("cartCount");
+            if (badge) badge.innerText = count;
+        }
+
+        function addToCart(productId) {
+            const product = allProducts.find(p => String(p.id) === String(productId));
+            if (!product) return;
+            const existing = cart.find(i => String(i.id) === String(productId));
+            if (existing) existing.quantity++;
+            else cart.push({ id: product.id, name: product.name, price: product.price, quantity: 1, emoji: product.emoji ||
+                        "📦", image: product.image });
+            saveCart();
+            updateCartBadge();
+            showToast(`✅ ${product.name.substring(0, 30)} added`);
+        }
+
+        function getComments(productId) {
+            const all = JSON.parse(localStorage.getItem(STORAGE_COMMENTS) || "{}");
+            return all[productId] || [];
+        }
+
+        function saveComment(productId, user, text) {
+            const all = JSON.parse(localStorage.getItem(STORAGE_COMMENTS) || "{}");
+            if (!all[productId]) all[productId] = [];
+            all[productId].push({ user, text, time: new Date().toLocaleString() });
+            localStorage.setItem(STORAGE_COMMENTS, JSON.stringify(all));
+        }
+
+        function showToast(msg) {
+            const t = document.createElement("div");
+            t.innerText = msg;
+            t.style.cssText =
+                "position:fixed; bottom:80px; left:50%; transform:translateX(-50%); background:#222; color:#fff; padding:6px 16px; border-radius:40px; z-index:9999; font-weight:500; max-width:90%; font-size:0.8rem;";
+            document.body.appendChild(t);
+            setTimeout(() => t.remove(), 2500);
+        }
+
+        function escapeHtml(str) { if (!str) return ""; return String(str).replace(/[&<>]/g, function(m) { if (m === '&')
+                    return '&amp;'; if (m === '<') return '&lt;'; if (m === '>') return '&gt;'; return m; }); }
+
+        function generateOrderId() { return "ORD-" + Date.now().toString().slice(-8); }
+
+        function generateTrackingNumber() { return "TH-2026-" + String(Math.floor(100000 + Math.random() * 900000)); }
+
+        // ============================================================
+        // PRODUCT CARD HTML
+        // ============================================================
+        function getProductCardHTML(p) {
+            const imgHtml = p.image ?
+                `<img src="${p.image}" class="product-img" alt="${p.name}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />` :
+                `<div class="product-img-placeholder">${p.emoji || '📦'}</div>`;
+            return `
+                <div class="product-card" data-id="${p.id}">
+                    ${imgHtml}
+                    <div class="product-title">${escapeHtml(p.name)}</div>
+                    <div class="product-price">${p.price.toLocaleString()} MMK</div>
+                    <div class="product-rating">⭐ ${p.rating} (${p.reviews} reviews)</div>
+                    <button class="add-to-cart" data-id="${p.id}">🛒 ထည့်ရန်</button>
+                </div>
+            `;
+        }
+
+        // ============================================================
+        // RENDER USER PAGE
+        // ============================================================
+        function renderUserPage() {
+            let filtered = allProducts;
+            if (currentCategory !== "all") {
+                filtered = filtered.filter(p => p.category === currentCategory || p.source === currentCategory);
+            }
+            if (searchQuery.trim() !== "") {
+                const q = searchQuery.toLowerCase().trim();
+                filtered = filtered.filter(p => p.name.toLowerCase().includes(q));
+            }
+            const total = filtered.length;
+            const totalPages = Math.ceil(total / PAGE_SIZE);
+            if (currentPage > totalPages) currentPage = Math.max(1, totalPages);
+            const start = (currentPage - 1) * PAGE_SIZE;
+            const pageProds = filtered.slice(start, start + PAGE_SIZE);
+
+            let html = `<div class="container" style="max-width:1200px;margin:0 auto;">
+                <div class="section-title"><span>✨ Products (${total} items)</span></div>
+                <div class="products-grid">`;
+            for (let p of pageProds) {
+                html += getProductCardHTML(p);
+            }
+            html += `</div><div class="pagination">`;
+            const maxShow = 7;
+            let startPage = Math.max(1, currentPage - 3);
+            let endPage = Math.min(totalPages, currentPage + 3);
+            if (endPage - startPage < maxShow - 1) {
+                if (startPage === 1) endPage = Math.min(totalPages, startPage + maxShow - 1);
+                else if (endPage === totalPages) startPage = Math.max(1, endPage - maxShow + 1);
+            }
+            if (currentPage > 1) { html += `<button class="page-btn" data-page="${currentPage - 1}">‹ Prev</button>`; }
+            if (startPage > 1) {
+                html += `<button class="page-btn" data-page="1">1</button>`;
+                if (startPage > 2) html += `<span style="padding:0 0.3rem;">...</span>`;
+            }
+            for (let i = startPage; i <= endPage; i++) {
+                html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+            }
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) html += `<span style="padding:0 0.3rem;">...</span>`;
+                html += `<button class="page-btn" data-page="${totalPages}">${totalPages}</button>`;
+            }
+            if (currentPage < totalPages) { html += `<button class="page-btn" data-page="${currentPage + 1}">Next ›</button>`; }
+            html += `</div></div>`;
+
+            document.getElementById("app").innerHTML = html;
+
+            document.querySelectorAll(".add-to-cart").forEach(btn => {
+                btn.onclick = (e) => { e.stopPropagation();
+                    addToCart(btn.dataset.id); };
+            });
+            document.querySelectorAll(".page-btn").forEach(btn => {
+                btn.onclick = () => {
+                    currentPage = parseInt(btn.dataset.page);
+                    renderUserPage();
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                };
+            });
+        }
+
+        // ============================================================
+        // CHECKOUT
+        // ============================================================
+        let currentOrder = null;
+        let orderTimerInterval = null;
+
+        function startOrderTimer() {
+            let timeLeft = 3600;
+            const timerEl = document.getElementById("orderTimer");
+            if (orderTimerInterval) clearInterval(orderTimerInterval);
+            orderTimerInterval = setInterval(() => {
+                timeLeft--;
+                const mins = Math.floor(timeLeft / 60);
+                const secs = timeLeft % 60;
+                timerEl.innerText = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+                if (timeLeft <= 0) {
+                    clearInterval(orderTimerInterval);
+                    orderTimerInterval = null;
+                    document.getElementById("orderStatusMsg").innerHTML =
+                        `<span style="color:#dc3545;">⛔ Order Cancelled</span>`;
+                    if (currentOrder) {
+                        currentOrder.status = "cancelled";
+                        updateOrderStatus(currentOrder.id, "cancelled");
+                    }
+                }
+            }, 1000);
+        }
+
+        function updateOrderStatus(orderId, status) {
+            const orders = JSON.parse(localStorage.getItem(STORAGE_ORDERS) || "[]");
+            const idx = orders.findIndex(o => o.id === orderId);
+            if (idx !== -1) { orders[idx].status = status;
+                localStorage.setItem(STORAGE_ORDERS, JSON.stringify(orders)); }
+        }
+
+        function showTracking(order) {
+            document.getElementById("trackingOrderId").innerText = order.id;
+            document.getElementById("trackingStatus").innerHTML = order.status === "confirmed" ? "✅ Confirmed" :
+                "⏳ Pending";
+            document.getElementById("trackingDelivery").innerText = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
+                .toLocaleDateString();
+            document.getElementById("trackingNumber").innerHTML = generateTrackingNumber();
+            document.getElementById("trackingModal").style.display = "flex";
+        }
+
+        function renderCartPage() {
+            const container = document.getElementById('cartPageContent');
+            if (!container) return;
+            if (cart.length === 0) {
+                container.innerHTML =
+                    `<div style="text-align:center;padding:2rem;color:#888;font-size:0.9rem;"><p style="font-size:2rem;">🛒</p><p>Cart is empty</p><button class="btn btn-primary" onclick="navigateTo('home')" style="margin-top:0.5rem;">Start Shopping</button></div>`;
+                return;
+            }
+            let total = 0;
+            let html = `<div style="margin-bottom:0.8rem;">`;
+            for (let item of cart) {
+                const subtotal = item.price * item.quantity;
+                total += subtotal;
+                html += `
+                    <div class="cart-item" style="display:flex;justify-content:space-between;padding:0.3rem 0;border-bottom:1px solid #eee;align-items:center;font-size:0.85rem;">
+                        <div>${item.emoji} ${item.name} x ${item.quantity}</div>
+                        <div>
+                            <button class="btn btn-outline btn-sm cart-dec-page" data-id="${item.id}" style="padding:0.1rem 0.4rem;font-size:0.7rem;">−</button>
+                            <span style="margin:0 0.2rem;">${item.quantity}</span>
+                            <button class="btn btn-outline btn-sm cart-inc-page" data-id="${item.id}" style="padding:0.1rem 0.4rem;font-size:0.7rem;">+</button>
+                            <button class="btn btn-danger btn-sm cart-remove-page" data-id="${item.id}" style="padding:0.1rem 0.4rem;font-size:0.6rem;">✕</button>
+                        </div>
+                    </div>
+                `;
+            }
+            html += `</div><div class="cart-total" style="font-size:1rem;font-weight:700;text-align:right;margin-top:0.8rem;">Total: ${total.toLocaleString()} MMK</div>
+                <button class="btn btn-success" onclick="navigateTo('checkout')" style="width:100%;margin-top:0.5rem;padding:0.4rem;">Proceed to Checkout</button>`;
+            container.innerHTML = html;
+            container.querySelectorAll('.cart-inc-page').forEach(btn => {
+                btn.onclick = () => {
+                    const id = parseInt(btn.dataset.id);
+                    const item = cart.find(i => i.id === id);
+                    if (item) { item.quantity++;
+                        saveCart();
+                        updateCartBadge();
+                        renderCartPage(); }
+                };
+            });
+            container.querySelectorAll('.cart-dec-page').forEach(btn => {
+                btn.onclick = () => {
+                    const id = parseInt(btn.dataset.id);
+                    const item = cart.find(i => i.id === id);
+                    if (item && item.quantity > 1) { item.quantity--;
+                        saveCart();
+                        updateCartBadge();
+                        renderCartPage(); } else if (item && item.quantity === 1) { cart = cart.filter(i => i
+                            .id !== id);
+                        saveCart();
+                        updateCartBadge();
+                        renderCartPage(); }
+                };
+            });
+            container.querySelectorAll('.cart-remove-page').forEach(btn => {
+                btn.onclick = () => {
+                    const id = parseInt(btn.dataset.id);
+                    cart = cart.filter(i => i.id !== id);
+                    saveCart();
+                    updateCartBadge();
+                    renderCartPage();
+                };
+            });
+        }
+
+        function renderCheckoutPage() {
+            const container = document.getElementById('checkoutPageContent');
+            if (!container) return;
+            if (cart.length === 0) {
+                container.innerHTML =
+                    `<div style="text-align:center;padding:2rem;color:#888;font-size:0.9rem;"><p style="font-size:2rem;">🛒</p><p>Cart is empty</p></div>`;
+                return;
+            }
+            const total = cart.reduce((s, i) => s + (i.price * i.quantity), 0);
+            const user = getCurrentUser();
+            const name = user ? user.username : '';
+            let html = `
+                <div class="checkout-address">
+                    <h4 style="font-size:0.95rem;">📍 Delivery Address</h4>
+                    <div style="padding:0.3rem 0;">
+                        <p><strong>${name || 'Guest'}</strong></p>
+                        <p style="color:#888;font-size:0.8rem;">Phone: 09-XXX-XXX-XXX</p>
+                        <p style="color:#888;font-size:0.8rem;">Address: Yangon, Myanmar</p>
+                    </div>
+                    <button class="btn btn-outline btn-sm" onclick="document.getElementById('checkoutModal').style.display='flex'" style="font-size:0.7rem;padding:0.1rem 0.6rem;">Edit Address</button>
+                </div>
+                <div style="margin:0.8rem 0;"><h4 style="font-size:0.95rem;">🛒 Order Summary</h4>`;
+            for (let item of cart) {
+                html +=
+                    `<div class="checkout-item" style="display:flex;justify-content:space-between;padding:0.3rem 0;border-bottom:1px solid #f0f0f0;font-size:0.85rem;"><span>${item.emoji} ${item.name} x ${item.quantity}</span><span>${(item.price * item.quantity).toLocaleString()} MMK</span></div>`;
+            }
+            html += `
+                </div>
+                <div class="checkout-summary">
+                    <div class="row" style="display:flex;justify-content:space-between;padding:0.2rem 0;"><span>Subtotal</span><span>${total.toLocaleString()} MMK</span></div>
+                    <div class="row" style="display:flex;justify-content:space-between;padding:0.2rem 0;"><span>Shipping</span><span>${total > 100000 ? 'Free' : '3,000 MMK'}</span></div>
+                    <div class="row total" style="display:flex;justify-content:space-between;padding:0.4rem 0;border-top:2px solid #eee;margin-top:0.4rem;font-weight:700;font-size:1rem;"><span>Total</span><span>${(total + (total > 100000 ? 0 : 3000)).toLocaleString()} MMK</span></div>
+                    <button class="btn btn-success" onclick="document.getElementById('checkoutModal').style.display='flex'" style="width:100%;margin-top:0.5rem;padding:0.4rem;">📦 Place Order</button>
+                </div>
+            `;
+            container.innerHTML = html;
+        }
+
+        function renderProfilePage() {
+            const container = document.getElementById('profilePageContent');
+            if (!container) return;
+            const user = getCurrentUser();
+            if (!user) {
+                container.innerHTML = `
+                    <div style="text-align:center;padding:2rem;">
+                        <p style="font-size:2.5rem;">👤</p>
+                        <h3 style="font-size:1rem;">Please Login</h3>
+                        <p style="color:#888;font-size:0.85rem;">Login to view your profile</p>
+                        <button class="btn btn-primary" onclick="document.getElementById('userBadge').click()" style="margin-top:0.5rem;">Login</button>
+                    </div>
+                `;
+                return;
+            }
+            const users = getUsers();
+            const userData = users[user.username] || {};
+            let html = `
+                <div class="profile-card">
+                    <div class="profile-avatar">${user.username.charAt(0).toUpperCase()}</div>
+                    <div class="profile-name">${user.username}</div>
+                    <div class="profile-email">${userData.email || 'user@email.com'}</div>
+                    <div class="profile-phone">${userData.phone || '09-XXX-XXX-XXX'}</div>
+                    <button class="btn btn-outline btn-sm" style="margin-top:0.3rem;font-size:0.7rem;padding:0.1rem 0.6rem;">✏️ Edit Profile</button>
+                </div>
+                <div class="profile-menu">
+                    <button class="profile-menu-item" onclick="navigateTo('orders')">
+                        <span class="icon">📦</span> My Orders <span class="arrow">→</span>
+                    </button>
+                    <button class="profile-menu-item" onclick="navigateTo('tracking')">
+                        <span class="icon">🚚</span> Order Tracking <span class="arrow">→</span>
+                    </button>
+                    <button class="profile-menu-item" onclick="document.getElementById('userChatContainer').classList.remove('hidden');document.getElementById('userFormContainer').classList.add('hidden')">
+                        <span class="icon">💬</span> Messages <span class="arrow">→</span>
+                    </button>
+                    <button class="profile-menu-item" style="border-bottom:none;">
+                        <span class="icon">❤️</span> Wishlist <span class="arrow">→</span>
+                    </button>
+                    <button class="profile-menu-item danger" onclick="logoutUser();renderProfilePage();navigateTo('home')">
+                        <span class="icon">🚪</span> Logout
+                    </button>
+                </div>
+            `;
+            container.innerHTML = html;
+        }
+
+        function renderOrdersPage() {
+            const container = document.getElementById('ordersPageContent');
+            if (!container) return;
+            const orders = JSON.parse(localStorage.getItem(STORAGE_ORDERS) || "[]");
+            const user = getCurrentUser();
+            const userOrders = user ? orders.filter(o => o.name === user.username || o.phone === user.username) : [];
+            if (userOrders.length === 0) {
+                container.innerHTML =
+                    `<div style="text-align:center;padding:2rem;color:#888;font-size:0.9rem;"><p style="font-size:2rem;">📦</p><p>No orders yet</p></div>`;
+                return;
+            }
+            userOrders.sort((a, b) => (b.timestamp || b.createdAt || 0) - (a.timestamp || a.createdAt || 0));
+            let html = `<div style="margin-bottom:0.5rem;"><input type="text" placeholder="🔍 Search orders..." style="width:100%;padding:0.3rem;border:1px solid #ddd;border-radius:8px;font-size:0.8rem;" id="orderSearchInput" /></div>`;
+            userOrders.forEach(o => {
+                const status = getTrackingStatus(o.timestamp || o.createdAt || Date.now());
+                const statusLabel = TRACKING_STATUSES.find(s => s.key === status.key)?.label || status.key;
+                const statusClass = status.key === 'delivered' ? 'delivered' : status.key === 'shipped' ?
+                    'transit' : 'pending';
+                html += `
+                    <div class="order-card" data-order-id="${o.id}">
+                        <div class="order-header">
+                            <span class="order-id">${o.id}</span>
+                            <span class="order-date">${new Date(o.timestamp || o.createdAt || Date.now()).toLocaleDateString()}</span>
+                            <span class="order-status ${statusClass}">${statusLabel}</span>
+                        </div>
+                        <div style="font-size:0.8rem;color:#555;margin:0.2rem 0;">${o.items.map(i => `${i.name} x ${i.quantity}`).join(', ')}</div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.2rem;">
+                            <span class="order-total">${o.total.toLocaleString()} MMK</span>
+                            <button class="btn btn-outline btn-sm" onclick="openOrderTracking('${o.id}')" style="font-size:0.6rem;padding:0.1rem 0.5rem;">👁️ View</button>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+            document.getElementById('orderSearchInput')?.addEventListener('input', function() {
+                const q = this.value.toLowerCase().trim();
+                document.querySelectorAll('.order-card').forEach(card => {
+                    const text = card.textContent.toLowerCase();
+                    card.style.display = text.includes(q) ? 'block' : 'none';
+                });
+            });
+        }
+
+        function renderTrackingPage() {
+            const container = document.getElementById('trackingPageContent');
+            if (!container) return;
+            const orders = JSON.parse(localStorage.getItem(STORAGE_ORDERS) || "[]");
+            const user = getCurrentUser();
+            const userOrders = user ? orders.filter(o => o.name === user.username || o.phone === user.username) : [];
+            if (userOrders.length === 0) {
+                container.innerHTML =
+                    `<div style="text-align:center;padding:2rem;color:#888;font-size:0.9rem;"><p style="font-size:2rem;">🚚</p><p>No orders to track</p></div>`;
+                return;
+            }
+            container.innerHTML = `
+                <div style="margin-bottom:0.8rem;">
+                    <label style="font-weight:600;font-size:0.85rem;">Select Order</label>
+                    <select id="trackingOrderSelect" style="width:100%;padding:0.4rem;border:1px solid #ddd;border-radius:8px;font-size:0.85rem;">
+                        ${userOrders.map(o => `<option value="${o.id}">${o.id} - ${new Date(o.timestamp || o.createdAt || Date.now()).toLocaleDateString()}</option>`).join('')}
+                    </select>
+                </div>
+                <div id="trackingPageDetail">
+                    <div style="text-align:center;padding:1rem;color:#888;font-size:0.9rem;">Select an order to track</div>
+                </div>
+            `;
+            document.getElementById('trackingOrderSelect')?.addEventListener('change', function() {
+                const orderId = this.value;
+                const order = userOrders.find(o => o.id === orderId);
+                if (order) {
+                    const config = getTrackingConfig();
+                    document.getElementById('trackingPageDetail').innerHTML = renderTrackingUI(order.id, order
+                        .timestamp || order.createdAt || Date.now(), config);
+                }
+            });
+            const select = document.getElementById('trackingOrderSelect');
+            if (select && select.options.length > 0) {
+                select.value = select.options[0].value;
+                select.dispatchEvent(new Event('change'));
+            }
+        }
+
+        // ============================================================
+        // TRACKING
+        // ============================================================
+        const DEFAULT_TRACKING_TIMES = { order_received: 10, processing: 3 * 60 * 60, shipped: 12 * 60 * 60,
+            delivered: 2 * 24 * 60 * 60 };
+        const TRACKING_STATUSES = [
+            { key: 'order_received', label: '📦 အမှာစာ လက်ခံရရှိပါပြီ', desc: 'သင့်အော်ဒါကို ကျွန်ုပ်တို့ လက်ခံရရှိပါပြီ' },
+            { key: 'processing', label: '⚙️ ပစ္စည်း စစ်ဆေးပြင်ဆင်နေပါပြီ', desc: 'ပစ္စည်းများကို စစ်ဆေးပြီး ထုပ်ပိုးနေပါသည်' },
+            { key: 'shipped', label: '🚚 ပို့ဆောင်ရေးထံ လွှဲပြောင်းလိုက်ပါပြီ', desc: 'သင့်ပစ္စည်းများ လမ်းခရီးပေါ်ရောက်နေပါပြီ' },
+            { key: 'delivered', label: '✅ ပစ္စည်း ရောက်ရှိပါပြီ', desc: 'သင့်ပစ္စည်းများ အောင်မြင်စွာ ရောက်ရှိပါပြီ။ ကျေးဇူးပါ' }
+        ];
+
+        function getTrackingConfig() {
+            const raw = localStorage.getItem('shop_tracking_config');
+            if (raw) { try { return JSON.parse(raw); } catch (e) {} }
+            return { ...DEFAULT_TRACKING_TIMES };
+        }
+
+        function getTrackingStatus(orderTime, config) {
+            const elapsed = (Date.now() - orderTime) / 1000;
+            const times = config || getTrackingConfig();
+            if (elapsed >= times.delivered) return { key: 'delivered', progress: 100 };
+            if (elapsed >= times.shipped) return { key: 'shipped', progress: 75 };
+            if (elapsed >= times.processing) return { key: 'processing', progress: 50 };
+            if (elapsed >= times.order_received) return { key: 'order_received', progress: 25 };
+            return { key: 'pending', progress: 0 };
+        }
+
+        function renderTrackingUI(orderId, orderTime, config) {
+            const statuses = TRACKING_STATUSES;
+            const times = config || getTrackingConfig();
+            const elapsed = (Date.now() - orderTime) / 1000;
+            const currentStatus = getTrackingStatus(orderTime, config);
+
+            let html = `<div class="tracking-container">
+                <p style="font-size:0.8rem;color:#888;margin-bottom:0.4rem;">🆔 Order: <strong>${orderId}</strong> | 📅 ${new Date(orderTime).toLocaleString()}</p>
+                <div style="background:#f0f0f0;border-radius:20px;height:6px;margin:0.4rem 0;overflow:hidden;">
+                    <div style="height:100%;width:${currentStatus.progress}%;background:linear-gradient(90deg,#28a745,#007bff);border-radius:20px;transition:width 0.5s ease;"></div>
+                </div>
+                <div class="tracking-steps">`;
+
+            const statusKeys = ['order_received', 'processing', 'shipped', 'delivered'];
+            statusKeys.forEach((key, index) => {
+                const isActive = currentStatus.key === key;
+                const isCompleted = statusKeys.indexOf(currentStatus.key) > index || (currentStatus.key ===
+                    key && elapsed >= times[key]);
+                let icon = '⏳';
+                let stepClass = 'tracking-step';
+                if (isCompleted) stepClass += ' completed';
+                else if (isActive) stepClass += ' active';
+                if (key === 'order_received') icon = '📦';
+                else if (key === 'processing') icon = '⚙️';
+                else if (key === 'shipped') icon = '🚚';
+                else if (key === 'delivered') icon = '✅';
+
+                let timeDisplay = '';
+                if (!isCompleted && key === currentStatus.key) {
+                    const remaining = Math.max(0, times[key] - elapsed);
+                    const hours = Math.floor(remaining / 3600);
+                    const mins = Math.floor((remaining % 3600) / 60);
+                    const secs = Math.floor(remaining % 60);
+                    if (hours > 0) timeDisplay = `⏱️ ${hours}h ${mins}m`;
+                    else if (mins > 0) timeDisplay = `⏱️ ${mins}m ${secs}s`;
+                    else timeDisplay = `⏱️ ${secs}s`;
+                } else if (isCompleted) { timeDisplay = '✅ ပြီးပါပြီ'; }
+
+                html += `
+                    <div class="${stepClass}">
+                        <div class="step-icon">${icon}</div>
+                        <div class="step-content">
+                            <div class="step-title">${statuses[index].label}</div>
+                            <div class="step-desc">${statuses[index].desc}</div>
+                            ${timeDisplay ? `<div class="step-time">${timeDisplay}</div>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `</div></div>`;
+            return html;
+        }
+
+        function openOrderTracking(orderId) {
+            const orders = JSON.parse(localStorage.getItem(STORAGE_ORDERS) || "[]");
+            const order = orders.find(o => o.id === orderId);
+            if (!order) { showToast("❌ Order not found"); return; }
+            const config = getTrackingConfig();
+            const container = document.getElementById("orderTrackingContent");
+            if (container) {
+                container.innerHTML = renderTrackingUI(order.id, order.timestamp || order.createdAt || Date.now(),
+                config);
+            }
+            document.getElementById("orderTrackingModal").style.display = "flex";
+        }
+
+        // ============================================================
+        // NAVIGATION
+        // ============================================================
+        function navigateTo(page) {
+            window.location.hash = page;
+        }
+
+        function showPage(pageName) {
+            document.querySelectorAll('.page-container').forEach(el => el.classList.remove('active'));
+            const target = document.getElementById(`page-${pageName}`);
+            if (target) { target.classList.add('active'); } else {
+                document.getElementById('page-home').classList.add('active'); }
+            document.querySelectorAll('.bottom-nav .nav-item').forEach(item => {
+                item.classList.toggle('active', item.dataset.page === pageName);
+            });
+            // Render page content
+            if (pageName === 'profile') renderProfilePage();
+            if (pageName === 'orders') renderOrdersPage();
+            if (pageName === 'tracking') renderTrackingPage();
+            if (pageName === 'cart') renderCartPage();
+            if (pageName === 'checkout') renderCheckoutPage();
+        }
+
+        function handleRoute() {
+            const hash = window.location.hash.replace('#', '');
+            const page = hash || 'home';
+            showPage(page);
+        }
+
+        // ============================================================
+        // ADMIN ROUTE
+        // ============================================================
+        const adminConfig = JSON.parse(localStorage.getItem("shop_admin_config") || '{"adminRoute":"#step","adminPage":"admin.html"}');
+        const adminRoute = adminConfig.adminRoute || "#step";
+        const adminPage = adminConfig.adminPage || "admin.html";
+        if (window.location.hash === adminRoute || window.location.pathname.endsWith("/" + adminPage)) {
+            window.location.href = adminPage;
+        }
+
+        // ============================================================
+        // CHAT WIDGET
+        // ============================================================
+        let chatOpen = false;
+
+        function openChatWidget() {
+            document.getElementById("chatWidget").classList.add("active");
+            document.getElementById("chatToggle").style.display = "none";
+            chatOpen = true;
+            renderChatWidgetMessages();
+        }
+
+        function closeChatWidget() {
+            document.getElementById("chatWidget").classList.remove("active");
+            document.getElementById("chatToggle").style.display = "flex";
+            chatOpen = false;
+        }
+
+        function addChatMessage(sender, text) {
+            const msgs = JSON.parse(localStorage.getItem("shop_chat_widget") || "[]");
+            msgs.push({ sender, text, time: Date.now() });
+            localStorage.setItem("shop_chat_widget", JSON.stringify(msgs));
+            if (chatOpen) renderChatWidgetMessages();
+            const badge = document.getElementById("chatBadge");
+            const unread = msgs.filter(m => m.sender === "bot" && !m.read).length;
+            badge.innerText = unread;
+        }
+
+        function renderChatWidgetMessages() {
+            const container = document.getElementById("chatMessagesWidget");
+            const msgs = JSON.parse(localStorage.getItem("shop_chat_widget") || "[]");
+            if (msgs.length === 0) {
+                container.innerHTML =
+                    "<div style='color:#888;font-size:0.8rem;text-align:center;padding:0.8rem;'>👋 မင်္ဂလာပါ။ မေးမြန်းစုံစမ်းလိုပါက ရေးသားနိုင်ပါသည်။</div>";
+                return;
+            }
+            container.innerHTML = msgs.map(m =>
+                `<div class="chat-msg ${m.sender === 'user' ? 'user' : 'bot'}"><div class="bubble">${escapeHtml(m.text)}</div><div class="time">${new Date(m.time).toLocaleTimeString()}</div></div>`
+            ).join("");
+            container.scrollTop = container.scrollHeight;
+            const updated = msgs.map(m => { if (m.sender === "bot") m.read = true; return m; });
+            localStorage.setItem("shop_chat_widget", JSON.stringify(updated));
+            document.getElementById("chatBadge").innerText = 0;
+        }
+
+        function getAdminReply(text) {
+            const lower = text.toLowerCase();
+            if (lower.includes("ဈေး") || lower.includes("price")) { return "📊 ဟုတ်ကဲ့ခင်ဗျာ၊ ပစ္စည်းဈေးနှုန်းများကို Product Page တွင် ကြည့်ရှုနိုင်ပါတယ်။"; }
+            if (lower.includes("ပို့") || lower.includes("delivery")) { return "🚚 ပို့ဆောင်ခမှာ ၃၀၀၀ ကျပ် ကျသင့်ပြီး ၃ ရက်အတွင်း ရောက်ရှိပါမည်။"; }
+            if (lower.includes("ပစ္စည်း") || lower.includes("product")) { return "🛒 ကျွန်တော်တို့ဆိုင်မှာ အမျိုးအစားစုံစွာ ရရှိနိုင်ပါတယ်။"; }
+            if (lower.includes("အော်ဒါ") || lower.includes("order")) { return "📦 သင့်အော်ဒါကို စစ်ဆေးပေးပါ့မယ်။ Order ID ကိုပေးပါ။"; }
+            if (lower.includes("ဟုတ်") || lower.includes("ok")) { return "✅ ကောင်းပါပြီခင်ဗျာ။"; }
+            if (lower.includes("မဟုတ်") || lower.includes("no")) { return "😕 စိတ်မကောင်းပါ။ ပြန်လည်စစ်ဆေးပေးပါမည်။"; }
+            if (lower.includes("ကျေးဇူး") || lower.includes("thank")) { return "😊 ကျေးဇူးလည်းပါခင်ဗျာ။"; }
+            if (lower.includes("hello") || lower.includes("hi") || lower.includes("မင်္ဂလာ")) { return "👋 မင်္ဂလာပါခင်ဗျာ။ ဘာကူညီရမလဲ။"; }
+            return "🙏 ဟုတ်ကဲ့ခင်ဗျာ၊ ကျွန်တော် စစ်ဆေးပေးပါ့မယ်။ ကျေးဇူးပြု၍ စောင့်မျှော်ပေးပါ။";
+        }
+
+        // ============================================================
+        // LOAD FROM FIRESTORE
+        // ============================================================
+        async function loadProductsFromFirestore() {
+            if (!db) { console.warn("Firebase not available"); return false; }
+            try {
+                const snapshot = await db.collection('products').get();
+                const products = [];
+                snapshot.forEach(doc => { products.push(doc.data()); });
+                if (products.length > 0) {
+                    allProducts = products;
+                    saveProducts();
+                    renderUserPage();
+                    console.log("✅ Loaded from Firebase:", products.length);
+                    return true;
+                }
+                return false;
+            } catch (e) { console.warn("Firebase load error:", e); return false; }
+        }
+
+        // ============================================================
+        // INIT
+        // ============================================================
+        document.addEventListener("DOMContentLoaded", function() {
+            // Load products
+            loadProducts();
+
+            // Load cart
+            loadCart();
+
+            // Load from Firebase
+            loadProductsFromFirestore().then(() => {
+                renderUserPage();
+            });
+
+            // Init music
+            initMusicPlayer();
+
+            // Init clock
+            initClock();
+
+            // Navigation
+            window.addEventListener('hashchange', handleRoute);
+            handleRoute();
+
+            // Bottom nav
+            document.querySelectorAll('.bottom-nav .nav-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const page = this.dataset.page;
+                    navigateTo(page);
+                });
+            });
+
+            // Logo home
+            document.getElementById("logoHome")?.addEventListener("click", () => {
+                navigateTo('home');
+                currentCategory = "all";
+                searchQuery = "";
+                document.getElementById("searchInput").value = "";
+                currentPage = 1;
+                renderUserPage();
+            });
+
+            // Search
+            document.getElementById("searchBtn")?.addEventListener("click", () => {
+                searchQuery = document.getElementById("searchInput").value;
+                currentPage = 1;
+                renderUserPage();
+            });
+            document.getElementById("searchInput")?.addEventListener("keypress", (e) => {
+                if (e.key === "Enter") {
+                    searchQuery = document.getElementById("searchInput").value;
+                    currentPage = 1;
+                    renderUserPage();
+                }
+            });
+
+            // Categories
+            renderCategories();
+
+            // Cart
+            document.getElementById("cartIcon")?.addEventListener("click", openCartModal);
+            document.getElementById("closeCartBtn")?.addEventListener("click", () => {
+                document.getElementById("cartModal").style.display = "none";
+            });
+
+            // Checkout button (from cart modal)
+            document.getElementById("checkoutBtn")?.addEventListener("click", function() {
+                if (cart.length === 0) { showToast("Cart empty"); return; }
+                navigateTo('checkout');
+                document.getElementById("cartModal").style.display = "none";
+            });
+
+            // Checkout form
+            document.getElementById("checkoutForm")?.addEventListener("submit", function(e) {
+                e.preventDefault();
+                const name = document.getElementById("custName").value.trim();
+                const phone = document.getElementById("custPhone").value.trim();
+                const address = document.getElementById("custAddress").value.trim();
+                if (!name || !phone || !address) { alert("Fill all fields"); return; }
+                document.getElementById("checkoutFormContainer").classList.add("hidden");
+                document.getElementById("paymentInfo").classList.remove("hidden");
+                const config = getAdminConfig();
+                document.getElementById("paymentNumberDisplay").innerHTML =
+                    `<strong>${config.checkoutInfo.bank} - ${config.checkoutInfo.paymentNumber}</strong>`;
+                startOrderTimer();
+                currentOrder = {
+                    id: generateOrderId(),
+                    name: name,
+                    phone: phone,
+                    address: address,
+                    items: [...cart],
+                    total: cart.reduce((s, i) => s + (i.price * i.quantity), 0),
+                    status: "pending",
+                    timestamp: Date.now()
+                };
+                const orders = JSON.parse(localStorage.getItem(STORAGE_ORDERS) || "[]");
+                orders.push(currentOrder);
+                localStorage.setItem(STORAGE_ORDERS, JSON.stringify(orders));
+            });
+
+            // Screenshot upload
+            document.getElementById("uploadScreenshotBtn")?.addEventListener("click", function() {
+                const fileInput = document.getElementById("screenshotInput");
+                if (!fileInput.files || !fileInput.files.length) { showToast("Choose screenshot"); return; }
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    if (currentOrder) {
+                        currentOrder.status = "confirmed";
+                        currentOrder.screenshot = e.target.result;
+                        updateOrderStatus(currentOrder.id, "confirmed");
+                    }
+                    document.getElementById("orderStatusMsg").innerHTML =
+                        `<span style="color:#28a745;">✅ Order Confirmed!</span>`;
+                    if (orderTimerInterval) { clearInterval(orderTimerInterval);
+                        orderTimerInterval = null; }
+                    setTimeout(() => {
+                        showTracking(currentOrder);
+                        document.getElementById("checkoutModal").style.display = "none";
+                        cart = [];
+                        saveCart();
+                        updateCartBadge();
+                        showToast("🎉 Order confirmed!");
+                    }, 1000);
+                };
+                reader.readAsDataURL(fileInput.files[0]);
+            });
+
+            // Cancel order
+            document.getElementById("cancelOrderBtn")?.addEventListener("click", function() {
+                if (confirm("Cancel order?")) {
+                    if (currentOrder) {
+                        currentOrder.status = "cancelled";
+                        updateOrderStatus(currentOrder.id, "cancelled");
+                    }
+                    if (orderTimerInterval) { clearInterval(orderTimerInterval);
+                        orderTimerInterval = null; }
+                    document.getElementById("orderStatusMsg").innerHTML =
+                        `<span style="color:#dc3545;">⛔ Cancelled</span>`;
+                    setTimeout(() => {
+                        document.getElementById("checkoutModal").style.display = "none";
+                        showToast("Order cancelled.");
+                    }, 500);
+                }
+            });
+
+            // Tracking modal close
+            document.getElementById("closeTrackingBtn")?.addEventListener("click", () => {
+                document.getElementById("trackingModal").style.display = "none";
+            });
+            document.getElementById("closeTrackingDetailBtn")?.addEventListener("click", () => {
+                document.getElementById("orderTrackingModal").style.display = "none";
+            });
+
+            // User badge
+            document.getElementById("userBadge")?.addEventListener("click", function() {
+                const user = getCurrentUser();
+                if (user) {
+                    navigateTo('profile');
+                    return;
+                }
+                document.getElementById("userModalTitle").innerText = "👤 Login / Register";
+                document.getElementById("userFormContainer").classList.remove("hidden");
+                document.getElementById("userChatContainer").classList.add("hidden");
+                document.getElementById("logoutBtn").style.display = "none";
+                document.getElementById("loginBtn").style.display = "inline-block";
+                document.getElementById("registerBtn").style.display = "inline-block";
+                document.getElementById("forgotPwdBtn").style.display = "inline-block";
+                document.getElementById("userModal").style.display = "flex";
+            });
+
+            // Login
+            document.getElementById("loginBtn")?.addEventListener("click", function() {
+                const u = document.getElementById("loginUsername").value.trim();
+                const p = document.getElementById("loginPassword").value.trim();
+                const result = loginUser(u, p);
+                if (result.success) {
+                    setCurrentUser({ username: u, profilePic: result.user.profilePic });
+                    document.getElementById("userBadge").innerHTML = `👤 ${u}`;
+                    document.getElementById("userStatus").innerHTML =
+                        `<span style="color:green;">✅ ${result.msg}</span>`;
+                    setTimeout(() => {
+                        document.getElementById("userModal").style.display = "none";
+                        navigateTo('profile');
+                    }, 500);
+                } else {
+                    document.getElementById("userStatus").innerHTML =
+                        `<span style="color:red;">❌ ${result.msg}</span>`;
+                }
+            });
+
+            // Register
+            document.getElementById("registerBtn")?.addEventListener("click", function() {
+                const u = document.getElementById("loginUsername").value.trim();
+                const p = document.getElementById("loginPassword").value.trim();
+                const result = registerUser(u, p);
+                if (result.success) {
+                    setCurrentUser({ username: u, profilePic: "" });
+                    document.getElementById("userBadge").innerHTML = `👤 ${u}`;
+                    document.getElementById("userStatus").innerHTML =
+                        `<span style="color:green;">✅ ${result.msg}</span>`;
+                    setTimeout(() => {
+                        document.getElementById("userModal").style.display = "none";
+                        navigateTo('profile');
+                    }, 500);
+                } else {
+                    document.getElementById("userStatus").innerHTML =
+                        `<span style="color:red;">❌ ${result.msg}</span>`;
+                }
+            });
+
+            // Forgot password
+            document.getElementById("forgotPwdBtn")?.addEventListener("click", function() {
+                const u = document.getElementById("loginUsername").value.trim();
+                if (!u) { document.getElementById("userStatus").innerHTML =
+                        `<span style="color:red;">❌ Enter username</span>`; return; }
+                const result = forgotPassword(u);
+                if (result.success) {
+                    document.getElementById("userStatus").innerHTML =
+                        `<span style="color:green;">✅ New password: <strong>${result.tempPassword}</strong></span>`;
+                    sendTelegramMessage(`🔑 Password Reset\nUsername: ${u}\nNew Password: ${result.tempPassword}`);
+                    showToast("✅ Temporary password sent to Telegram!");
+                } else {
+                    document.getElementById("userStatus").innerHTML =
+                        `<span style="color:red;">❌ ${result.msg}</span>`;
+                }
+            });
+
+            // Logout
+            document.getElementById("logoutBtn")?.addEventListener("click", function() {
+                logoutUser();
+                document.getElementById("userBadge").innerHTML = "👤 Login";
+                document.getElementById("userModal").style.display = "none";
+                showToast("Logged out");
+                navigateTo('home');
+                renderUserPage();
+            });
+
+            // Close user modal
+            document.getElementById("closeUserBtn")?.addEventListener("click", function() {
+                document.getElementById("userModal").style.display = "none";
+            });
+
+            // Profile picture upload
+            document.getElementById("uploadProfilePicBtn")?.addEventListener("click", function() {
+                const fileInput = document.getElementById("profilePicInput");
+                if (!fileInput.files || !fileInput.files.length) { alert("Choose image"); return; }
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const user = getCurrentUser();
+                    if (user) {
+                        const users = getUsers();
+                        if (users[user.username]) {
+                            users[user.username].profilePic = e.target.result;
+                            saveUsers(users);
+                            setCurrentUser({ username: user.username, profilePic: e.target.result });
+                            document.getElementById("profilePicPlaceholder").innerHTML =
+                                `<img src="${e.target.result}" style="width:60px;height:60px;border-radius:50%;object-fit:cover;" />`;
+                            showToast("✅ Profile picture updated!");
+                        }
+                    }
+                };
+                reader.readAsDataURL(fileInput.files[0]);
+            });
+
+            // User chat (in modal)
+            let currentChatTarget = null;
+
+            function renderChatUsers() {
+                const container = document.getElementById("chatUserList");
+                const allUsers = Object.keys(getUsers());
+                const current = getCurrentUser();
+                const others = allUsers.filter(u => u !== current?.username);
+                container.innerHTML = `<div style="font-weight:600;font-size:0.8rem;">Users: ${others.length}</div>`;
+                for (let u of others) {
+                    container.innerHTML +=
+                        `<div class="chat-user" data-user="${u}" style="cursor:pointer;padding:0.15rem;background:#f0f0f0;margin:0.1rem 0;border-radius:4px;font-size:0.75rem;">💬 ${u}</div>`;
+                }
+                document.querySelectorAll(".chat-user").forEach(el => {
+                    el.onclick = () => { currentChatTarget = el.dataset.user;
+                        renderChatMessages(); };
+                });
+            }
+
+            function renderChatMessages() {
+                const container = document.getElementById("chatMessages");
+                const current = getCurrentUser();
+                if (!currentChatTarget || !current) { container.innerHTML =
+                        "<div style='color:#888;font-size:0.8rem;'>Select a user</div>"; return; }
+                const msgs = getConversation(current.username, currentChatTarget);
+                if (!msgs.length) { container.innerHTML =
+                        `<div style='color:#888;font-size:0.8rem;'>No messages with ${currentChatTarget}</div>`; return; }
+                container.innerHTML = msgs.map(m =>
+                    `<div style="padding:0.15rem 0;border-bottom:1px solid #f0f0f0;font-size:0.8rem;${m.from === current.username ? 'text-align:right;' : ''}">
+                        <strong>${m.from === current.username ? 'You' : m.from}</strong>
+                        <span style="color:#888;font-size:0.6rem;">${new Date(m.time).toLocaleTimeString()}</span><br/>
+                        ${m.text}
+                    </div>`
+                ).join('');
+                container.scrollTop = container.scrollHeight;
+            }
+
+            document.getElementById("chatSendBtn")?.addEventListener("click", function() {
+                const current = getCurrentUser();
+                if (!current) { alert("Login first"); return; }
+                const to = document.getElementById("chatRecipient").value.trim() || currentChatTarget;
+                const msg = document.getElementById("chatMessageInput").value.trim();
+                if (!to || !msg) { alert("Recipient and message required"); return; }
+                sendChatMessage(current.username, to, msg);
+                document.getElementById("chatMessageInput").value = "";
+                renderChatMessages();
+                renderChatUsers();
+                showToast("✅ Sent");
+            });
+
+            document.getElementById("chatBackBtn")?.addEventListener("click", function() {
+                document.getElementById("userModal").style.display = "none";
+            });
+
+                        // Chat widget
+            document.getElementById("chatToggle")?.addEventListener("click", function() {
+                if (!chatOpen) openChatWidget();
+            });
+            document.getElementById("closeChatBtn")?.addEventListener("click", closeChatWidget);
+
+            document.getElementById("chatSendWidgetBtn")?.addEventListener("click", function() {
+                const input = document.getElementById("chatInputWidget");
+                const text = input.value.trim();
+                if (!text) return;
+                addChatMessage("user", text);
+                input.value = "";
+                setTimeout(() => {
+                    const reply = getAdminReply(text);
+                    addChatMessage("bot", reply);
+                }, 600);
+            });
+            document.getElementById("chatInputWidget")?.addEventListener("keypress", (e) => {
+                if (e.key === "Enter") document.getElementById("chatSendWidgetBtn").click();
+            });
+
+            // Review modal
+            document.getElementById("closeReviewBtn")?.addEventListener("click", function() {
+                document.getElementById("reviewModal").style.display = "none";
+            });
+            document.getElementById("addCommentBtn")?.addEventListener("click", function() {
+                const text = document.getElementById("newComment").value.trim();
+                if (!text) return;
+                const user = getCurrentUser() ? getCurrentUser().username : "Guest";
+                saveComment(window.currentReviewProductId, user, text);
+                document.getElementById("newComment").value = "";
+                renderComments(window.currentReviewProductId);
+                showToast("✅ Comment added!");
+            });
+
+            console.log("✅ All systems ready!");
+        });
+
+        // ============================================================
+        // CATEGORIES
+        // ============================================================
+        function renderCategories() {
+            const categories = [
+                { id: 'all', label: 'အားလုံး', emoji: '📋' },
+                { id: 'Amazon', label: 'Amazon', emoji: '🛒' },
+                { id: 'GoogleSheet', label: 'Google Sheet', emoji: '📊' },
+                { id: 'TikTok', label: 'TikTok', emoji: '🎵' },
+                { id: 'YouTube', label: 'YouTube', emoji: '▶️' }
+            ];
+            const bar = document.getElementById('categoriesBar');
+            if (!bar) return;
+            bar.innerHTML = categories.map(cat =>
+                `<a data-cat="${cat.id}" class="${cat.id === currentCategory ? 'active' : ''}">${cat.emoji} ${cat.label}</a>`
+            ).join('');
+            bar.querySelectorAll('a').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    currentCategory = this.dataset.cat;
+                    searchQuery = '';
+                    document.getElementById('searchInput').value = '';
+                    currentPage = 1;
+                    renderUserPage();
+                    // Update active class
+                    bar.querySelectorAll('a').forEach(a => a.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+        }
+
+        // ============================================================
+        // PRODUCT DETAIL (Review)
+        // ============================================================
+        window.currentReviewProductId = null;
+
+        function openProductDetail(productId) {
+            const p = allProducts.find(prod => String(prod.id) === String(productId));
+            if (!p) return;
+            window.currentReviewProductId = productId;
+            document.getElementById("reviewProductTitle").innerHTML = `${p.emoji} ${p.name}`;
+            document.getElementById("reviewProductInfo").innerHTML =
+                `<p><strong>Price:</strong> ${p.price.toLocaleString()} MMK</p><p><strong>Category:</strong> ${p.category}</p><p><strong>Rating:</strong> ⭐ ${p.rating}</p>`;
+            renderComments(productId);
+            document.getElementById("reviewModal").style.display = "flex";
+        }
+
+        function renderComments(productId) {
+            const list = document.getElementById("commentsList");
+            const comments = getComments(productId);
+            if (comments.length === 0) { list.innerHTML =
+                    "<p style='color:#888;font-size:0.8rem;'>No comments yet.</p>"; return; }
+            list.innerHTML = comments.map(c =>
+                `<div style="background:#f8f9fa;padding:0.3rem 0.6rem;border-radius:8px;margin-bottom:0.3rem;font-size:0.8rem;"><strong>${escapeHtml(c.user)}</strong> <span style="font-size:0.6rem;color:#888;">${c.time}</span><br/>${escapeHtml(c.text)}</div>`
+            ).join("");
+        }
+
+        // Override product card click
+        document.addEventListener('click', function(e) {
+            const card = e.target.closest('.product-card');
+            if (card) {
+                const id = card.dataset.id;
+                if (id) openProductDetail(parseInt(id));
+            }
+        });
+
+        console.log("✅ Shop.com.mm loaded successfully!");
+        console.log("🎵 Music Player: Add YouTube links in Admin panel");
+        console.log("🕐 Clock: Slows down after 3 minutes");
+        console.log("🛒 Cart, Profile, Orders, Tracking all working!");
+    </script>
+
+</body>
+</html>
