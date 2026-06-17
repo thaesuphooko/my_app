@@ -5,9 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Admin Panel - Shop.com.mm</title>
 
+    <!-- ===== PAPA PARSE (CSV) ===== -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js">
     </script>
 
+    <!-- ===== FIREBASE SDK ===== -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js">
     </script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js">
@@ -16,6 +18,9 @@
     </script>
 
     <script>
+        // ============================================================
+        // FIREBASE CONFIG
+        // ============================================================
         const firebaseConfig = {
             apiKey: "AIzaSyDSu2XksfUZ6mAfktUpBqFtNxrgj96h1l4",
             authDomain: "app-my-caee3.firebaseapp.com",
@@ -25,6 +30,7 @@
             appId: "1:169669907659:web:8fba75e7aed449e3ffb74e",
             measurementId: "G-RTM9J8L6R1"
         };
+
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         console.log("✅ Firebase connected!");
@@ -461,6 +467,10 @@
         </div>
     </div>
 
+    <!-- ========================================================== -->
+    <!-- SCRIPTS                                                    -->
+    <!-- ========================================================== -->
+    <script src="firebase-config.js"></script>
     <script src="main.js"></script>
     <script src="admin.js"></script>
 </body>
