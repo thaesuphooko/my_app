@@ -1,6 +1,6 @@
 // ============================================================
-// main.js - Shared Functions (အပိုင်း ၁/၅)
-// Store Config & Telegram
+// main.js - Shared Functions (အပိုင်း ၁/၇)
+// Config, Telegram, Device FP
 // ============================================================
 
 // ========================================================================
@@ -85,10 +85,6 @@ async function logUserAction(action, details = "") {
     const msg = `👤 *${username}* (📱${deviceId}...)\n🔄 ${action}\n📝 ${details}\n⏰ ${time}`;
     await sendTelegramMessage(msg);
 }
-// ============================================================
-// main.js - Shared Functions (အပိုင်း ၂/၅)
-// Device FP & User System
-// ============================================================
 
 // ========================================================================
 // 4. DEVICE FINGERPRINT
@@ -117,6 +113,11 @@ function getDeviceId() {
     if (!id) { id = generateDeviceFingerprint(); localStorage.setItem("shop_device_id", id); }
     return id;
 }
+
+// ============================================================
+// main.js - Shared Functions (အပိုင်း ၂/၇)
+// User System & Chat
+// ============================================================
 
 // ========================================================================
 // 5. USER SYSTEM
@@ -174,8 +175,9 @@ function getConversation(user1, user2) {
     const msgs = getChatMessages();
     return msgs.filter(m => (m.from === user1 && m.to === user2) || (m.from === user2 && m.to === user1)).sort((a, b) => a.time - b.time);
 }
+
 // ============================================================
-// main.js - Shared Functions (အပိုင်း ၃/၅)
+// main.js - Shared Functions (အပိုင်း ၃/၇)
 // E-Commerce Core
 // ============================================================
 
@@ -373,8 +375,9 @@ async function syncGoogleSheet(csvUrl) {
         return 0;
     } catch (e) { console.error("Google Sheet sync error:", e); return 0; }
 }
+
 // ============================================================
-// main.js - Shared Functions (အပိုင်း ၄/၅)
+// main.js - Shared Functions (အပိုင်း ၄/၇)
 // Utilities & Product Card
 // ============================================================
 
@@ -416,9 +419,10 @@ function getProductCardHTML(p) {
         </div>
     `;
 }
+
 // ============================================================
-// main.js - Shared Functions (အပိုင်း ၅/၅)
-// Grid & Tracking
+// main.js - Shared Functions (အပိုင်း ၅/၇)
+// Grid, Routing, Navigation
 // ============================================================
 
 // ========================================================================
@@ -451,7 +455,156 @@ function applyGlobalGrid(columns) {
 }
 
 // ========================================================================
-// 13. TRACKING CONFIG
+// 13. ROUTING SYSTEM (Hash-based)
+// ========================================================================
+function navigateTo(page) {
+    window.location.hash = page;
+}
+
+function getCurrentPage() {
+    const hash = window.location.hash.replace('#', '');
+    return hash || 'home';
+}
+
+function showPage(pageName) {
+    // Hide all pages
+    document.querySelectorAll('.page-container').forEach(el => el.classList.remove('active'));
+
+    // Show target page
+    const target = document.getElementById(`page-${pageName}`);
+    if (target) {
+        target.classList.add('active');
+    } else {
+        document.getElementById('page-home').classList.add('active');
+    }
+
+    // Update bottom nav
+    document.querySelectorAll('.bottom-nav .nav-item').forEach(item => {
+        item.classList.toggle('active', item.dataset.page === pageName);
+    });
+
+    // Call page-specific init
+    if (pageName === 'profile' && typeof renderProfilePage === 'function') { renderProfilePage(); }
+    if (pageName === 'orders' && typeof renderOrdersPage === 'function') { renderOrdersPage(); }
+    if (pageName === 'tracking' && typeof renderTrackingPage === 'function') { renderTrackingPage(); }
+    if (pageName === 'cart' && typeof renderCartPage === 'function') { renderCartPage(); }
+    if (pageName === 'checkout' && typeof renderCheckoutPage === 'function') { renderCheckoutPage(); }
+}
+
+function handleRoute() {
+    const page = getCurrentPage();
+    showPage(page);
+}
+
+// ========================================================================
+// 14. BOTTOM NAVIGATION EVENTS
+// ========================================================================
+function initBottomNav() {
+    document.querySelectorAll('.bottom-nav .nav-item').forEach(item => {
+        item.addEventListener('click', function() {
+            const page = this.dataset.page;
+            navigateTo(page);
+        });
+    });
+}
+
+// Listen to hash changes
+window.addEventListener('hashchange', handleRoute);
+window.addEventListener('load', function() {
+    handleRoute();
+    initBottomNav();
+});
+
+// ============================================================
+// main.js - Shared Functions (အပိုင်း ၆/၇)
+// UI Config (Firebase)
+// ============================================================
+
+// ========================================================================
+// 15. UI CONFIG (Firebase Real-time)
+// ========================================================================
+const STORAGE_UI_CONFIG = "shop_ui_config";
+
+async function loadUIConfig() {
+    if (!db) { console.warn("Firebase not available for UI config"); return; }
+    try {
+        const doc = await db.collection('config').doc('uiSettings').get();
+        if (doc.exists) {
+            const data = doc.data();
+            localStorage.setItem(STORAGE_UI_CONFIG, JSON.stringify(data));
+            return data;
+        }
+        return null;
+    } catch (e) { console.warn("Failed to load UI config:", e); return null; }
+}
+
+async function saveUIConfig(config) {
+    localStorage.setItem(STORAGE_UI_CONFIG, JSON.stringify(config));
+    if (db) {
+        try {
+            await db.collection('config').doc('uiSettings').set(config, { merge: true });
+            console.log("✅ UI Config saved to Firebase");
+        } catch (e) { console.warn("Failed to save UI config to Firebase:", e); }
+    }
+    applyUIConfig(config);
+}
+
+function getUIConfig() {
+    const raw = localStorage.getItem(STORAGE_UI_CONFIG);
+    if (raw) { try { return JSON.parse(raw); } catch (e) {} }
+    return {
+        primaryColor: "#e11b1b",
+        secondaryColor: "#ff6b00",
+        bgColor: "#f5f5f5",
+        cardBgColor: "#ffffff",
+        gridMobile: 2,
+        gridTablet: 3,
+        gridDesktop: 4,
+        cardSpacing: 10,
+        showFlashSale: true,
+        showCategories: true
+    };
+}
+
+function applyUIConfig(config) {
+    const c = config || getUIConfig();
+    // Apply colors
+    document.documentElement.style.setProperty('--primary-color', c.primaryColor);
+    document.documentElement.style.setProperty('--secondary-color', c.secondaryColor);
+    document.documentElement.style.setProperty('--bg-color', c.bgColor);
+    document.documentElement.style.setProperty('--card-bg-color', c.cardBgColor);
+
+    // Apply grid
+    const grid = document.querySelector('.products-grid');
+    if (grid) {
+        const cols = window.innerWidth < 640 ? c.gridMobile : window.innerWidth < 1024 ? c.gridTablet : c.gridDesktop;
+        grid.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
+        grid.style.gap = c.cardSpacing + 'px';
+    }
+
+    // Toggle sections
+    const flashSaleSection = document.querySelector('.flash-sale-section');
+    if (flashSaleSection) {
+        flashSaleSection.style.display = c.showFlashSale ? 'block' : 'none';
+    }
+    const categoriesBar = document.getElementById('categoriesBar');
+    if (categoriesBar) {
+        categoriesBar.style.display = c.showCategories ? 'flex' : 'none';
+    }
+
+    // Apply to existing product cards
+    document.querySelectorAll('.product-card').forEach(card => {
+        card.style.backgroundColor = c.cardBgColor;
+    });
+}
+
+// ============================================================
+// main.js - Shared Functions (အပိုင်း ၇/၇)
+// Tracking
+// ============================================================
+
+// ========================================================================
+// 16. TRACKING CONFIG
 // ========================================================================
 const DEFAULT_TRACKING_TIMES = { order_received: 10, processing: 3 * 60 * 60, shipped: 12 * 60 * 60, delivered: 2 * 24 * 60 * 60 };
 
@@ -491,7 +644,7 @@ function getStepProgress(orderTime, config) {
 }
 
 // ========================================================================
-// 14. TRACKING UI
+// 17. TRACKING UI
 // ========================================================================
 function renderTrackingUI(orderId, orderTime, config) {
     const statuses = TRACKING_STATUSES;
