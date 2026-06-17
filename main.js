@@ -1,10 +1,210 @@
 // ============================================================
 // main.js - Shared Functions (အပိုင်း ၁/၇)
-// Config & Telegram
+// Music Player & Clock
 // ============================================================
 
 // ========================================================================
-// 1. STORE CONFIG
+// 1. MUSIC PLAYER (YouTube Background Music)
+// ========================================================================
+let musicPlayer = null;
+let musicIndex = 0;
+let musicPlaylist = [];
+let isMusicPlaying = false;
+
+function getMusicLinks() {
+    const raw = localStorage.getItem('shop_music_links');
+    if (raw) { try { return JSON.parse(raw); } catch (e) {} }
+    return [];
+}
+
+function saveMusicLinks(links) {
+    localStorage.setItem('shop_music_links', JSON.stringify(links));
+}
+
+function initMusicPlayer() {
+    const playlist = getMusicLinks();
+    if (playlist.length === 0) {
+        document.getElementById('musicTitle').innerText = 'No music';
+        return;
+    }
+    musicPlaylist = playlist;
+    // Load first track
+    loadMusicTrack(0);
+}
+
+function loadMusicTrack(index) {
+    if (musicPlaylist.length === 0) return;
+    musicIndex = index % musicPlaylist.length;
+    const link = musicPlaylist[musicIndex];
+    // Extract video ID from YouTube link
+    const videoId = extractYouTubeId(link);
+    if (!videoId) {
+        document.getElementById('musicTitle').innerText = 'Invalid link';
+        return;
+    }
+    // Use YouTube iframe API or simple audio fallback
+    // For simplicity, we use a hidden iframe
+    const existingIframe = document.getElementById('musicIframe');
+    if (existingIframe) existingIframe.remove();
+    
+    const iframe = document.createElement('iframe');
+    iframe.id = 'musicIframe';
+    iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=0&enablejsapi=1&loop=1&playlist=${videoId}`;
+    iframe.style.display = 'none';
+    iframe.allow = 'autoplay';
+    document.body.appendChild(iframe);
+    
+    document.getElementById('musicTitle').innerText = `Track ${musicIndex + 1}`;
+    document.getElementById('musicPlayBtn').innerText = '▶️';
+    isMusicPlaying = false;
+    
+    // Store current track
+    localStorage.setItem('music_current_index', musicIndex);
+    localStorage.setItem('music_current_time', 0);
+}
+
+function extractYouTubeId(url) {
+    const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[7].length === 11) ? match[7] : null;
+}
+
+function toggleMusic() {
+    const iframe = document.getElementById('musicIframe');
+    if (!iframe) {
+        initMusicPlayer();
+        return;
+    }
+    if (isMusicPlaying) {
+        // Pause
+        iframe.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+        document.getElementById('musicPlayBtn').innerText = '▶️';
+        isMusicPlaying = false;
+    } else {
+        // Play
+        iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+        document.getElementById('musicPlayBtn').innerText = '⏸️';
+        isMusicPlaying = true;
+    }
+}
+
+// Volume control
+document.getElementById('musicVolume')?.addEventListener('input', function() {
+    const iframe = document.getElementById('musicIframe');
+    if (iframe) {
+        const vol = this.value / 100;
+        iframe.contentWindow.postMessage(`{"event":"command","func":"setVolume","args":[${vol * 100}]}`, '*');
+    }
+});
+
+// Next track
+function nextMusicTrack() {
+    if (musicPlaylist.length === 0) return;
+    musicIndex = (musicIndex + 1) % musicPlaylist.length;
+    loadMusicTrack(musicIndex);
+    // Auto-play
+    setTimeout(() => {
+        const btn = document.getElementById('musicPlayBtn');
+        if (btn && btn.innerText === '⏸️') {
+            toggleMusic();
+        } else {
+            toggleMusic();
+            toggleMusic(); // Start playing
+        }
+    }, 500);
+}
+
+// ========================================================================
+// 2. CLOCK (Slowing down after 3 minutes)
+// ========================================================================
+let clockInterval = null;
+let clockSpeed = 1;
+let clockStartTime = Date.now();
+let clockElapsed = 0;
+
+function initClock() {
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const mins = String(now.getMinutes()).padStart(2, '0');
+    const secs = String(now.getSeconds()).padStart(2, '0');
+    document.getElementById('clockDisplay').innerText = `${hours}:${mins}:${secs}`;
+    
+    clockStartTime = Date.now();
+    clockElapsed = 0;
+    clockSpeed = 1;
+    
+    if (clockInterval) clearInterval(clockInterval);
+    clockInterval = setInterval(() => {
+        const now2 = new Date();
+        clockElapsed = (Date.now() - clockStartTime) / 1000;
+        
+        // After 3 minutes (180 seconds), slow down
+        if (clockElapsed > 180) {
+            // Speed: 30 seconds per 3 minutes = 1/6 speed
+            clockSpeed = 0.1667;
+        }
+        
+        const realElapsed = (Date.now() - clockStartTime) / 1000;
+        const displayElapsed = realElapsed * clockSpeed;
+        
+        const baseTime = new Date();
+        baseTime.setHours(0, 0, 0, 0);
+        baseTime.setSeconds(Math.floor(displayElapsed));
+        
+        const h = String(Math.floor(displayElapsed / 3600)).padStart(2, '0');
+        const m = String(Math.floor((displayElapsed % 3600) / 60)).padStart(2, '0');
+        const s = String(Math.floor(displayElapsed % 60)).padStart(2, '0');
+        document.getElementById('clockDisplay').innerText = `${h}:${m}:${s}`;
+    }, 200);
+}
+
+// Update clock with real time for first 3 minutes
+// Actually we show real time initially, then slow down
+
+// Better approach: show real time, but speed changes after 3 min
+function initClockBetter() {
+    updateClockDisplay();
+    if (clockInterval) clearInterval(clockInterval);
+    clockInterval = setInterval(() => {
+        const elapsed = (Date.now() - clockStartTime) / 1000;
+        let speed = 1;
+        if (elapsed > 180) {
+            speed = 0.1667; // 30 seconds per 3 minutes
+        }
+        const realTime = new Date();
+        // For display, we simulate time passing faster/slower
+        const base = new Date();
+        base.setHours(0, 0, 0, 0);
+        const simulatedSeconds = elapsed * speed;
+        base.setSeconds(Math.floor(simulatedSeconds));
+        const h = String(Math.floor(simulatedSeconds / 3600)).padStart(2, '0');
+        const m = String(Math.floor((simulatedSeconds % 3600) / 60)).padStart(2, '0');
+        const s = String(Math.floor(simulatedSeconds % 60)).padStart(2, '0');
+        document.getElementById('clockDisplay').innerText = `${h}:${m}:${s}`;
+    }, 200);
+}
+
+function updateClockDisplay() {
+    const now = new Date();
+    const h = String(now.getHours()).padStart(2, '0');
+    const m = String(now.getMinutes()).padStart(2, '0');
+    const s = String(now.getSeconds()).padStart(2, '0');
+    document.getElementById('clockDisplay').innerText = `${h}:${m}:${s}`;
+}
+
+// Initialize clock on load
+document.addEventListener('DOMContentLoaded', function() {
+    clockStartTime = Date.now();
+    initClockBetter();
+});
+
+// ============================================================
+// main.js - Shared Functions (အပိုင်း ၂/၇)
+// Store Config & Telegram
+// ============================================================
+
+// ========================================================================
+// 3. STORE CONFIG
 // ========================================================================
 const STORAGE_STORE_CONFIG = "shop_store_config";
 
@@ -30,7 +230,7 @@ function applyStoreConfig() {
 }
 
 // ========================================================================
-// 2. AMAZON API CONFIG
+// 4. AMAZON API CONFIG
 // ========================================================================
 const STORAGE_AMAZON_API = "shop_amazon_api_config";
 const DEFAULT_API_KEY = "1852a28efamsh993c0fa32ed6003p1072dbjsnd07318e9d120";
@@ -45,7 +245,7 @@ function getAmazonApiConfig() {
 function saveAmazonApiConfig(apiKey, host) { localStorage.setItem(STORAGE_AMAZON_API, JSON.stringify({ apiKey, host })); }
 
 // ========================================================================
-// 3. TELEGRAM CONFIG
+// 5. TELEGRAM CONFIG
 // ========================================================================
 const STORAGE_TELEGRAM = "shop_telegram_config";
 
@@ -87,12 +287,12 @@ async function logUserAction(action, details = "") {
 }
 
 // ============================================================
-// main.js - Shared Functions (အပိုင်း ၂/၇)
+// main.js - Shared Functions (အပိုင်း ၃/၇)
 // Device FP & User System
 // ============================================================
 
 // ========================================================================
-// 4. DEVICE FINGERPRINT
+// 6. DEVICE FINGERPRINT
 // ========================================================================
 function generateDeviceFingerprint() {
     const canvas = document.createElement("canvas");
@@ -120,7 +320,7 @@ function getDeviceId() {
 }
 
 // ========================================================================
-// 5. USER SYSTEM
+// 7. USER SYSTEM
 // ========================================================================
 const STORAGE_USERS = "shop_users";
 const STORAGE_SESSION = "shop_session";
@@ -156,7 +356,7 @@ function forgotPassword(username) {
 }
 
 // ========================================================================
-// 6. CHAT SYSTEM
+// 8. CHAT SYSTEM
 // ========================================================================
 const STORAGE_CHAT = "shop_chat_messages";
 
@@ -177,12 +377,12 @@ function getConversation(user1, user2) {
 }
 
 // ============================================================
-// main.js - Shared Functions (အပိုင်း ၃/၇)
+// main.js - Shared Functions (အပိုင်း ၄/၇)
 // E-Commerce Core
 // ============================================================
 
 // ========================================================================
-// 7. E-COMMERCE CORE
+// 9. E-COMMERCE CORE
 // ========================================================================
 const STORAGE_PRODUCTS = "shop_products";
 const STORAGE_CART = "shop_cart";
@@ -283,12 +483,12 @@ function showToast(msg) {
 }
 
 // ============================================================
-// main.js - Shared Functions (အပိုင်း ၄/၇)
+// main.js - Shared Functions (အပိုင်း ၅/၇)
 // Amazon & Google Sync
 // ============================================================
 
 // ========================================================================
-// 8. AMAZON API INTEGRATION
+// 10. AMAZON API INTEGRATION
 // ========================================================================
 async function fetchAmazonProducts(query, country = "US", page = 1) {
     const config = getAmazonApiConfig();
@@ -338,7 +538,7 @@ async function syncAmazonProducts(searchTerm, maxPages = 10) {
 }
 
 // ========================================================================
-// 9. GOOGLE SHEETS SYNC
+// 11. GOOGLE SHEETS SYNC
 // ========================================================================
 async function syncGoogleSheet(csvUrl) {
     if (!csvUrl || csvUrl.trim() === "") { alert("Please enter a valid Google Sheets Published CSV URL"); return 0; }
@@ -382,12 +582,12 @@ async function syncGoogleSheet(csvUrl) {
 }
 
 // ============================================================
-// main.js - Shared Functions (အပိုင်း ၅/၇)
+// main.js - Shared Functions (အပိုင်း ၆/၇)
 // Utilities & Product Card
 // ============================================================
 
 // ========================================================================
-// 10. UTILITY FUNCTIONS
+// 12. UTILITY FUNCTIONS
 // ========================================================================
 function escapeHtml(str) { if (!str) return ""; return String(str).replace(/[&<>]/g, function(m) { if (m === '&') return '&amp;'; if (m === '<') return '&lt;'; if (m === '>') return '&gt;'; return m; }); }
 function escapeCsv(str) { return String(str).replace(/"/g, '""'); }
@@ -395,7 +595,7 @@ function generateOrderId() { return "ORD-" + Date.now().toString().slice(-8); }
 function generateTrackingNumber() { return "TH-2026-" + String(Math.floor(100000 + Math.random() * 900000)); }
 
 // ========================================================================
-// 11. PRODUCT CARD HTML (Lazada Style)
+// 13. PRODUCT CARD HTML (Lazada Style)
 // ========================================================================
 function getProductCardHTML(p) {
     const discountPercent = p.original_price && p.original_price > p.price ? Math.round((1 - p.price / p.original_price) * 100) : 0;
@@ -426,12 +626,12 @@ function getProductCardHTML(p) {
 }
 
 // ============================================================
-// main.js - Shared Functions (အပိုင်း ၆/၇)
+// main.js - Shared Functions (အပိုင်း ၇/၇)
 // Grid Layout & Routing
 // ============================================================
 
 // ========================================================================
-// 12. GLOBAL GRID LAYOUT (Firebase)
+// 14. GLOBAL GRID LAYOUT (Firebase)
 // ========================================================================
 let globalGridColumns = 4;
 
@@ -460,7 +660,7 @@ function applyGlobalGrid(columns) {
 }
 
 // ========================================================================
-// 13. ROUTING SYSTEM (Hash-based)
+// 15. ROUTING SYSTEM (Hash-based)
 // ========================================================================
 function navigateTo(page) {
     window.location.hash = page;
@@ -502,7 +702,7 @@ function handleRoute() {
 }
 
 // ========================================================================
-// 14. BOTTOM NAVIGATION EVENTS
+// 16. BOTTOM NAVIGATION EVENTS
 // ========================================================================
 function initBottomNav() {
     document.querySelectorAll('.bottom-nav .nav-item').forEach(item => {
@@ -520,184 +720,3 @@ window.addEventListener('load', function() {
     initBottomNav();
 });
 
-// ============================================================
-// main.js - Shared Functions (အပိုင်း ၇/၇)
-// UI Config & Tracking
-// ============================================================
-
-// ========================================================================
-// 15. UI CONFIG (Firebase Real-time)
-// ========================================================================
-const STORAGE_UI_CONFIG = "shop_ui_config";
-
-async function loadUIConfig() {
-    if (!db) { console.warn("Firebase not available for UI config"); return; }
-    try {
-        const doc = await db.collection('config').doc('uiSettings').get();
-        if (doc.exists) {
-            const data = doc.data();
-            localStorage.setItem(STORAGE_UI_CONFIG, JSON.stringify(data));
-            return data;
-        }
-        return null;
-    } catch (e) { console.warn("Failed to load UI config:", e); return null; }
-}
-
-async function saveUIConfig(config) {
-    localStorage.setItem(STORAGE_UI_CONFIG, JSON.stringify(config));
-    if (db) {
-        try {
-            await db.collection('config').doc('uiSettings').set(config, { merge: true });
-            console.log("✅ UI Config saved to Firebase");
-        } catch (e) { console.warn("Failed to save UI config to Firebase:", e); }
-    }
-    applyUIConfig(config);
-}
-
-function getUIConfig() {
-    const raw = localStorage.getItem(STORAGE_UI_CONFIG);
-    if (raw) { try { return JSON.parse(raw); } catch (e) {} }
-    return {
-        primaryColor: "#e11b1b",
-        secondaryColor: "#ff6b00",
-        bgColor: "#f5f5f5",
-        cardBgColor: "#ffffff",
-        gridMobile: 2,
-        gridTablet: 3,
-        gridDesktop: 4,
-        cardSpacing: 10,
-        showFlashSale: true,
-        showCategories: true
-    };
-}
-
-function applyUIConfig(config) {
-    const c = config || getUIConfig();
-    // Apply colors
-    document.documentElement.style.setProperty('--primary-color', c.primaryColor);
-    document.documentElement.style.setProperty('--secondary-color', c.secondaryColor);
-    document.documentElement.style.setProperty('--bg-color', c.bgColor);
-    document.documentElement.style.setProperty('--card-bg-color', c.cardBgColor);
-
-    // Apply grid
-    const grid = document.querySelector('.products-grid');
-    if (grid) {
-        const cols = window.innerWidth < 640 ? c.gridMobile : window.innerWidth < 1024 ? c.gridTablet : c.gridDesktop;
-        grid.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
-        grid.style.gap = c.cardSpacing + 'px';
-    }
-
-    // Toggle sections
-    const flashSaleSection = document.querySelector('.flash-sale-section');
-    if (flashSaleSection) {
-        flashSaleSection.style.display = c.showFlashSale ? 'block' : 'none';
-    }
-    const categoriesBar = document.getElementById('categoriesBar');
-    if (categoriesBar) {
-        categoriesBar.style.display = c.showCategories ? 'flex' : 'none';
-    }
-
-    // Apply to existing product cards
-    document.querySelectorAll('.product-card').forEach(card => {
-        card.style.backgroundColor = c.cardBgColor;
-    });
-}
-
-// ========================================================================
-// 16. TRACKING CONFIG
-// ========================================================================
-const DEFAULT_TRACKING_TIMES = { order_received: 10, processing: 3 * 60 * 60, shipped: 12 * 60 * 60, delivered: 2 * 24 * 60 * 60 };
-
-const TRACKING_STATUSES = [
-    { key: 'order_received', label: '📦 အမှာစာ လက်ခံရရှိပါပြီ', desc: 'သင့်အော်ဒါကို ကျွန်ုပ်တို့ လက်ခံရရှိပါပြီ' },
-    { key: 'processing', label: '⚙️ ပစ္စည်း စစ်ဆေးပြင်ဆင်နေပါပြီ', desc: 'ပစ္စည်းများကို စစ်ဆေးပြီး ထုပ်ပိုးနေပါသည်' },
-    { key: 'shipped', label: '🚚 ပို့ဆောင်ရေးထံ လွှဲပြောင်းလိုက်ပါပြီ', desc: 'သင့်ပစ္စည်းများ လမ်းခရီးပေါ်ရောက်နေပါပြီ' },
-    { key: 'delivered', label: '✅ ပစ္စည်း ရောက်ရှိပါပြီ', desc: 'သင့်ပစ္စည်းများ အောင်မြင်စွာ ရောက်ရှိပါပြီ။ ကျေးဇူးပါ' }
-];
-
-function getTrackingConfig() {
-    const raw = localStorage.getItem('shop_tracking_config');
-    if (raw) { try { return JSON.parse(raw); } catch (e) {} }
-    return { ...DEFAULT_TRACKING_TIMES };
-}
-
-function saveTrackingConfig(config) { localStorage.setItem('shop_tracking_config', JSON.stringify(config)); }
-
-function getTrackingStatus(orderTime, config) {
-    const elapsed = (Date.now() - orderTime) / 1000;
-    const times = config || getTrackingConfig();
-    if (elapsed >= times.delivered) return { key: 'delivered', progress: 100 };
-    if (elapsed >= times.shipped) return { key: 'shipped', progress: 75 };
-    if (elapsed >= times.processing) return { key: 'processing', progress: 50 };
-    if (elapsed >= times.order_received) return { key: 'order_received', progress: 25 };
-    return { key: 'pending', progress: 0 };
-}
-
-function getStepProgress(orderTime, config) {
-    const elapsed = (Date.now() - orderTime) / 1000;
-    const times = config || getTrackingConfig();
-    const steps = ['order_received', 'processing', 'shipped', 'delivered'];
-    const thresholds = [times.order_received, times.processing, times.shipped, times.delivered];
-    let currentIndex = 0;
-    for (let i = 0; i < thresholds.length; i++) { if (elapsed >= thresholds[i]) currentIndex = i + 1; }
-    return { currentIndex, stepProgress: 0, totalProgress: currentIndex / steps.length };
-}
-
-// ========================================================================
-// 17. TRACKING UI
-// ========================================================================
-function renderTrackingUI(orderId, orderTime, config) {
-    const statuses = TRACKING_STATUSES;
-    const times = config || getTrackingConfig();
-    const elapsed = (Date.now() - orderTime) / 1000;
-    const stepProgress = getStepProgress(orderTime, config);
-    const currentStatus = getTrackingStatus(orderTime, config);
-
-    let html = `<div class="tracking-container">
-        <p style="font-size:0.85rem;color:#888;margin-bottom:0.5rem;">🆔 Order: <strong>${orderId}</strong> | 📅 ${new Date(orderTime).toLocaleString()}</p>
-        <div style="background:#f0f0f0;border-radius:20px;height:8px;margin:0.5rem 0;overflow:hidden;">
-            <div style="height:100%;width:${Math.min(stepProgress.totalProgress * 100, 100)}%;background:linear-gradient(90deg,#28a745,#007bff);border-radius:20px;transition:width 0.5s ease;"></div>
-        </div>
-        <div class="tracking-steps">`;
-
-    const statusKeys = ['order_received', 'processing', 'shipped', 'delivered'];
-    statusKeys.forEach((key, index) => {
-        const isActive = currentStatus.key === key;
-        const isCompleted = statusKeys.indexOf(currentStatus.key) > index || (currentStatus.key === key && elapsed >= times[key]);
-        let icon = '⏳';
-        let stepClass = 'tracking-step';
-        if (isCompleted) stepClass += ' completed';
-        else if (isActive) stepClass += ' active';
-        if (key === 'order_received') icon = '📦';
-        else if (key === 'processing') icon = '⚙️';
-        else if (key === 'shipped') icon = '🚚';
-        else if (key === 'delivered') icon = '✅';
-
-        let timeDisplay = '';
-        if (!isCompleted && key === currentStatus.key) {
-            const remaining = Math.max(0, times[key] - elapsed);
-            const hours = Math.floor(remaining / 3600);
-            const mins = Math.floor((remaining % 3600) / 60);
-            const secs = Math.floor(remaining % 60);
-            if (hours > 0) timeDisplay = `⏱️ ${hours}h ${mins}m`;
-            else if (mins > 0) timeDisplay = `⏱️ ${mins}m ${secs}s`;
-            else timeDisplay = `⏱️ ${secs}s`;
-        } else if (isCompleted) { timeDisplay = '✅ ပြီးပါပြီ'; }
-
-        html += `
-            <div class="${stepClass}">
-                <div class="step-icon">${icon}</div>
-                <div class="step-content">
-                    <div class="step-title">${statuses[index].label}</div>
-                    <div class="step-desc">${statuses[index].desc}</div>
-                    ${timeDisplay ? `<div class="step-time">${timeDisplay}</div>` : ''}
-                </div>
-            </div>
-        `;
-    });
-
-    html += `</div></div>`;
-    return html;
-}
-
-console.log("✅ main.js loaded successfully!");
