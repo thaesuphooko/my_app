@@ -1105,4 +1105,4 @@ document.addEventListener("DOMContentLoaded", function() {
     }
     logUserAction(`🌐 Page Visit`, `Device: ${getDeviceId()}`);
     console.log("✅ User page ready!");
-})();
+})(); 
