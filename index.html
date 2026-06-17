@@ -5,41 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title id="pageTitle">Shop.com.mm</title>
 
-    <!-- ===== PAPA PARSE (CSV) ===== -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js">
-    </script>
-
-    <!-- ===== LEAFET.JS (Map) ===== -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
-    </script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    <!-- ===== FIREBASE SDK ===== -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js">
-    </script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js">
-    </script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js">
-    </script>
-
-    <script>
-        // ============================================================
-        // FIREBASE CONFIG
-        // ============================================================
-        const firebaseConfig = {
-            apiKey: "AIzaSyDSu2XksfUZ6mAfktUpBqFtNxrgj96h1l4",
-            authDomain: "app-my-caee3.firebaseapp.com",
-            projectId: "app-my-caee3",
-            storageBucket: "app-my-caee3.firebasestorage.app",
-            messagingSenderId: "169669907659",
-            appId: "1:169669907659:web:8fba75e7aed449e3ffb74e",
-            measurementId: "G-RTM9J8L6R1"
-        };
-
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-        console.log("✅ Firebase connected!");
-    </script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 
     <link rel="stylesheet" href="style.css">
     <style>
@@ -62,6 +34,16 @@
                 <input type="text" id="searchInput" placeholder="ရှာမည်..." />
                 <button id="searchBtn">🔍</button>
             </div>
+
+            <!-- ===== MUSIC PLAYER + CLOCK ===== -->
+            <div class="music-player" id="musicPlayer">
+                <button class="play-btn" id="musicPlayBtn">▶️</button>
+                <span class="music-label" id="musicTitle">No music</span>
+                <input type="range" class="volume-slider" id="musicVolume" min="0" max="100" value="50" />
+                <span class="music-time" id="musicTime">0:00</span>
+                <span class="clock-display" id="clockDisplay">00:00:00</span>
+            </div>
+
             <span class="cart-icon" id="cartIcon">🛍️ (<span id="cartCount">0</span>)</span>
             <span class="user-badge" id="userBadge">👤 Login</span>
         </div>
@@ -155,6 +137,7 @@
             <span class="nav-label">Profile</span>
         </button>
     </nav>
+
     <!-- ========================================================== -->
     <!-- MODALS                                                    -->
     <!-- ========================================================== -->
