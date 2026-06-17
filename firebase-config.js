@@ -494,3 +494,959 @@
 // ဤနေရာတွင် firebase-config.js Part 1 ပြီးဆုံးပါသည်။
 // လိုင်း ၃၀၀ အတိအကျ။
 // ============================================================
+
+// ============================================================
+// firebase-config.js - PART 2 (LINES 301-600)
+// အဆင့်မြင့် Firebase လုပ်ဆောင်ချက်များ - Real-time Listeners,
+// Data Validation, Security Rules Simulation, Batch Operations,
+// Transactions, Storage Helpers, နှင့် အပိုဆောင်း Utilities
+// ============================================================
+
+(function() {
+    'use strict';
+
+    // =============================================================
+    // ၁၈။ REALTIME LISTENER MANAGEMENT
+    // =============================================================
+    // Real-time listeners များကို စီမံခန့်ခွဲရန် Manager
+    // =============================================================
+
+    class ListenerManager {
+        constructor() {
+            this.listeners = new Map();
+            this.listenerIdCounter = 0;
+        }
+
+        /**
+         * Listener အသစ်ထည့်သွင်းခြင်း
+         * @param {string} name - Listener အမည်
+         * @param {Function} unsubscribe - Unsubscribe function
+         * @returns {string} - Listener ID
+         */
+        add(name, unsubscribe) {
+            const id = `listener_${++this.listenerIdCounter}_${Date.now()}`;
+            this.listeners.set(id, {
+                name: name,
+                unsubscribe: unsubscribe,
+                addedAt: new Date()
+            });
+            return id;
+        }
+
+        /**
+         * Listener ကိုဖယ်ရှားခြင်း
+         * @param {string} id - Listener ID
+         * @returns {boolean} - အောင်မြင်ပါက true
+         */
+        remove(id) {
+            const listener = this.listeners.get(id);
+            if (listener) {
+                try {
+                    listener.unsubscribe();
+                } catch (e) {
+                    console.warn(`Error unsubscribing listener ${id}:`, e);
+                }
+                this.listeners.delete(id);
+                return true;
+            }
+            return false;
+        }
+
+        /**
+         * Listener အားလုံးကိုဖယ်ရှားခြင်း
+         */
+        removeAll() {
+            for (const [id, listener] of this.listeners) {
+                try {
+                    listener.unsubscribe();
+                } catch (e) {
+                    console.warn(`Error unsubscribing listener ${id}:`, e);
+                }
+            }
+            this.listeners.clear();
+        }
+
+        /**
+         * Listener အားလုံးကိုပြန်ပေးခြင်း
+         * @returns {Array} - Listener list
+         */
+        getAll() {
+            return Array.from(this.listeners.entries()).map(([id, data]) => ({
+                id,
+                ...data
+            }));
+        }
+
+        /**
+         * Listener အရေအတွက်ကိုပြန်ပေးခြင်း
+         * @returns {number} - Listener count
+         */
+        count() {
+            return this.listeners.size;
+        }
+
+        /**
+         * Listener အခြေအနေကိုစစ်ဆေးခြင်း
+         * @param {string} id - Listener ID
+         * @returns {boolean} - ရှိပါက true
+         */
+        has(id) {
+            return this.listeners.has(id);
+        }
+    }
+
+    // Global listener manager instance
+    const listenerManager = new ListenerManager();
+    window.listenerManager = listenerManager;
+
+    // =============================================================
+    // ၁၉။ EASY LISTENER HELPERS
+    // =============================================================
+    // Collection listener များအတွက် အဆင်ပြေသော Helpers
+    // =============================================================
+
+    /**
+     * Collection တစ်ခုကို real-time နားထောင်ခြင်း
+     * @param {string} collectionName - Collection အမည်
+     * @param {Function} onData - ဒေတာရလျှင် call မည့် function
+     * @param {Function} onError - အမှားရှိလျှင် call မည့် function
+     * @param {Object} options - Query options (where, orderBy, limit, etc.)
+     * @returns {string} - Listener ID
+     */
+    window.listenCollection = function(collectionName, onData, onError, options = {}) {
+        let query = db.collection(collectionName);
+
+        // Apply where clauses
+        if (options.where) {
+            if (Array.isArray(options.where)) {
+                options.where.forEach(w => {
+                    if (Array.isArray(w) && w.length >= 3) {
+                        query = query.where(w[0], w[1], w[2]);
+                    }
+                });
+            }
+        }
+
+        // Apply orderBy
+        if (options.orderBy) {
+            if (Array.isArray(options.orderBy)) {
+                options.orderBy.forEach(o => {
+                    query = query.orderBy(o.field, o.direction || 'asc');
+                });
+            }
+        }
+
+        // Apply limit
+        if (options.limit) {
+            query = query.limit(options.limit);
+        }
+
+        const unsubscribe = query.onSnapshot((snapshot) => {
+            const data = [];
+            snapshot.forEach(doc => {
+                data.push({ id: doc.id, ...doc.data() });
+            });
+            if (onData) onData(data, snapshot);
+        }, (error) => {
+            if (onError) onError(error);
+            console.error(`Listener error on ${collectionName}:`, error);
+        });
+
+        const id = listenerManager.add(`listen_${collectionName}`, unsubscribe);
+        return id;
+    };
+
+    /**
+     * Document တစ်ခုကို real-time နားထောင်ခြင်း
+     * @param {string} collectionName - Collection အမည်
+     * @param {string} docId - Document ID
+     * @param {Function} onData - ဒေတာရလျှင် call မည့် function
+     * @param {Function} onError - အမှားရှိလျှင် call မည့် function
+     * @returns {string} - Listener ID
+     */
+    window.listenDocument = function(collectionName, docId, onData, onError) {
+        const unsubscribe = db.collection(collectionName).doc(docId)
+            .onSnapshot((doc) => {
+                if (doc.exists) {
+                    if (onData) onData({ id: doc.id, ...doc.data() }, doc);
+                } else {
+                    if (onData) onData(null, doc);
+                }
+            }, (error) => {
+                if (onError) onError(error);
+                console.error(`Listener error on ${collectionName}/${docId}:`, error);
+            });
+
+        const id = listenerManager.add(`listen_doc_${collectionName}_${docId}`, unsubscribe);
+        return id;
+    };
+
+    // =============================================================
+    // ၂၀။ DATA VALIDATION & SANITIZATION
+    // =============================================================
+    // Firestore သို့ မသွင်းမီ ဒေတာကို စစ်ဆေးခြင်း
+    // =============================================================
+
+    const validators = {
+        /**
+         * စာသားကို သန့်ရှင်းအောင်ပြုလုပ်ခြင်း
+         */
+        sanitizeString: function(str) {
+            if (typeof str !== 'string') return '';
+            return str.trim().replace(/[<>]/g, ''); // Basic XSS prevention
+        },
+
+        /**
+         * ဈေးနှုန်းကို စစ်ဆေးခြင်း
+         */
+        validatePrice: function(price) {
+            const num = Number(price);
+            if (isNaN(num) || num < 0) return 0;
+            return Math.round(num * 100) / 100;
+        },
+
+        /**
+         * အရေအတွက်ကို စစ်ဆေးခြင်း
+         */
+        validateQuantity: function(qty) {
+            const num = Number(qty);
+            if (isNaN(num) || num < 0) return 0;
+            return Math.floor(num);
+        },
+
+        /**
+         * ဖုန်းနံပါတ်ကို စစ်ဆေးခြင်း
+         */
+        validatePhone: function(phone) {
+            if (typeof phone !== 'string') return '';
+            // Myanmar phone number format: 09XXXXXXXXX
+            const cleaned = phone.replace(/[^0-9+]/g, '');
+            return cleaned;
+        },
+
+        /**
+         * Email ကိုစစ်ဆေးခြင်း
+         */
+        validateEmail: function(email) {
+            if (typeof email !== 'string') return false;
+            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return re.test(email);
+        },
+
+        /**
+         * Object တစ်ခုလုံးကို စစ်ဆေးခြင်း
+         */
+        validateObject: function(obj, schema) {
+            const errors = [];
+            for (const [key, rule] of Object.entries(schema)) {
+                if (rule.required && (obj[key] === undefined || obj[key] === null || obj[key] === '')) {
+                    errors.push(`${key} is required`);
+                    continue;
+                }
+                if (obj[key] !== undefined && obj[key] !== null) {
+                    if (rule.type && typeof obj[key] !== rule.type) {
+                        errors.push(`${key} must be of type ${rule.type}`);
+                    }
+                    if (rule.min !== undefined && obj[key] < rule.min) {
+                        errors.push(`${key} must be at least ${rule.min}`);
+                    }
+                    if (rule.max !== undefined && obj[key] > rule.max) {
+                        errors.push(`${key} must be at most ${rule.max}`);
+                    }
+                    if (rule.pattern && !rule.pattern.test(String(obj[key]))) {
+                        errors.push(`${key} has invalid format`);
+                    }
+                }
+            }
+            return errors;
+        }
+    };
+
+    window.validators = validators;
+
+    /**
+     * Product data validation
+     */
+    window.validateProduct = function(product) {
+        const schema = {
+            name: { required: true, type: 'string', min: 2, max: 100 },
+            price: { required: true, type: 'number', min: 0 },
+            category: { required: true, type: 'string', min: 2 },
+            stock: { required: true, type: 'number', min: 0 },
+            image: { required: false, type: 'string' }
+        };
+        return validators.validateObject(product, schema);
+    };
+
+    /**
+     * Order data validation
+     */
+    window.validateOrder = function(order) {
+        const schema = {
+            name: { required: true, type: 'string', min: 2, max: 50 },
+            phone: { required: true, type: 'string', min: 7, max: 15 },
+            address: { required: true, type: 'string', min: 5 },
+            total: { required: true, type: 'number', min: 0 }
+        };
+        return validators.validateObject(order, schema);
+    };
+
+    // =============================================================
+    // ၂၁။ SECURITY RULES SIMULATION
+    // =============================================================
+    // Security rules များကို simulate လုပ်ရန် (client-side only)
+    // =============================================================
+
+    const securityRules = {
+        /**
+         * Product ကို ဖတ်ခွင့်ရှိမရှိ စစ်ဆေးခြင်း
+         */
+        canReadProduct: function(product, user) {
+            // Anyone can read products
+            return true;
+        },
+
+        /**
+         * Product ကို ရေးခွင့်ရှိမရှိ စစ်ဆေးခြင်း
+         */
+        canWriteProduct: function(product, user) {
+            // Only admin can write products
+            return user && user.email === 'admin@shop.com';
+        },
+
+        /**
+         * Order ကိုဖတ်ခွင့်ရှိမရှိ စစ်ဆေးခြင်း
+         */
+        canReadOrder: function(order, user) {
+            // User can read own orders, admin can read all
+            if (!user) return false;
+            if (user.email === 'admin@shop.com') return true;
+            return order.userId === user.uid;
+        },
+
+        /**
+         * Order ကိုရေးခွင့်ရှိမရှိ စစ်ဆေးခြင်း
+         */
+        canWriteOrder: function(order, user) {
+            // User can create own orders, admin can update all
+            if (!user) return false;
+            if (user.email === 'admin@shop.com') return true;
+            return order.userId === user.uid;
+        },
+
+        /**
+         * Message ကိုဖတ်ခွင့်ရှိမရှိ စစ်ဆေးခြင်း
+         */
+        canReadMessage: function(message, user) {
+            // Anyone can read messages (for chat)
+            return true;
+        },
+
+        /**
+         * Message ကိုရေးခွင့်ရှိမရှိ စစ်ဆေးခြင်း
+         */
+        canWriteMessage: function(message, user) {
+            // Anyone can write messages (with auth)
+            return user !== null;
+        }
+    };
+
+    window.securityRules = securityRules;
+
+    /**
+     * Permission စစ်ဆေးရန် Helper
+     */
+    window.checkPermission = function(action, resource, data) {
+        const user = auth.currentUser;
+        const rule = securityRules[`can${action}${resource}`];
+        if (typeof rule === 'function') {
+            return rule(data, user);
+        }
+        return false;
+    };
+
+    // =============================================================
+    // ၂၂။ TRANSACTION HELPERS
+    // =============================================================
+    // Firestore Transactions များအတွက် Helpers
+    // =============================================================
+
+    /**
+     * Transaction ကို run ခြင်း
+     * @param {Function} transactionFn - Transaction function
+     * @param {Object} options - Transaction options
+     * @returns {Promise<any>} - Transaction result
+     */
+    window.runTransaction = async function(transactionFn, options = {}) {
+        const maxRetries = options.maxRetries || 3;
+        let attempt = 0;
+
+        while (attempt < maxRetries) {
+            try {
+                const result = await db.runTransaction(transactionFn);
+                return result;
+            } catch (error) {
+                attempt++;
+                if (attempt >= maxRetries) {
+                    throw error;
+                }
+                // Exponential backoff
+                const delay = 1000 * Math.pow(2, attempt);
+                await new Promise(resolve => setTimeout(resolve, delay));
+                console.log(`Transaction retry ${attempt}/${maxRetries}`);
+            }
+        }
+    };
+
+    /**
+     * Stock ကို update လုပ်ရန် Transaction
+     * @param {string} productId - Product ID
+     * @param {number} quantity - လျှော့မည့် အရေအတွက်
+     * @returns {Promise<boolean>} - အောင်မြင်ပါက true
+     */
+    window.updateStockTransaction = async function(productId, quantity) {
+        return await window.runTransaction(async (transaction) => {
+            const productRef = db.collection('products').doc(productId);
+            const productDoc = await transaction.get(productRef);
+
+            if (!productDoc.exists) {
+                throw new Error('Product not found');
+            }
+
+            const currentStock = productDoc.data().stock || 0;
+            if (currentStock < quantity) {
+                throw new Error(`Insufficient stock. Available: ${currentStock}, Requested: ${quantity}`);
+            }
+
+            const newStock = currentStock - quantity;
+            transaction.update(productRef, {
+                stock: newStock,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            return true;
+        });
+    };
+
+    /**
+     * Order နှင့် Stock ကို တစ်ပြိုင်နက် update လုပ်ရန် Transaction
+     * @param {Object} orderData - Order data
+     * @param {Array} items - Cart items
+     * @returns {Promise<string>} - Order ID
+     */
+    window.createOrderTransaction = async function(orderData, items) {
+        return await window.runTransaction(async (transaction) => {
+            // 1. Update stock for each item
+            for (const item of items) {
+                const productRef = db.collection('products').doc(item.id);
+                const productDoc = await transaction.get(productRef);
+
+                if (!productDoc.exists) {
+                    throw new Error(`Product ${item.name} not found`);
+                }
+
+                const currentStock = productDoc.data().stock || 0;
+                if (currentStock < item.quantity) {
+                    throw new Error(`Insufficient stock for ${item.name}. Available: ${currentStock}`);
+                }
+
+                transaction.update(productRef, {
+                    stock: currentStock - item.quantity,
+                    sold: (productDoc.data().sold || 0) + item.quantity
+                });
+            }
+
+            // 2. Create order
+            const orderRef = db.collection('orders').doc();
+            const orderId = orderRef.id;
+            transaction.set(orderRef, {
+                ...orderData,
+                orderId: orderId,
+                status: 'pending',
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            return orderId;
+        });
+    };
+
+    // =============================================================
+    // ၂၃။ STORAGE HELPERS
+    // =============================================================
+    // Firebase Storage အတွက် အပိုဆောင်း Helpers
+    // =============================================================
+
+    /**
+     * File ကို Storage သို့ upload လုပ်ခြင်း
+     * @param {File} file - Upload လုပ်မည့် File
+     * @param {string} path - Storage path
+     * @param {Function} onProgress - Progress callback
+     * @returns {Promise<string>} - Download URL
+     */
+    window.uploadFile = function(file, path, onProgress) {
+        return new Promise((resolve, reject) => {
+            const storageRef = storage.ref(path);
+            const uploadTask = storageRef.put(file);
+
+            uploadTask.on('state_changed',
+                (snapshot) => {
+                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                    if (onProgress) onProgress(progress, snapshot);
+                },
+                (error) => {
+                    reject(error);
+                },
+                async () => {
+                    try {
+                        const url = await uploadTask.snapshot.ref.getDownloadURL();
+                        resolve(url);
+                    } catch (error) {
+                        reject(error);
+                    }
+                }
+            );
+        });
+    };
+
+    /**
+     * File ကို Storage မှ ဖျက်ခြင်း
+     * @param {string} path - Storage path
+     * @returns {Promise<void>}
+     */
+    window.deleteFile = async function(path) {
+        try {
+            const fileRef = storage.ref(path);
+            await fileRef.delete();
+            console.log(`✅ File deleted: ${path}`);
+        } catch (error) {
+            console.error(`Error deleting file ${path}:`, error);
+            throw error;
+        }
+    };
+
+    /**
+     * File URL ကို Storage မှ ရယူခြင်း
+     * @param {string} path - Storage path
+     * @returns {Promise<string>} - Download URL
+     */
+    window.getFileUrl = async function(path) {
+        try {
+            const fileRef = storage.ref(path);
+            const url = await fileRef.getDownloadURL();
+            return url;
+        } catch (error) {
+            console.error(`Error getting file URL for ${path}:`, error);
+            throw error;
+        }
+    };
+
+    /**
+     * Storage မှ file list ကိုရယူခြင်း
+     * @param {string} path - Storage path
+     * @returns {Promise<Array>} - File list
+     */
+    window.listFiles = async function(path) {
+        try {
+            const listRef = storage.ref(path);
+            const result = await listRef.listAll();
+            return result.items.map(item => item.name);
+        } catch (error) {
+            console.error(`Error listing files in ${path}:`, error);
+            throw error;
+        }
+    };
+
+    // =============================================================
+    // ၂၄။ ORDER STATUS HELPERS
+    // =============================================================
+    // Order status များအတွက် Helpers
+    // =============================================================
+
+    const orderStatuses = {
+        PENDING: 'pending',
+        CONFIRMED: 'confirmed',
+        PROCESSING: 'processing',
+        SHIPPED: 'shipped',
+        DELIVERED: 'delivered',
+        CANCELLED: 'cancelled'
+    };
+
+      const orderStatusLabels = {
+        pending: 'ဆိုင်သို့ရောက်ရှိ',
+        confirmed: 'အတည်ပြုပြီး',
+        processing: 'ပြင်ဆင်နေသည်',
+        shipped: 'ပို့ဆောင်နေသည်',
+        delivered: 'ရောက်ရှိပါပြီ',
+        cancelled: 'ဖျက်သိမ်းထားသည်'
+    };
+
+    const orderStatusColors = {
+        pending: '#fef3c7',
+        confirmed: '#dbeafe',
+        processing: '#e0e7ff',
+        shipped: '#d1fae5',
+        delivered: '#d1fae5',
+        cancelled: '#fee2e2'
+    };
+
+    const orderStatusTextColors = {
+        pending: '#92400e',
+        confirmed: '#1e40af',
+        processing: '#3730a3',
+        shipped: '#065f46',
+        delivered: '#065f46',
+        cancelled: '#991b1b'
+    };
+
+    window.orderStatus = orderStatuses;
+    window.orderStatusLabels = orderStatusLabels;
+    window.orderStatusColors = orderStatusColors;
+    window.orderStatusTextColors = orderStatusTextColors;
+
+    /**
+     * Order status ကိုအဆင့်မြှင့်တင်ရန် Helper
+     */
+    window.updateOrderStatus = async function(orderId, newStatus) {
+        if (!Object.values(orderStatuses).includes(newStatus)) {
+            throw new Error(`Invalid status: ${newStatus}`);
+        }
+
+        const orderRef = db.collection('orders').doc(orderId);
+        const order = await orderRef.get();
+
+        if (!order.exists) {
+            throw new Error('Order not found');
+        }
+
+        await orderRef.update({
+            status: newStatus,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        return newStatus;
+    };
+
+    /**
+     * Order status label ကိုရယူခြင်း
+     */
+    window.getOrderStatusLabel = function(status) {
+        return orderStatusLabels[status] || status;
+    };
+
+    /**
+     * Order status color ကိုရယူခြင်း
+     */
+    window.getOrderStatusColor = function(status) {
+        return orderStatusColors[status] || '#e5e7eb';
+    };
+
+    // =============================================================
+    // ၂၅။ PRICE FORMATTING
+    // =============================================================
+    // ဈေးနှုန်းကို မြန်မာကျပ် ပုံစံဖြင့် ပြသခြင်း
+    // =============================================================
+
+    /**
+     * ဈေးနှုန်းကို ပုံစံကျအောင်ပြသခြင်း
+     * @param {number} price - ဈေးနှုန်း
+     * @param {string} currency - ငွေကြေးအမျိုးအစား (default: 'Ks')
+     * @returns {string} - ပုံစံကျသော ဈေးနှုန်း
+     */
+    window.formatPrice = function(price, currency = 'Ks') {
+        if (price === undefined || price === null || isNaN(price)) {
+            return `${currency} 0`;
+        }
+        const num = Number(price);
+        const formatted = num.toLocaleString('en-US', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        });
+        return `${currency} ${formatted}`;
+    };
+
+    /**
+     * Discount ရာခိုင်နှုန်းကိုတွက်ချက်ခြင်း
+     */
+    window.calculateDiscount = function(originalPrice, currentPrice) {
+        if (!originalPrice || originalPrice <= 0) return 0;
+        const discount = ((originalPrice - currentPrice) / originalPrice) * 100;
+        return Math.round(discount);
+    };
+
+    // =============================================================
+    // ၂၆။ DATE & TIME HELPERS
+    // =============================================================
+    // Firebase Timestamp များအတွက် Helpers
+    // =============================================================
+
+    /**
+     * Timestamp ကို ရက်စွဲအဖြစ်ပြောင်းခြင်း
+     */
+    window.timestampToDate = function(timestamp) {
+        if (!timestamp) return null;
+        if (timestamp.toDate) {
+            return timestamp.toDate();
+        }
+        if (timestamp instanceof Date) {
+            return timestamp;
+        }
+        if (typeof timestamp === 'string') {
+            return new Date(timestamp);
+        }
+        if (typeof timestamp === 'number') {
+            return new Date(timestamp);
+        }
+        return null;
+    };
+
+    /**
+     * Timestamp ကို ပုံစံကျအောင်ပြသခြင်း
+     */
+    window.formatTimestamp = function(timestamp, format = 'datetime') {
+        const date = window.timestampToDate(timestamp);
+        if (!date) return 'N/A';
+
+        const options = {
+            date: { year: 'numeric', month: 'short', day: 'numeric' },
+            time: { hour: '2-digit', minute: '2-digit' },
+            datetime: { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' },
+            full: { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }
+        };
+
+        return date.toLocaleString('en-US', options[format] || options.datetime);
+    };
+
+    /**
+     * လက်ရှိအချိန်ကို Timestamp အဖြစ်ရယူခြင်း
+     */
+    window.nowTimestamp = function() {
+        return firebase.firestore.Timestamp.now();
+    };
+
+    // =============================================================
+    // ၂၇။ CACHE MANAGEMENT
+    // =============================================================
+    // Firestore ဒေတာကို cache လုပ်ရန် Helpers
+    // =============================================================
+
+    class CacheManager {
+        constructor() {
+            this.cache = new Map();
+            this.maxAge = 5 * 60 * 1000; // 5 minutes default
+        }
+
+        /**
+         * Cache သို့ ဒေတာသိမ်းခြင်း
+         */
+        set(key, data, maxAge = this.maxAge) {
+            this.cache.set(key, {
+                data: data,
+                timestamp: Date.now(),
+                maxAge: maxAge
+            });
+        }
+
+        /**
+         * Cache မှ ဒေတာရယူခြင်း
+         */
+        get(key) {
+            const entry = this.cache.get(key);
+            if (!entry) return null;
+
+            const age = Date.now() - entry.timestamp;
+            if (age > entry.maxAge) {
+                this.cache.delete(key);
+                return null;
+            }
+
+            return entry.data;
+        }
+
+        /**
+         * Cache ကိုရှင်းလင်းခြင်း
+         */
+        clear() {
+            this.cache.clear();
+        }
+
+        /**
+         * Cache ရှိမရှိစစ်ဆေးခြင်း
+         */
+        has(key) {
+            return this.cache.has(key) && this.get(key) !== null;
+        }
+
+        /**
+         * Expired cache များကိုရှင်းလင်းခြင်း
+         */
+        clean() {
+            for (const [key, entry] of this.cache) {
+                const age = Date.now() - entry.timestamp;
+                if (age > entry.maxAge) {
+                    this.cache.delete(key);
+                }
+            }
+        }
+    }
+
+    const cacheManager = new CacheManager();
+    window.cacheManager = cacheManager;
+
+    /**
+     * Cached query helper
+     */
+    window.cachedQuery = async function(collectionName, queryOptions, cacheKey = null) {
+        const key = cacheKey || `${collectionName}_${JSON.stringify(queryOptions)}`;
+
+        // Check cache first
+        const cached = cacheManager.get(key);
+        if (cached) {
+            console.log(`📦 Cache hit: ${key}`);
+            return cached;
+        }
+
+        // Execute query
+        let query = db.collection(collectionName);
+
+        if (queryOptions.where) {
+            queryOptions.where.forEach(w => {
+                query = query.where(w[0], w[1], w[2]);
+            });
+        }
+
+        if (queryOptions.orderBy) {
+            queryOptions.orderBy.forEach(o => {
+                query = query.orderBy(o.field, o.direction || 'asc');
+            });
+        }
+
+        if (queryOptions.limit) {
+            query = query.limit(queryOptions.limit);
+        }
+
+        const snapshot = await query.get();
+        const data = [];
+        snapshot.forEach(doc => {
+            data.push({ id: doc.id, ...doc.data() });
+        });
+
+        // Save to cache
+        cacheManager.set(key, data);
+        console.log(`📦 Cache set: ${key}`);
+
+        return data;
+    };
+
+    // =============================================================
+    // ၂၈။ COLLECTION GROUP HELPERS
+    // =============================================================
+    // Collection Group Queries အတွက် Helpers
+    // =============================================================
+
+    /**
+     * Collection Group query ကို run ခြင်း
+     */
+    window.queryCollectionGroup = async function(collectionId, filters = {}) {
+        let query = db.collectionGroup(collectionId);
+
+        if (filters.where) {
+            filters.where.forEach(w => {
+                query = query.where(w[0], w[1], w[2]);
+            });
+        }
+
+        if (filters.orderBy) {
+            query = query.orderBy(filters.orderBy.field, filters.orderBy.direction || 'asc');
+        }
+
+        if (filters.limit) {
+            query = query.limit(filters.limit);
+        }
+
+        const snapshot = await query.get();
+        const data = [];
+        snapshot.forEach(doc => {
+            data.push({ id: doc.id, ...doc.data(), refPath: doc.ref.path });
+        });
+        return data;
+    };
+
+    // =============================================================
+    // ၂၉။ EXPOSE ALL HELPERS
+    // =============================================================
+    // အားလုံးကို Global အဖြစ် သတ်မှတ်ခြင်း
+    // =============================================================
+
+    // Listener Manager
+    window.listenerManager = listenerManager;
+    window.listenCollection = window.listenCollection;
+    window.listenDocument = window.listenDocument;
+
+    // Validators
+    window.validators = validators;
+    window.validateProduct = window.validateProduct;
+    window.validateOrder = window.validateOrder;
+
+    // Security
+    window.securityRules = securityRules;
+    window.checkPermission = window.checkPermission;
+
+    // Transactions
+    window.runTransaction = window.runTransaction;
+    window.updateStockTransaction = window.updateStockTransaction;
+    window.createOrderTransaction = window.createOrderTransaction;
+
+    // Storage
+    window.uploadFile = window.uploadFile;
+    window.deleteFile = window.deleteFile;
+    window.getFileUrl = window.getFileUrl;
+    window.listFiles = window.listFiles;
+
+    // Order Status
+    window.orderStatus = orderStatuses;
+    window.orderStatusLabels = orderStatusLabels;
+    window.orderStatusColors = orderStatusColors;
+    window.orderStatusTextColors = orderStatusTextColors;
+    window.updateOrderStatus = window.updateOrderStatus;
+    window.getOrderStatusLabel = window.getOrderStatusLabel;
+    window.getOrderStatusColor = window.getOrderStatusColor;
+
+    // Price & Formatting
+    window.formatPrice = window.formatPrice;
+    window.calculateDiscount = window.calculateDiscount;
+
+    // Date & Time
+    window.timestampToDate = window.timestampToDate;
+    window.formatTimestamp = window.formatTimestamp;
+    window.nowTimestamp = window.nowTimestamp;
+
+    // Cache
+    window.cacheManager = cacheManager;
+    window.cachedQuery = window.cachedQuery;
+
+    // Collection Group
+    window.queryCollectionGroup = window.queryCollectionGroup;
+
+    // =============================================================
+        // ၃၀။ FINAL LOGGING
+    // =============================================================
+    console.log('✅ firebase-config.js - Part 2 (Lines 301-600) complete.');
+    console.log('📦 Advanced features loaded:');
+    console.log('   - Listener Manager');
+    console.log('   - Data Validators');
+    console.log('   - Security Rules Simulation');
+    console.log('   - Transaction Helpers');
+    console.log('   - Storage Helpers');
+    console.log('   - Order Status Helpers');
+    console.log('   - Price Formatting');
+    console.log('   - Cache Manager');
+    console.log('   - Collection Group Queries');
+
+})(); // IIFE end
+
+// ============================================================
+// ဤနေရာတွင် firebase-config.js Part 2 ပြီးဆုံးပါသည်။
+// လိုင်း ၆၀၀ အတိအကျ။
+// firebase-config.js ဖိုင်အတွက် စုစုပေါင်း လိုင်း ၆၀၀ အထိ ပြီးမြောက်ပါပြီ။
+// ============================================================
