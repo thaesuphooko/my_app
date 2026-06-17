@@ -1,66 +1,968 @@
 <!DOCTYPE html>
-<html lang="my" data-theme="light">
+<html lang="my">
 <head>
-    <!-- Meta Tags - မြန်မာဘာသာအပြည့်အဝ -->
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#e11b1b">
-    <title>ShopNow Admin Panel</title>
-
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Myanmar:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- ============================================================
+    admin.html - PART 1 (LINES 1-300)
+    အက်ဒမင်ပန်နယ် UI – ဆိုင်ပိုင်ရှင်အတွက် စီမံခန့်ခွဲရေး
+    ဤအပိုင်းတွင် HTML ဖွဲ့စည်းပုံ၊ CSS အားလုံးနှင့် 
+    အခြေခံ UI အပိုင်းများ ပါဝင်သည်။
+    ============================================================ -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
+    <title>Admin Panel – Premium Shop</title>
 
     <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    
-    <!-- Leaflet CSS (optional for admin) -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    
-    <!-- Papa Parse -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <!-- Papa Parse (CSV) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
 
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="style.css">
+    <style>
+        /* ===== RESET & ROOT ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-    <!-- Firebase Config -->
-    <script src="firebase-config.js" defer></script>
-    <!-- Admin Scripts -->
-    <script src="admin.js" defer></script>
+        :root {
+            --primary: #e11b1b;
+            --primary-dark: #b71c1c;
+            --secondary: #ff6b00;
+            --bg-start: #fce4ec;
+            --bg-end: #f3e5f5;
+            --card-bg: rgba(255, 255, 255, 0.80);
+            --card-border: rgba(255, 255, 255, 0.30);
+            --text-primary: #1a1a2e;
+            --text-secondary: #4a4a6a;
+            --text-light: #8888aa;
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+            --radius: 16px;
+            --header-height: 64px;
+            --sidebar-width: 240px;
+            --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Dark Theme */
+        [data-theme="dark"] {
+            --bg-start: #0f0f1a;
+            --bg-end: #1a1a2e;
+            --card-bg: rgba(30, 30, 50, 0.80);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #f0f0f5;
+            --text-secondary: #b0b0cc;
+            --text-light: #6a6a8a;
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.40);
+        }
+
+        html,
+        body {
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(145deg, var(--bg-start), var(--bg-end));
+            color: var(--text-primary);
+            transition: background var(--transition), color var(--transition);
+            overflow: hidden;
+        }
+
+        /* ===== ADMIN SHELL ===== */
+        #adminApp {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            max-width: 1400px;
+            margin: 0 auto;
+            background: transparent;
+        }
+
+        /* ===== HEADER ===== */
+        .admin-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            height: var(--header-height);
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--card-border);
+            flex-shrink: 0;
+            z-index: 20;
+        }
+
+        .admin-header .logo {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--primary);
+        }
+        .admin-header .logo i {
+            color: var(--secondary);
+            margin-right: 6px;
+        }
+
+        .admin-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .admin-header-actions button {
+            background: rgba(0, 0, 0, 0.04);
+            border: none;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            font-size: 16px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        [data-theme="dark"] .admin-header-actions button {
+            background: rgba(255, 255, 255, 0.06);
+        }
+        .admin-header-actions button:hover {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .admin-user-badge {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .admin-user-badge img {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ===== BODY (Sidebar + Content) ===== */
+        .admin-body {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* ===== SIDEBAR ===== */
+        .admin-sidebar {
+            width: var(--sidebar-width);
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-right: 1px solid var(--card-border);
+            padding: 16px 12px;
+            overflow-y: auto;
+            flex-shrink: 0;
+            transition: transform var(--transition);
+            z-index: 10;
+        }
+        .admin-sidebar::-webkit-scrollbar {
+            width: 3px;
+        }
+        .admin-sidebar::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 30px;
+        }
+
+        .sidebar-menu {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .sidebar-menu .menu-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 12px 12px 6px;
+        }
+        .sidebar-menu .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all var(--transition);
+            border: none;
+            background: transparent;
+            width: 100%;
+            text-align: left;
+            font-family: inherit;
+        }
+        .sidebar-menu .menu-item i {
+            width: 20px;
+            font-size: 16px;
+            color: var(--text-light);
+            transition: color var(--transition);
+        }
+        .sidebar-menu .menu-item:hover {
+            background: rgba(225, 27, 27, 0.06);
+            color: var(--text-primary);
+        }
+        .sidebar-menu .menu-item.active {
+            background: var(--primary);
+            color: #fff;
+            box-shadow: 0 4px 16px rgba(225, 27, 27, 0.25);
+        }
+        .sidebar-menu .menu-item.active i {
+            color: #fff;
+        }
+
+        /* ===== MAIN CONTENT ===== */
+        .admin-content {
+            flex: 1;
+            padding: 20px 24px 24px;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        .admin-content::-webkit-scrollbar {
+            width: 4px;
+        }
+        .admin-content::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 30px;
+        }
+
+        /* ===== ADMIN CARDS ===== */
+        .admin-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: all var(--transition);
+        }
+        .admin-card:hover {
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.10);
+        }
+        .admin-card .card-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .admin-card .card-title i {
+            color: var(--primary);
+        }
+
+        /* ===== TABLES ===== */
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        table.admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        table.admin-table th {
+            text-align: left;
+            padding: 10px 12px;
+            background: rgba(0, 0, 0, 0.02);
+            font-weight: 600;
+            color: var(--text-secondary);
+            border-bottom: 2px solid var(--card-border);
+            white-space: nowrap;
+        }
+        [data-theme="dark"] table.admin-table th {
+            background: rgba(255, 255, 255, 0.03);
+        }
+        table.admin-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--card-border);
+            vertical-align: middle;
+        }
+        table.admin-table tr:hover td {
+            background: rgba(225, 27, 27, 0.03);
+        }
+        table.admin-table .checkbox-col {
+            width: 36px;
+            text-align: center;
+        }
+        table.admin-table .checkbox-col input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--primary);
+            cursor: pointer;
+        }
+
+        /* ===== FORM ELEMENTS ===== */
+        .admin-input {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1px solid var(--card-border);
+            background: var(--card-bg);
+            color: var(--text-primary);
+            font-size: 14px;
+            transition: border var(--transition);
+            outline: none;
+        }
+        .admin-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(225, 27, 27, 0.10);
+        }
+        .admin-input-sm {
+            padding: 6px 10px;
+            font-size: 13px;
+        }
+
+        .admin-btn {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .admin-btn-primary {
+            background: var(--primary);
+            color: #fff;
+        }
+        .admin-btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(225, 27, 27, 0.30);
+        }
+        .admin-btn-secondary {
+            background: var(--secondary);
+            color: #fff;
+        }
+        .admin-btn-secondary:hover {
+            opacity: 0.85;
+            transform: translateY(-1px);
+        }
+        .admin-btn-outline {
+            background: transparent;
+            border: 1px solid var(--card-border);
+            color: var(--text-secondary);
+        }
+        .admin-btn-outline:hover {
+            background: var(--card-bg);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+        .admin-btn-danger {
+            background: #dc2626;
+            color: #fff;
+        }
+        .admin-btn-danger:hover {
+            background: #b91c1c;
+            transform: translateY(-1px);
+        }
+        .admin-btn-sm {
+            padding: 5px 14px;
+            font-size: 12px;
+        }
+
+        /* ===== GRID LAYOUT ===== */
+        .admin-grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .admin-grid-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+        }
+        .admin-grid-4 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+        }
+
+        /* ===== STAT CARDS ===== */
+        .stat-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius);
+            padding: 18px 20px;
+            text-align: center;
+            transition: all var(--transition);
+        }
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow);
+        }
+        .stat-card .stat-number {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--primary);
+        }
+        .stat-card .stat-label {
+            font-size: 13px;
+            color: var(--text-light);
+            margin-top: 4px;
+        }
+        .stat-card .stat-icon {
+            font-size: 28px;
+            color: var(--text-light);
+            opacity: 0.4;
+            margin-bottom: 6px;
+        }
+
+        /* ===== TOGGLE SWITCH ===== */
+        .toggle-switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            background: #ccc;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: background var(--transition);
+            flex-shrink: 0;
+        }
+        .toggle-switch.active {
+            background: var(--primary);
+        }
+        .toggle-switch .toggle-knob {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: #fff;
+            border-radius: 50%;
+            transition: transform var(--transition);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+        .toggle-switch.active .toggle-knob {
+            transform: translateX(20px);
+        }
+
+        /* ===== BADGE / CHIP ===== */
+        .badge-status {
+            padding: 3px 12px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+        }
+        .badge-status.pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        .badge-status.confirmed {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        .badge-status.shipped {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .badge-status.delivered {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .badge-status.cancelled {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 1024px) {
+            .admin-grid-4 {
+                grid-template-columns: 1fr 1fr;
+            }
+            .admin-grid-3 {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        @media (max-width: 768px) {
+            .admin-sidebar {
+                position: fixed;
+                top: var(--header-height);
+                left: 0;
+                bottom: 0;
+                transform: translateX(-100%);
+                width: 260px;
+                z-index: 30;
+                border-right: 1px solid var(--card-border);
+                box-shadow: 4px 0 30px rgba(0, 0, 0, 0.10);
+            }
+            .admin-sidebar.open {
+                transform: translateX(0);
+            }
+            .admin-grid-2,
+            .admin-grid-3,
+            .admin-grid-4 {
+                grid-template-columns: 1fr;
+            }
+            .admin-content {
+                padding: 16px;
+            }
+            /* Mobile menu toggle */
+            .menu-toggle-btn {
+                display: flex !important;
+            }
+        }
+        .menu-toggle-btn {
+            display: none;
+        }
+
+        /* ===== DROP ZONE ===== */
+        .drop-zone {
+            border: 2px dashed var(--card-border);
+            border-radius: 12px;
+            padding: 30px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all var(--transition);
+            background: var(--card-bg);
+        }
+        .drop-zone:hover,
+        .drop-zone.dragover {
+            border-color: var(--primary);
+            background: rgba(225, 27, 27, 0.04);
+        }
+        .drop-zone i {
+            font-size: 36px;
+            color: var(--text-light);
+            opacity: 0.4;
+        }
+
+        /* ===== CODE EDITOR (Simple) ===== */
+        .code-editor {
+            background: #1e1e2e;
+            color: #d4d4d4;
+            padding: 16px;
+            border-radius: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            min-height: 200px;
+            width: 100%;
+            border: none;
+            outline: none;
+            resize: vertical;
+            tab-size: 2;
+        }
+        .code-editor:focus {
+            outline: 2px solid var(--primary);
+            outline-offset: 2px;
+        }
+
+        /* ===== PAGINATION ===== */
+        .pagination {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+        .pagination button {
+            padding: 6px 14px;
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            background: var(--card-bg);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all var(--transition);
+            font-size: 13px;
+        }
+        .pagination button:hover {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+        }
+        .pagination button.active {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+        }
+
+        /* ===== MISC ===== */
+        .flex-between {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .flex-center {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .gap-8 {
+            gap: 8px;
+        }
+        .gap-12 {
+            gap: 12px;
+        }
+        .mt-12 {
+            margin-top: 12px;
+        }
+        .mb-12 {
+            margin-bottom: 12px;
+        }
+        .text-muted {
+            color: var(--text-light);
+        }
+        .text-primary {
+            color: var(--primary);
+        }
+        .fw-600 {
+            font-weight: 600;
+        }
+        .w-full {
+            width: 100%;
+        }
+    </style>
 </head>
 <body>
-    <!-- 
-      Admin Panel Container -
-      admin.js မှ အလိုအလျောက် စီမံမည်။
-      Login မဝင်ရသေးပါက Login UI ပြမည်။
-    -->
-    <div id="admin-container"></div>
 
+    <!-- ============================================================ -->
+     <!-- ADMIN APP -->
+    <!-- ============================================================ -->
+    <div id="adminApp">
+
+        <!-- ===== HEADER ===== -->
+        <header class="admin-header">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <button class="menu-toggle-btn" id="menuToggleBtn" style="background:none; border:none; font-size:22px; color:var(--text-secondary); cursor:pointer;">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <span class="logo"><i class="fas fa-crown"></i>Admin Panel</span>
+            </div>
+            <div class="admin-header-actions">
+                <button id="adminThemeToggle" title="အလင်းအမှောင်"><i class="fas fa-moon"></i></button>
+                <button id="adminLogoutBtn" title="ထွက်ရန်"><i class="fas fa-sign-out-alt"></i></button>
+                <div class="admin-user-badge">
+                    <span id="adminNameDisplay">Admin</span>
+                    <div style="width:32px;height:32px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;">A</div>
+                </div>
+            </div>
+        </header>
+
+        <!-- ===== BODY ===== -->
+        <div class="admin-body">
+
+            <!-- ===== SIDEBAR ===== -->
+            <nav class="admin-sidebar" id="adminSidebar">
+                <div class="sidebar-menu">
+                    <div class="menu-label">အဓိက</div>
+                    <button class="menu-item active" data-section="dashboard"><i class="fas fa-chart-pie"></i> Dashboard</button>
+                    <button class="menu-item" data-section="products"><i class="fas fa-boxes"></i> ကုန်ပစ္စည်းများ</button>
+                    <button class="menu-item" data-section="orders"><i class="fas fa-truck"></i> အော်ဒါများ</button>
+                    <button class="menu-item" data-section="messages"><i class="fas fa-comment-dots"></i> စာဝိုင်းများ</button>
+                    <div class="menu-label">စီမံခန့်ခွဲရေး</div>
+                    <button class="menu-item" data-section="ui-config"><i class="fas fa-palette"></i> UI Config</button>
+                    <button class="menu-item" data-section="telegram"><i class="fab fa-telegram"></i> Telegram</button>
+                    <button class="menu-item" data-section="backup"><i class="fas fa-database"></i> Backup</button>
+                    <button class="menu-item" data-section="code-injector"><i class="fas fa-code"></i> Code Injector</button>
+                    <div class="menu-label">အခြား</div>
+                    <button class="menu-item" data-section="settings"><i class="fas fa-cog"></i> ဆက်တင်များ</button>
+                    <button class="menu-item" id="viewStoreBtn"><i class="fas fa-store"></i> ဆိုင်သို့သွားရန်</button>
+                </div>
+            </nav>
+
+            <!-- ===== CONTENT ===== -->
+            <main class="admin-content" id="adminContent">
+
+                <!-- ===== DASHBOARD SECTION ===== -->
+                <section id="section-dashboard" class="admin-section active">
+                    <h2 style="font-size:22px; margin-bottom:20px;"><i class="fas fa-chart-pie text-primary"></i> Dashboard</h2>
+                    <div class="admin-grid-4" id="statsContainer">
+                        <div class="stat-card"><div class="stat-icon"><i class="fas fa-box"></i></div><div class="stat-number" id="statProducts">0</div><div class="stat-label">ကုန်ပစ္စည်း</div></div>
+                        <div class="stat-card"><div class="stat-icon"><i class="fas fa-truck"></i></div><div class="stat-number" id="statOrders">0</div><div class="stat-label">အော်ဒါများ</div></div>
+                        <div class="stat-card"><div class="stat-icon"><i class="fas fa-users"></i></div><div class="stat-number" id="statUsers">0</div><div class="stat-label">သုံးစွဲသူ</div></div>
+                        <div class="stat-card"><div class="stat-icon"><i class="fas fa-dollar-sign"></i></div><div class="stat-number" id="statRevenue">Ks 0</div><div class="stat-label">စုစုပေါင်းရောင်းအား</div></div>
+                    </div>
+                    <div class="admin-card">
+                        <div class="card-title"><i class="fas fa-clock"></i> နောက်ဆုံးအော်ဒါများ</div>
+                        <div class="table-responsive">
+                            <table class="admin-table" id="recentOrdersTable">
+                                <thead><tr><th>အော်ဒါ ID</th><th>အမည်</th><th>စုစုပေါင်း</th><th>အခြေအနေ</th><th>ရက်စွဲ</th></tr></thead>
+                                <tbody><tr><td colspan="5" class="text-muted" style="text-align:center;padding:20px;">အော်ဒါမရှိသေးပါ</td></tr></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ===== PRODUCTS SECTION ===== -->
+                <section id="section-products" class="admin-section" style="display:none;">
+                    <div class="flex-between" style="margin-bottom:16px; flex-wrap:wrap; gap:12px;">
+                        <h2 style="font-size:20px;"><i class="fas fa-boxes text-primary"></i> ကုန်ပစ္စည်းများ</h2>
+                        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                            <button class="admin-btn admin-btn-primary" id="addProductBtn"><i class="fas fa-plus"></i> အသစ်ထည့်</button>
+                            <button class="admin-btn admin-btn-secondary" id="importCsvBtn"><i class="fas fa-file-import"></i> CSV Import</button>
+                            <button class="admin-btn admin-btn-outline" id="exportCsvBtn"><i class="fas fa-file-export"></i> CSV Export</button>
+                            <button class="admin-btn admin-btn-danger" id="bulkDeleteBtn"><i class="fas fa-trash"></i> Bulk Delete</button>
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:12px; margin-bottom:16px; flex-wrap:wrap;">
+                        <input type="text" id="productSearch" placeholder="🔍 ရှာဖွေရန်..." class="admin-input" style="max-width:300px;" />
+                        <button class="admin-btn admin-btn-primary admin-btn-sm" id="bulkPriceBtn">ဈေးနှုန်း Bulk ပြောင်း</button>
+                    </div>
+                    <div class="admin-card" style="padding:12px;">
+                        <div class="table-responsive">
+                            <table class="admin-table" id="productTable">
+                                <thead>
+                                    <tr>
+                                        <th class="checkbox-col"><input type="checkbox" id="selectAllProducts" /></th>
+                                        <th>ပုံ</th>
+                                        <th>အမည်</th>
+                                        <th>အမျိုးအစား</th>
+                                        <th>မူရင်းဈေး</th>
+                                        <th>ရောင်းဈေး</th>
+                                        <th>စတော့</th>
+                                        <th>လုပ်ဆောင်ချက်</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="productTableBody">
+                                    <tr><td colspan="8" class="text-muted" style="text-align:center;padding:20px;">ကုန်ပစ္စည်းများ ဖွင့်နေသည်...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="pagination" id="productPagination"></div>
+                    </div>
+                </section>
+
+                <!-- ===== ORDERS SECTION ===== -->
+                <section id="section-orders" class="admin-section" style="display:none;">
+                    <h2 style="font-size:20px; margin-bottom:16px;"><i class="fas fa-truck text-primary"></i> အော်ဒါများ</h2>
+                    <div class="admin-card" style="padding:12px;">
+                        <div class="table-responsive">
+                            <table class="admin-table" id="orderTable">
+                                <thead>
+                                    <tr>
+                                        <th>အော်ဒါ ID</th>
+                                        <th>အမည်</th>
+                                        <th>ဖုန်း</th>
+                                        <th>ပစ္စည်းများ</th>
+                                        <th>စုစုပေါင်း</th>
+                                        <th>အခြေအနေ</th>
+                                        <th>ရက်စွဲ</th>
+                                        <th>လုပ်ဆောင်ချက်</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="orderTableBody">
+                                    <tr><td colspan="8" class="text-muted" style="text-align:center;padding:20px;">အော်ဒါမရှိသေးပါ</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="pagination" id="orderPagination"></div>
+                    </div>
+                </section>
+
+                <!-- ===== MESSAGES SECTION ===== -->
+                <section id="section-messages" class="admin-section" style="display:none;">
+                    <h2 style="font-size:20px; margin-bottom:16px;"><i class="fas fa-comment-dots text-primary"></i> စာဝိုင်းများ</h2>
+                    <div class="admin-card">
+                        <div id="adminMessageList" style="max-height:400px; overflow-y:auto;">
+                            <div class="text-muted" style="text-align:center;padding:30px;">စာဝိုင်းများ မရှိသေးပါ</div>
+                        </div>
+                        <div style="display:flex; gap:10px; margin-top:12px;">
+                            <input type="text" id="adminMsgInput" placeholder="Broadcast စာရိုက်ပါ..." class="admin-input" />
+                            <button class="admin-btn admin-btn-primary" id="adminMsgSendBtn">ပို့မည်</button>
+                        </div>
+                    </div>
+                </section>
+
+ <!-- ===== UI CONFIG SECTION ===== -->
+                <section id="section-ui-config" class="admin-section" style="display:none;">
+                    <h2 style="font-size:20px; margin-bottom:16px;"><i class="fas fa-palette text-primary"></i> UI Configuration</h2>
+                    <div class="admin-grid-2">
+                        <div class="admin-card">
+                            <div class="card-title"><i class="fas fa-fill-drip"></i> အရောင်များ</div>
+                            <div style="display:flex; gap:16px; flex-wrap:wrap;">
+                                <div><label style="font-size:13px;color:var(--text-light);">Primary</label><input type="color" id="configPrimary" value="#e11b1b" style="width:60px;height:40px;border:none;cursor:pointer;background:transparent;" /></div>
+                                <div><label style="font-size:13px;color:var(--text-light);">Secondary</label><input type="color" id="configSecondary" value="#ff6b00" style="width:60px;height:40px;border:none;cursor:pointer;background:transparent;" /></div>
+                            </div>
+                        </div>
+                        <div class="admin-card">
+                            <div class="card-title"><i class="fas fa-columns"></i> Grid Settings</div>
+                            <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+                                <label style="font-size:13px;">Desktop Grid:</label>
+                                <select id="configGridDesktop" class="admin-input admin-input-sm" style="width:80px;">
+                                    <option value="4">4</option>
+                                    <option value="5">5</option>
+                                    <option value="6">6</option>
+                                </select>
+                                <label style="font-size:13px;">Mobile Grid:</label>
+                                <select id="configGridMobile" class="admin-input admin-input-sm" style="width:80px;">
+                                    <option value="2">2</option>
+                                    <option value="1">1</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="admin-card">
+                        <div class="card-title"><i class="fas fa-toggle-on"></i> Feature Toggles</div>
+                        <div style="display:flex; gap:24px; flex-wrap:wrap;">
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <span>Flash Sale</span>
+                                <div class="toggle-switch active" id="toggleFlashSale"><div class="toggle-knob"></div></div>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <span>Categories Bar</span>
+                                <div class="toggle-switch active" id="toggleCategories"><div class="toggle-knob"></div></div>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <span>Slow Mode Clock</span>
+                                <div class="toggle-switch active" id="toggleSlowMode"><div class="toggle-knob"></div></div>
+                            </div>
+                        </div>
+                        <div style="margin-top:12px; display:flex; align-items:center; gap:12px;">
+                            <label style="font-size:13px;">Slow Multiplier:</label>
+                            <input type="number" id="configSlowMultiplier" value="6" min="1" max="20" class="admin-input admin-input-sm" style="width:80px;" />
+                            <button class="admin-btn admin-btn-primary admin-btn-sm" id="saveConfigBtn"><i class="fas fa-save"></i> သိမ်းမည်</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ===== TELEGRAM SECTION ===== -->
+                <section id="section-telegram" class="admin-section" style="display:none;">
+                    <h2 style="font-size:20px; margin-bottom:16px;"><i class="fab fa-telegram text-primary"></i> Telegram Settings</h2>
+                    <div class="admin-card">
+                        <div style="display:flex; flex-direction:column; gap:12px;">
+                            <div><label style="font-weight:600;">Chat ID:</label> <span id="tgChatId">6917040501</span></div>
+                            <div><label style="font-weight:600;">Bot Tokens (Round-Robin):</label></div>
+                            <div id="tgTokensList" style="font-size:13px;color:var(--text-secondary);">
+                                1) 8869917655:AAFk9tcBhEkmaFEOzXsbmcRQtymBtSZ3M9g<br />
+                                2) 8914390345:AAE-oorODF1HQbOLkuKJkNXwy-w2XbXtud0<br />
+                                3) 8684986169:AAE2JP-iOydPWEStbg2iDQ4koipL1czWYs0<br />
+                                4) 8949147819:AAGBSy8ZexmYrDMo2pRuqUA1k8PyOyE9OJQ
+                            </div>
+                            <div style="display:flex; gap:8px; margin-top:8px;">
+                                <input type="text" id="tgBroadcastMsg" placeholder="Broadcast စာသား..." class="admin-input" />
+                                <button class="admin-btn admin-btn-primary" id="tgBroadcastBtn"><i class="fab fa-telegram"></i> Broadcast</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ===== BACKUP SECTION ===== -->
+                <section id="section-backup" class="admin-section" style="display:none;">
+                    <h2 style="font-size:20px; margin-bottom:16px;"><i class="fas fa-database text-primary"></i> Backup & File Manager</h2>
+                    <div class="admin-grid-2">
+                        <div class="admin-card">
+                            <div class="card-title"><i class="fas fa-file-code"></i> Code Editor</div>
+                            <label style="font-size:13px;color:var(--text-light);">ဖိုင်:</label>
+                            <select id="backupFileSelect" class="admin-input admin-input-sm" style="margin-bottom:8px;">
+                                <option value="index.html">index.html</option>
+                                <option value="admin.html">admin.html</option>
+                                <option value="style.css">style.css</option>
+                                <option value="main.js">main.js</option>
+                                <option value="user.js">user.js</option>
+                                <option value="admin.js">admin.js</option>
+                                <option value="firebase-config.js">firebase-config.js</option>
+                            </select>
+                            <textarea id="codeEditorArea" class="code-editor" rows="8" placeholder="ကုဒ်ကို ဤနေရာတွင် ပြင်ဆင်ပါ..."></textarea>
+                            <div style="display:flex; gap:8px; margin-top:8px;">
+                                <button class="admin-btn admin-btn-primary admin-btn-sm" id="saveCodeBtn"><i class="fas fa-save"></i> သိမ်းမည်</button>
+                                <button class="admin-btn admin-btn-secondary admin-btn-sm" id="backupNowBtn"><i class="fas fa-archive"></i> Backup ပြုလုပ်ရန်</button>
+                            </div>
+                        </div>
+                        <div class="admin-card">
+                            <div class="card-title"><i class="fas fa-history"></i> နောက်ဆုံး Backup များ</div>
+                            <div id="backupList" style="max-height:300px; overflow-y:auto;">
+                                <div class="text-muted" style="text-align:center;padding:20px;">Backup မရှိသေးပါ</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ===== CODE INJECTOR ===== -->
+                <section id="section-code-injector" class="admin-section" style="display:none;">
+                    <h2 style="font-size:20px; margin-bottom:16px;"><i class="fas fa-code text-primary"></i> DeepSeek AI Code Injector</h2>
+                    <div class="admin-card">
+                        <div class="card-title"><i class="fas fa-robot"></i> သဘာဝဘာသာဖြင့် အမိန့်ပေးပါ</div>
+                        <textarea id="aiPromptInput" rows="4" class="admin-input" placeholder="ဥပမာ - 'ထုတ်ကုန်ကတ်များကို အနီရောင်ဘောင်လေးထည့်ပါ'"></textarea>
+                        <div style="display:flex; gap:8px; margin-top:8px;">
+                            <button class="admin-btn admin-btn-primary" id="aiInjectBtn"><i class="fas fa-wand-magic-sparkles"></i> Code Inject</button>
+                            <button class="admin-btn admin-btn-outline" id="aiPreviewBtn">Preview</button>
+                        </div>
+                        <div id="aiResult" style="margin-top:12px; background:var(--card-bg); border-radius:12px; padding:16px; min-height:60px; border:1px solid var(--card-border); font-family:monospace; font-size:13px; white-space:pre-wrap; display:none;"></div>
+                    </div>
+                </section>
+
+                <!-- ===== SETTINGS ===== -->
+                <section id="section-settings" class="admin-section" style="display:none;">
+                    <h2 style="font-size:20px; margin-bottom:16px;"><i class="fas fa-cog text-primary"></i> ဆက်တင်များ</h2>
+                    <div class="admin-card">
+                        <div style="display:flex; flex-direction:column; gap:16px;">
+                            <div style="display:flex; align-items:center; gap:16px;">
+                                <label style="font-weight:600;">Admin Password:</label>
+                                <input type="text" id="adminPasswordInput" value="2003" class="admin-input admin-input-sm" style="width:150px;" />
+                                <button class="admin-btn admin-btn-primary admin-btn-sm" id="updatePasswordBtn">ပြောင်းမည်</button>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:16px;">
+                                <label style="font-weight:600;">ဆိုင်အမည်:</label>
+                                <input type="text" id="shopNameInput" value="Premium Shop" class="admin-input admin-input-sm" style="width:200px;" />
+                                <button class="admin-btn admin-btn-primary admin-btn-sm" id="updateShopNameBtn">သိမ်းမည်</button>
+                            </div>
+                            <div>
+                                <button class="admin-btn admin-btn-danger" id="clearAllDataBtn"><i class="fas fa-exclamation-triangle"></i> ဒေတာအားလုံးရှင်းရန်</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- FIREBASE CONFIG (ဤနေရာတွင် ထည့်သွင်းထားသည်) -->
+    <!-- ============================================================ -->
     <script>
-        // admin.js ပြီးသည်နှင့် Admin Panel စတင်ရန်
-        window.addEventListener('DOMContentLoaded', () => {
-            // admin.js ၏ initAdminPanel ကို ခေါ်မည်။
-            // admin.js သည် လက်ရှိ hash ကို #step ဟု မသတ်မှတ်ဘဲ admin.html တွင် 
-            // အမြဲတမ်း admin panel ပြသရန် အနည်းငယ် ပြင်ဆင်ထားသည်။
-            if (typeof initAdminPanel === 'function') {
-                initAdminPanel();
-            } else {
-                // admin.js မရောက်သေးပါက စောင့်ဆိုင်းရန်
-                const check = setInterval(() => {
-                    if (typeof initAdminPanel === 'function') {
-                        clearInterval(check);
-                        initAdminPanel();
-                    }
-                }, 200);
-            }
-        });
+        const firebaseConfig = {
+            apiKey: "AIzaSyDSu2XksfUZ6mAfktUpBqFtNxrgj96h1l4",
+            authDomain: "app-my-caee3.firebaseapp.com",
+            projectId: "app-my-caee3",
+            storageBucket: "app-my-caee3.firebasestorage.app",
+            messagingSenderId: "169669907659",
+            appId: "1:169669907659:web:8fba75e7aed449e3ffb74e",
+            measurementId: "G-RTM9J8L6R1"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+        const storage = firebase.storage();
+
+        // Theme from localStorage
+        const savedTheme = localStorage.getItem('adminTheme') || 'light';
+        if (savedTheme === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            document.querySelector('#adminThemeToggle i').className = 'fas fa-sun';
+        }
+
+        console.log('✅ admin.html Part 1 (Lines 1-300) loaded.');
     </script>
+    <!-- ============================================================ -->
+    <!-- ဤနေရာတွင် admin.html Part 1 ပြီးဆုံးပါသည်။ လိုင်း ၃၀၀    -->
+    <!-- Part 2 တွင် JavaScript Logic အားလုံး ဆက်လက်ထည့်သွင်းမည် -->
+    <!-- ============================================================ -->
 </body>
 </html>
