@@ -664,3 +664,279 @@ function getProductCardHTML(p) {
         </div>
     `;
 }
+// ============================================================
+// ADD TO main.js - Order Tracking & Map Functions
+// ============================================================
+
+// ========================================================================
+// TRACKING STATUS CONFIG (Default - Admin can change)
+// ========================================================================
+const DEFAULT_TRACKING_TIMES = {
+    order_received: 10,        // seconds
+    processing: 3 * 60 * 60,   // 3 hours (in seconds)
+    shipped: 12 * 60 * 60,     // 12 hours (in seconds)
+    delivered: 2 * 24 * 60 * 60 // 2 days (in seconds)
+};
+
+// Tracking status names
+const TRACKING_STATUSES = [
+    { key: 'order_received', label: '📦 အမှာစာ လက်ခံရရှိပါပြီ', desc: 'သင့်အော်ဒါကို ကျွန်ုပ်တို့ လက်ခံရရှိပါပြီ' },
+    { key: 'processing', label: '⚙️ ပစ္စည်း စစ်ဆေးပြင်ဆင်နေပါပြီ', desc: 'ပစ္စည်းများကို စစ်ဆေးပြီး ထုပ်ပိုးနေပါသည်' },
+    { key: 'shipped', label: '🚚 ပို့ဆောင်ရေးထံ လွှဲပြောင်းလိုက်ပါပြီ', desc: 'သင့်ပစ္စည်းများ လမ်းခရီးပေါ်ရောက်နေပါပြီ' },
+    { key: 'delivered', label: '✅ ပစ္စည်း ရောက်ရှိပါပြီ', desc: 'သင့်ပစ္စည်းများ အောင်မြင်စွာ ရောက်ရှိပါပြီ။ ကျေးဇူးပါ' }
+];
+
+// Get tracking config from localStorage
+function getTrackingConfig() {
+    const raw = localStorage.getItem('shop_tracking_config');
+    if (raw) {
+        try { return JSON.parse(raw); } catch(e) {}
+    }
+    return { ...DEFAULT_TRACKING_TIMES };
+}
+
+// Save tracking config
+function saveTrackingConfig(config) {
+    localStorage.setItem('shop_tracking_config', JSON.stringify(config));
+}
+
+// Calculate current tracking status based on elapsed time
+function getTrackingStatus(orderTime, config) {
+    const elapsed = (Date.now() - orderTime) / 1000; // seconds
+    const times = config || getTrackingConfig();
+
+    if (elapsed >= times.delivered) return { key: 'delivered', progress: 100 };
+    if (elapsed >= times.shipped) return { key: 'shipped', progress: 75 };
+    if (elapsed >= times.processing) return { key: 'processing', progress: 50 };
+    if (elapsed >= times.order_received) return { key: 'order_received', progress: 25 };
+    return { key: 'pending', progress: 0 };
+}
+
+// Get progress percentage for each step
+function getStepProgress(orderTime, config) {
+    const elapsed = (Date.now() - orderTime) / 1000;
+    const times = config || getTrackingConfig();
+    const steps = ['order_received', 'processing', 'shipped', 'delivered'];
+    const thresholds = [times.order_received, times.processing, times.shipped, times.delivered];
+    
+    let currentIndex = 0;
+    for (let i = 0; i < thresholds.length; i++) {
+        if (elapsed >= thresholds[i]) currentIndex = i + 1;
+    }
+    
+    // If between steps, calculate partial progress
+    if (currentIndex < steps.length && currentIndex > 0) {
+        const prevThreshold = thresholds[currentIndex - 1];
+        const nextThreshold = thresholds[currentIndex] || thresholds[currentIndex - 1] + 3600;
+        const stepProgress = (elapsed - prevThreshold) / (nextThreshold - prevThreshold);
+        return { currentIndex, stepProgress: Math.min(stepProgress, 1), totalProgress: Math.min((currentIndex / steps.length) + (stepProgress / steps.length), 1) };
+    }
+    
+    return { currentIndex, stepProgress: 0, totalProgress: currentIndex / steps.length };
+}
+
+// ========================================================================
+// MAP FUNCTIONS (Leaflet.js)
+// ========================================================================
+let mapInstance = null;
+let markerInstance = null;
+let routeLine = null;
+let animationInterval = null;
+
+// Initialize map
+function initTrackingMap(containerId, shopLat = 16.8661, shopLng = 96.1951, userLat = 16.8731, userLng = 96.1961) {
+    if (typeof L === 'undefined') {
+        console.warn('Leaflet.js not loaded');
+        return;
+    }
+
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    // Destroy existing map
+    if (mapInstance) {
+        mapInstance.remove();
+        mapInstance = null;
+    }
+
+    mapInstance = L.map(containerId).setView([shopLat, shopLng], 15);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(mapInstance);
+
+    // Shop pin
+    const shopIcon = L.divIcon({
+        html: '🛍️',
+        className: 'custom-div-icon',
+        iconSize: [30, 30],
+        iconAnchor: [15, 30]
+    });
+    L.marker([shopLat, shopLng], { icon: shopIcon }).addTo(mapInstance)
+        .bindPopup('🛍️ ဆိုင်');
+
+    // User home pin
+    const homeIcon = L.divIcon({
+        html: '🏠',
+        className: 'custom-div-icon',
+        iconSize: [30, 30],
+        iconAnchor: [15, 30]
+    });
+    L.marker([userLat, userLng], { icon: homeIcon }).addTo(mapInstance)
+        .bindPopup('🏠 သင့်အိမ်');
+
+    // Route line
+    routeLine = L.polyline([[shopLat, shopLng], [userLat, userLng]], {
+        color: '#007bff',
+        weight: 3,
+        opacity: 0.6,
+        dashArray: '8, 8'
+    }).addTo(mapInstance);
+
+    // Bike marker (initially at shop)
+    const bikeIcon = L.divIcon({
+        html: '🏍️',
+        className: 'custom-div-icon bike-marker',
+        iconSize: [35, 35],
+        iconAnchor: [17, 35]
+    });
+    markerInstance = L.marker([shopLat, shopLng], { icon: bikeIcon }).addTo(mapInstance);
+
+    // Fit bounds
+    mapInstance.fitBounds([[shopLat, shopLng], [userLat, userLng]], { padding: [50, 50] });
+
+    return { shopLat, shopLng, userLat, userLng };
+}
+
+// Update bike position on map (progress 0-1)
+function updateBikePosition(progress, shopLat, shopLng, userLat, userLng) {
+    if (!markerInstance) return;
+    const lat = shopLat + (userLat - shopLat) * progress;
+    const lng = shopLng + (userLng - shopLng) * progress;
+    markerInstance.setLatLng([lat, lng]);
+}
+
+// Get bike progress based on tracking status
+function getBikeProgress(statusKey) {
+    switch(statusKey) {
+        case 'order_received': return 0;
+        case 'processing': return 0.1;
+        case 'shipped': return 0.5;
+        case 'delivered': return 1;
+        default: return 0;
+    }
+}
+
+// Start map animation
+function startMapAnimation(containerId, orderTime, config, shopLat, shopLng, userLat, userLng) {
+    if (animationInterval) {
+        clearInterval(animationInterval);
+        animationInterval = null;
+    }
+
+    const status = getTrackingStatus(orderTime, config);
+    const targetProgress = getBikeProgress(status.key);
+    let currentProgress = targetProgress;
+
+    // If already delivered, set to 1
+    if (status.key === 'delivered') {
+        updateBikePosition(1, shopLat, shopLng, userLat, userLng);
+        return;
+    }
+
+    // If shipped or processing, animate gradually
+    if (status.key === 'shipped' || status.key === 'processing') {
+        const startProgress = status.key === 'processing' ? 0.1 : 0.5;
+        const endProgress = status.key === 'shipped' ? 0.5 : 1;
+        const elapsed = (Date.now() - orderTime) / 1000;
+        const times = config || getTrackingConfig();
+        const startTime = status.key === 'processing' ? times.order_received : times.processing;
+        const endTime = status.key === 'shipped' ? times.processing : times.shipped;
+        const duration = endTime - startTime;
+        const progress = Math.min((elapsed - startTime) / duration, 1);
+        currentProgress = startProgress + (endProgress - startProgress) * progress;
+        updateBikePosition(currentProgress, shopLat, shopLng, userLat, userLng);
+
+        // Continue animation
+        animationInterval = setInterval(() => {
+            const newElapsed = (Date.now() - orderTime) / 1000;
+            const newProgress = Math.min((newElapsed - startTime) / duration, 1);
+            const newPos = startProgress + (endProgress - startProgress) * newProgress;
+            updateBikePosition(newPos, shopLat, shopLng, userLat, userLng);
+            if (newProgress >= 1) {
+                clearInterval(animationInterval);
+                animationInterval = null;
+            }
+        }, 1000);
+    } else {
+        updateBikePosition(targetProgress, shopLat, shopLng, userLat, userLng);
+    }
+}
+
+// ========================================================================
+// ORDER TRACKING UI
+// ========================================================================
+function renderTrackingUI(orderId, orderTime, config) {
+    const statuses = TRACKING_STATUSES;
+    const times = config || getTrackingConfig();
+    const elapsed = (Date.now() - orderTime) / 1000;
+    const stepProgress = getStepProgress(orderTime, config);
+    const currentStatus = getTrackingStatus(orderTime, config);
+
+    let html = `<div class="tracking-container">
+        <p style="font-size:0.85rem;color:#888;margin-bottom:0.5rem;">
+            🆔 Order: <strong>${orderId}</strong> | 
+            📅 ${new Date(orderTime).toLocaleString()}
+        </p>
+        <div style="background:#f0f0f0;border-radius:20px;height:8px;margin:0.5rem 0;overflow:hidden;">
+            <div style="height:100%;width:${Math.min(stepProgress.totalProgress * 100, 100)}%;background:linear-gradient(90deg,#28a745,#007bff);border-radius:20px;transition:width 0.5s ease;"></div>
+        </div>
+        <div class="tracking-steps">`;
+
+    const statusKeys = ['order_received', 'processing', 'shipped', 'delivered'];
+    statusKeys.forEach((key, index) => {
+        const isActive = currentStatus.key === key;
+        const isCompleted = statusKeys.indexOf(currentStatus.key) > index || 
+            (currentStatus.key === key && elapsed >= times[key]);
+        const isPending = !isCompleted && !isActive;
+
+        let icon = '⏳';
+        let stepClass = 'tracking-step';
+        if (isCompleted) stepClass += ' completed';
+        else if (isActive) stepClass += ' active';
+        else stepClass += ' pending';
+
+        if (key === 'order_received') icon = '📦';
+        else if (key === 'processing') icon = '⚙️';
+        else if (key === 'shipped') icon = '🚚';
+        else if (key === 'delivered') icon = '✅';
+
+        // Time remaining
+        let timeDisplay = '';
+        if (!isCompleted && key === currentStatus.key) {
+            const remaining = Math.max(0, times[key] - elapsed);
+            const hours = Math.floor(remaining / 3600);
+            const mins = Math.floor((remaining % 3600) / 60);
+            const secs = Math.floor(remaining % 60);
+            if (hours > 0) timeDisplay = `⏱️ ${hours}h ${mins}m`;
+            else if (mins > 0) timeDisplay = `⏱️ ${mins}m ${secs}s`;
+            else timeDisplay = `⏱️ ${secs}s`;
+        } else if (isCompleted) {
+            timeDisplay = '✅ ပြီးပါပြီ';
+        }
+
+        html += `
+            <div class="${stepClass}">
+                <div class="step-icon">${icon}</div>
+                <div class="step-content">
+                    <div class="step-title">${statuses[index].label}</div>
+                    <div class="step-desc">${statuses[index].desc}</div>
+                    ${timeDisplay ? `<div class="step-time">${timeDisplay}</div>` : ''}
+                </div>
+            </div>
+        `;
+    });
+
+    html += `</div></div>`;
+    return html;
+}
