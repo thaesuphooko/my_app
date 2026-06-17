@@ -980,3 +980,12 @@ function addSyncModeSelector() {
   if (radio) radio.checked = true;
   syncMode = saved;
 }
+// ============================================================
+// REFRESH LIMITS BUTTON
+// ============================================================
+document.addEventListener("DOMContentLoaded", function() {
+  document.getElementById("refreshLimitsBtn")?.addEventListener("click", function() {
+    displayAPILimits();
+    showToast("🔄 Limits refreshed!");
+  });
+});
