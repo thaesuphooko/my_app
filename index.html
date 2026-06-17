@@ -1,241 +1,828 @@
 <!DOCTYPE html>
-<html lang="my" data-theme="light">
+<html lang="my">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>ShopNow Myanmar</title>
-  <!-- Fonts & Icons -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+Myanmar:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <style>
-    /* ========== CSS Variables & Reset ========== */
-    :root {
-      --primary: #e11b1b; --primary-dark: #b71c1c; --secondary: #ff6b00;
-      --bg-start: #fce4ec; --bg-end: #f3e5f5;
-      --glass-bg: rgba(255,255,255,0.7); --glass-blur: blur(10px);
-      --text: #212121; --text-light: #616161; --border: #e0e0e0;
-      --header-h: 56px; --nav-h: 60px; --radius: 16px;
-    }
-    [data-theme="dark"] {
-      --bg-start: #1a1a2e; --bg-end: #16213e;
-      --glass-bg: rgba(30,30,40,0.7); --text: #f5f5f5; --text-light: #bdbdbd; --border: #424242;
-    }
-    * { margin:0; padding:0; box-sizing:border-box; }
-    body {
-      font-family: 'Inter','Noto Sans Myanmar',sans-serif;
-      background: linear-gradient(135deg, var(--bg-start), var(--bg-end));
-      color: var(--text); min-height:100vh; padding-top:var(--header-h);
-      padding-bottom:calc(var(--nav-h) + 20px); transition: background 0.3s, color 0.3s;
-    }
-    /* Header */
-    #header {
-      position:fixed; top:0; left:0; right:0; height:var(--header-h);
-      background:var(--glass-bg); backdrop-filter:var(--glass-blur);
-      border-bottom:1px solid rgba(255,255,255,0.4); z-index:1000;
-      display:flex; align-items:center; padding:0 16px; justify-content:space-between;
-    }
-    .brand { font-weight:800; font-size:20px; color:var(--primary); cursor:pointer; }
-    .header-actions { display:flex; gap:12px; align-items:center; }
-    .icon-btn { background:none; border:none; color:var(--text); font-size:20px; cursor:pointer; }
-    .theme-toggle { display:flex; align-items:center; gap:4px; cursor:pointer; background:var(--glass-bg); padding:4px 10px; border-radius:20px; }
-    .toggle-slider { width:36px; height:20px; background:var(--border); border-radius:10px; position:relative; transition:0.2s; }
-    .toggle-slider::after { content:''; width:16px; height:16px; background:white; border-radius:50%; position:absolute; top:2px; left:2px; transition:0.2s; }
-    #dark-check:checked + .toggle-slider { background:var(--secondary); }
-    #dark-check:checked + .toggle-slider::after { left:18px; }
+    <!-- ============================================================
+    PART 1 (LINES 1-300) – INDEX.HTML
+    ဤအပိုင်းတွင် HTML ဖွဲ့စည်းပုံ၊ Meta, CDN, CSS အားလုံး၊
+    နှင့် စာမျက်နှာ အပိုင်းအစများ (Home, Messages, Cart, Profile)
+    ပါဝင်သည်။
+    ============================================================ -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover" />
+    <meta name="theme-color" content="#e11b1b" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="format-detection" content="telephone=yes" />
+    <title>Premium Shop – Myanmar E-Commerce</title>
 
-    /* Bottom Nav */
-    #bottom-nav {
-      position:fixed; bottom:0; left:0; right:0; height:var(--nav-h);
-      background:var(--glass-bg); backdrop-filter:var(--glass-blur);
-      border-top:1px solid rgba(255,255,255,0.4); display:flex;
-      justify-content:space-around; align-items:center; z-index:999;
-    }
-    .nav-item { display:flex; flex-direction:column; align-items:center; text-decoration:none; color:var(--text-light); font-size:11px; gap:2px; }
-    .nav-item i { font-size:20px; }
-    .nav-item.active { color:var(--primary); font-weight:700; }
+    <!-- Font Awesome 6 (Free) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <!-- Leaflet.js CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Papa Parse (CSV) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js">
+    </script>
 
-    /* Product Card */
-    .products-grid { display:grid; grid-template-columns: repeat(2,1fr); gap:12px; padding:16px; }
-    .product-card {
-      background:var(--glass-bg); backdrop-filter:var(--glass-blur);
-      border-radius:var(--radius); overflow:hidden; box-shadow:0 8px 20px rgba(0,0,0,0.08);
-      position:relative; cursor:pointer; transition:0.2s;
-    }
-    .product-card:hover { transform:translateY(-2px); }
-    .discount-badge {
-      position:absolute; top:8px; right:8px; background:var(--primary); color:white;
-      font-size:11px; font-weight:700; padding:2px 8px; border-radius:12px;
-    }
-    .product-img { width:100%; aspect-ratio:1/1; object-fit:cover; }
-    .card-body { padding:10px; }
-    .price-row { display:flex; gap:6px; align-items:baseline; }
-    .new-price { font-weight:800; color:var(--primary); }
-    .old-price { font-size:13px; text-decoration:line-through; color:var(--text-light); }
-    .stars { color:#f59e0b; font-size:12px; }
+    <!-- Firebase v9 Compat (modular) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js">
+    </script>
 
-    /* Floating Chat */
-    #chat-widget {
-      position:fixed; bottom:80px; right:20px; width:50px; height:50px; border-radius:50%;
-      background:var(--secondary); color:white; display:flex; align-items:center; justify-content:center;
-      font-size:22px; box-shadow:0 4px 12px rgba(0,0,0,0.2); cursor:pointer; z-index:998;
-    }
-    .hidden { display:none !important; }
+    <!-- Leaflet.js JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+    </script>
 
-    /* Admin Modal */
-    .modal {
-      position:fixed; inset:0; background:rgba(0,0,0,0.5); backdrop-filter:blur(4px);
-      display:flex; align-items:center; justify-content:center; z-index:2000;
-    }
-    .modal-box { background:white; border-radius:var(--radius); padding:24px; width:300px; }
-    input, textarea { width:100%; padding:10px; margin:6px 0; border-radius:8px; border:1px solid var(--border); }
-    .btn { background:var(--primary); color:white; border:none; padding:12px; width:100%; border-radius:8px; font-weight:700; cursor:pointer; }
-  </style>
+    <!-- ===== GLOBAL STYLES ===== -->
+    <style>
+        /* ---------- RESET & ROOT VARIABLES ---------- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --primary: #e11b1b;
+            --primary-dark: #b71c1c;
+            --secondary: #ff6b00;
+            --bg-start: #fce4ec;
+            --bg-end: #f3e5f5;
+            --card-bg: rgba(255, 255, 255, 0.70);
+            --card-border: rgba(255, 255, 255, 0.30);
+            --text-primary: #1a1a2e;
+            --text-secondary: #4a4a6a;
+            --text-light: #8888aa;
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+            --radius: 18px;
+            --nav-height: 68px;
+            --header-height: 60px;
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --glass-blur: blur(12px);
+            --transition: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Dark Theme */
+        [data-theme="dark"] {
+            --bg-start: #0f0f1a;
+            --bg-end: #1a1a2e;
+            --card-bg: rgba(30, 30, 50, 0.75);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #f0f0f5;
+            --text-secondary: #b0b0cc;
+            --text-light: #6a6a8a;
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.40);
+        }
+
+        /* ---------- BASE ---------- */
+        html,
+        body {
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: linear-gradient(145deg, var(--bg-start), var(--bg-end));
+            color: var(--text-primary);
+            transition: background var(--transition), color var(--transition);
+            overflow: hidden;
+        }
+
+        /* ---------- APP SHELL ---------- */
+        #app {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            max-width: 480px;
+            margin: 0 auto;
+            background: transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* ---------- HEADER ---------- */
+        .app-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 16px;
+            height: var(--header-height);
+            background: var(--card-bg);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border-bottom: 1px solid var(--card-border);
+            flex-shrink: 0;
+            z-index: 30;
+            gap: 8px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .logo {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--primary);
+            letter-spacing: -0.5px;
+            white-space: nowrap;
+        }
+        .logo i {
+            margin-right: 4px;
+            color: var(--secondary);
+        }
+
+        .header-clock {
+            font-size: 13px;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+            background: rgba(0, 0, 0, 0.05);
+            padding: 4px 10px;
+            border-radius: 30px;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            transition: color var(--transition);
+            letter-spacing: 0.3px;
+        }
+        [data-theme="dark"] .header-clock {
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .header-actions button {
+            background: rgba(0, 0, 0, 0.04);
+            border: none;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            font-size: 17px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        [data-theme="dark"] .header-actions button {
+            background: rgba(255, 255, 255, 0.06);
+        }
+        .header-actions button:hover,
+        .header-actions button:active {
+            background: var(--primary);
+            color: #fff;
+            transform: scale(0.94);
+        }
+
+        /* Music toggle dot */
+        .music-toggle .badge-dot {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            width: 10px;
+            height: 10px;
+            background: #22c55e;
+            border-radius: 50%;
+            border: 2px solid var(--card-bg);
+            animation: pulse-dot 2s infinite;
+        }
+        @keyframes pulse-dot {
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.5;
+                transform: scale(0.8);
+            }
+        }
+
+        /* ---------- MAIN CONTENT (scrollable) ---------- */
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 12px 12px calc(var(--nav-height) + 20px + var(--safe-bottom));
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* ---------- PAGES (hash routing) ---------- */
+        .page {
+            display: none;
+            animation: fadeSlide 0.30s ease forwards;
+        }
+        .page.active {
+            display: block;
+        }
+
+        @keyframes fadeSlide {
+            0% {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ---------- BOTTOM NAVIGATION ---------- */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 480px;
+            height: calc(var(--nav-height) + var(--safe-bottom));
+            padding-bottom: var(--safe-bottom);
+            background: var(--card-bg);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border-top: 1px solid var(--card-border);
+            display: flex;
+            align-items: stretch;
+            justify-content: space-around;
+            z-index: 50;
+            box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.06);
+        }
+        [data-theme="dark"] .bottom-nav {
+            box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.30);
+        }
+
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            font-size: 10px;
+            font-weight: 500;
+            color: var(--text-light);
+            text-decoration: none;
+            transition: all var(--transition);
+            cursor: pointer;
+            position: relative;
+            padding: 4px 0;
+            border: none;
+            background: transparent;
+            font-family: inherit;
+        }
+        .nav-item i {
+            font-size: 20px;
+            transition: transform var(--transition);
+        }
+        .nav-item span {
+            line-height: 1.2;
+            font-size: 9px;
+            letter-spacing: 0.2px;
+        }
+        .nav-item.active {
+            color: var(--primary);
+        }
+        .nav-item.active i {
+            transform: scale(1.05);
+        }
+        .nav-item .badge {
+            position: absolute;
+            top: 2px;
+            right: 50%;
+            transform: translateX(calc(50% + 14px));
+            background: var(--primary);
+            color: #fff;
+            font-size: 9px;
+            font-weight: 700;
+            min-width: 18px;
+            height: 18px;
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 5px;
+            border: 2px solid var(--card-bg);
+            box-shadow: 0 2px 8px rgba(225, 27, 27, 0.30);
+        }
+        .nav-item .badge.hidden {
+            display: none;
+        }
+
+        /* ---------- GLASS CARD ---------- */
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            transition: all var(--transition);
+            padding: 16px;
+        }
+        .glass-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.10);
+        }
+
+        /* ---------- PRODUCT GRID (2-column) ---------- */
+        .product-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        /* ---------- CATEGORY BAR ---------- */
+        .category-bar {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding: 8px 0 12px 0;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            flex-shrink: 0;
+        }
+        .category-bar::-webkit-scrollbar {
+            display: none;
+        }
+        .category-chip {
+            flex-shrink: 0;
+            padding: 8px 18px;
+            border-radius: 40px;
+            background: var(--card-bg);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--card-border);
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all var(--transition);
+            white-space: nowrap;
+        }
+        .category-chip.active {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+            box-shadow: 0 4px 16px rgba(225, 27, 27, 0.25);
+        }
+        .category-chip:active {
+            transform: scale(0.94);
+        }
+
+        /* ---------- UTILITY CLASSES ---------- */
+        .text-muted {
+            color: var(--text-light);
+            font-size: 13px;
+        }
+        .text-primary {
+            color: var(--primary);
+        }
+        .text-secondary {
+            color: var(--secondary);
+        }
+        .fw-700 {
+            font-weight: 700;
+        }
+        .mt-8 {
+            margin-top: 8px;
+        }
+        .mt-12 {
+            margin-top: 12px;
+        }
+        .mb-8 {
+            margin-bottom: 8px;
+        }
+        .flex-between {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .flex-center {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ---------- SCROLLBAR ---------- */
+        .main-content::-webkit-scrollbar {
+            width: 3px;
+        }
+        .main-content::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .main-content::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 30px;
+        }
+
+        /* ---------- FLOATING CHAT FAB ---------- */
+        .chat-fab {
+            position: fixed;
+            bottom: calc(var(--nav-height) + 20px + var(--safe-bottom));
+            right: 16px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            font-size: 26px;
+            box-shadow: 0 8px 32px rgba(225, 27, 27, 0.35);
+            cursor: pointer;
+            z-index: 40;
+            transition: all var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .chat-fab:active {
+            transform: scale(0.88);
+        }
+        .chat-fab.hidden {
+            transform: scale(0);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* ---------- RESPONSIVE ---------- */
+        @media (min-width: 600px) {
+            #app {
+                max-width: 600px;
+            }
+            .product-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            .bottom-nav {
+                max-width: 600px;
+            }
+        }
+        @media (min-width: 900px) {
+            #app {
+                max-width: 960px;
+            }
+            .product-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            .bottom-nav {
+                max-width: 960px;
+            }
+        }
+
+        /* ---------- PAGE PLACEHOLDER ---------- */
+        .page-placeholder {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary);
+        }
+        .page-placeholder i {
+            font-size: 48px;
+            color: var(--text-light);
+            margin-bottom: 16px;
+            display: block;
+        }
+        .page-placeholder h3 {
+            font-size: 18px;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        /* ---------- LOAD MORE BTN ---------- */
+        .load-more-btn {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            border: 1px solid var(--card-border);
+            border-radius: 40px;
+            background: var(--card-bg);
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all var(--transition);
+            margin-top: 20px;
+            text-align: center;
+        }
+        .load-more-btn:active {
+            transform: scale(0.96);
+            background: var(--primary);
+            color: #fff;
+        }
+
+        /* ---------- PROFILE MENU ITEM (Viber style) ---------- */
+        .profile-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 18px;
+            background: var(--card-bg);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all var(--transition);
+            width: 100%;
+            text-align: left;
+            font-family: inherit;
+        }
+        .profile-menu-item i:first-child {
+            width: 28px;
+            font-size: 18px;
+            text-align: center;
+        }
+        .profile-menu-item:active {
+            transform: scale(0.97);
+            background: var(--primary);
+            color: #fff;
+        }
+        .profile-menu-item:active i {
+            color: #fff !important;
+        }
+
+        /* ---------- CONFETTI (success) ---------- */
+        @keyframes confetti-fall {
+            0% {
+                transform: translateY(-100px) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+        .confetti-piece {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+            animation: confetti-fall 3s linear forwards;
+            z-index: 100;
+            pointer-events: none;
+        }
+    </style>
 </head>
 <body>
-  <!-- Header -->
-  <header id="header">
-    <div class="brand" onclick="navigate('home')">🛒 ShopNow</div>
-    <div class="header-actions">
-      <label class="theme-toggle"><input type="checkbox" id="dark-check"> <span class="toggle-slider"></span></label>
-      <div id="clock">--:--:--</div>
-    </div>
-  </header>
 
-  <!-- Main Content -->
-  <div id="app"></div>
+    <!-- ============================================================ -->
+    <!-- APP ROOT -->
+    <!-- ============================================================ -->
+    <div id="app">
 
-  <!-- Bottom Nav -->
-  <nav id="bottom-nav">
-    <a class="nav-item active" data-page="home"><i class="fas fa-home"></i><span>အိမ်</span></a>
-    <a class="nav-item" data-page="cart"><i class="fas fa-shopping-cart"></i><span>ခြင်း</span></a>
-    <a class="nav-item" data-page="messages"><i class="fas fa-comment"></i><span>စာ</span></a>
-    <a class="nav-item" data-page="profile"><i class="fas fa-user"></i><span>ကိုယ်ရေး</span></a>
-  </nav>
+        <!-- ===== HEADER ===== -->
+        <header class="app-header" id="appHeader">
+            <div class="header-left">
+                <span class="logo"><i class="fas fa-store-alt"></i>Shop</span>
+                <span class="header-clock" id="smartClock">--:--:--</span>
+            </div>
+            <div class="header-actions">
+                <button class="music-toggle" id="musicToggle" title="သီချင်းဖွင့်စက်">
+                    <i class="fas fa-music"></i>
+                    <span class="badge-dot" id="musicDot"></span>
+                </button>
+                <button class="theme-toggle" id="themeToggle" title="အလင်းအမှောင် ပြောင်းရန်">
+                    <i class="fas fa-moon"></i>
+                </button>
+            </div>
+        </header> 
 
-  <!-- Floating Chat -->
-  <div id="chat-widget" onclick="navigate('messages')"><i class="fas fa-headset"></i></div>
+                    <!-- ===== MAIN CONTENT ===== -->
+        <main class="main-content" id="mainContent">
 
-  <script>
-    // ---------- App State & Routing ----------
-    const pages = ['home','cart','messages','profile'];
-    let currentPage = 'home';
-
-    function navigate(page) {
-      if (page === currentPage) return;
-      currentPage = page;
-      window.location.hash = page;
-      renderPage();
-      updateNav();
-    }
-
-    function updateNav() {
-      document.querySelectorAll('.nav-item').forEach(item => {
-        item.classList.toggle('active', item.dataset.page === currentPage);
-      });
-      // hide chat widget on messages page
-      document.getElementById('chat-widget').classList.toggle('hidden', currentPage === 'messages');
-    }
-
-    window.addEventListener('hashchange', () => {
-      const hash = window.location.hash.slice(1) || 'home';
-      if (hash.startsWith('step')) return showAdminLogin();
-      currentPage = hash;
-      renderPage();
-      updateNav();
-    });
-
-    // ---------- Page Rendering ----------
-    const sampleProducts = [
-      { name:'Bluetooth Earphone', price:22800, oldPrice:30000, disc:20, img:'https://picsum.photos/300?1', stars:4, sold:120 },
-      { name:'Smart Watch', price:45000, oldPrice:55000, disc:18, img:'https://picsum.photos/300?2', stars:5, sold:89 },
-      { name:'Power Bank 20000mAh', price:18000, oldPrice:25000, disc:28, img:'https://picsum.photos/300?3', stars:4, sold:205 },
-      { name:'Wireless Mouse', price:15000, oldPrice:20000, disc:25, img:'https://picsum.photos/300?4', stars:3, sold:60 }
-    ];
-
-    function renderPage() {
-      const app = document.getElementById('app');
-      switch(currentPage) {
-        case 'home': app.innerHTML = `
-          <div class="products-grid">
-            ${sampleProducts.map(p => `
-              <div class="product-card" onclick="alert('Product detail')">
-                <span class="discount-badge">-${p.disc}%</span>
-                <img class="product-img" src="${p.img}" alt="${p.name}">
-                <div class="card-body">
-                  <div>${p.name}</div>
-                  <div class="price-row"><span class="new-price">Ks ${p.price}</span><span class="old-price">Ks ${p.oldPrice}</span></div>
-                  <div class="stars">${'★'.repeat(p.stars)}${'☆'.repeat(5-p.stars)} (${p.sold} sold)</div>
+            <!-- ===== HOME PAGE ===== -->
+            <section class="page active" id="page-home">
+                <div class="category-bar" id="categoryBar">
+                    <span class="category-chip active" data-cat="all">အားလုံး</span>
+                    <span class="category-chip" data-cat="electronics">အီလက်ထရွန်း</span>
+                    <span class="category-chip" data-cat="fashion">ဖက်ရှင်</span>
+                    <span class="category-chip" data-cat="food">အစားအသောက်</span>
+                    <span class="category-chip" data-cat="books">စာအုပ်</span>
+                    <span class="category-chip" data-cat="home">အိမ်သုံး</span>
                 </div>
-              </div>`).join('')}
-          </div>`; break;
-        case 'cart': app.innerHTML = '<div style="padding:20px; text-align:center;"><i class="fas fa-shopping-cart fa-3x"></i><p>ဈေးခြင်းဗလာဖြစ်နေပါသည်</p></div>'; break;
-        case 'messages': app.innerHTML = '<div style="padding:20px; text-align:center;"><i class="fas fa-comment-dots fa-3x"></i><p>Chat Support (Demo)</p></div>'; break;
-        case 'profile': app.innerHTML = `
-          <div style="padding:20px; text-align:center;">
-            <i class="fas fa-user-circle fa-5x" style="color:var(--primary);"></i>
-            <h3>ဧည့်သည်</h3>
-            <button class="btn" style="width:auto; padding:10px 30px;" onclick="alert('Logout')">ထွက်မည်</button>
-          </div>`; break;
-      }
-    }
+                <div class="product-grid" id="productGrid">
+                    <!-- JS မှ ပစ္စည်းများ ဖွင့်ပြမည် -->
+                    <div class="glass-card" style="padding:20px; text-align:center; grid-column:1/-1;">
+                        <i class="fas fa-spinner fa-pulse" style="font-size:28px; color:var(--primary);"></i>
+                        <p class="text-muted mt-8">ကုန်ပစ္စည်းများ ဖွင့်နေသည်...</p>
+                    </div>
+                </div>
+                <button class="load-more-btn" id="loadMoreBtn">နောက်ထပ် ပစ္စည်းများ <i class="fas fa-chevron-down"></i></button>
+            </section>
 
-    // ---------- Dark Mode ----------
-    const darkCheck = document.getElementById('dark-check');
-    darkCheck.addEventListener('change', e => {
-      document.documentElement.setAttribute('data-theme', e.target.checked ? 'dark' : 'light');
-      localStorage.setItem('theme', e.target.checked ? 'dark' : 'light');
-    });
-    if (localStorage.getItem('theme') === 'dark') darkCheck.checked = true;
+            <!-- ===== MESSAGES PAGE ===== -->
+            <section class="page" id="page-messages">
+                <div class="glass-card" style="min-height:300px;">
+                    <h3><i class="fas fa-comment-dots text-primary"></i> စကားဝိုင်းများ</h3>
+                    <div id="messageList" style="margin-top:16px;">
+                        <div class="text-muted" style="text-align:center; padding:30px 0;">
+                            <i class="fas fa-inbox" style="font-size:36px; opacity:0.3;"></i>
+                            <p>စာများ မရှိသေးပါ</p>
+                        </div>
+                    </div>
+                    <div style="margin-top:16px; display:flex; gap:10px;">
+                        <input type="text" id="msgInput" placeholder="စာရိုက်ပါ..." style="flex:1; padding:12px 16px; border-radius:40px; border:1px solid var(--card-border); background:var(--card-bg); color:var(--text-primary); outline:none; font-size:14px;" />
+                        <button id="msgSendBtn" style="background:var(--primary); color:#fff; border:none; border-radius:40px; padding:12px 20px; font-weight:600; cursor:pointer;">ပို့မည်</button>
+                    </div>
+                </div>
+            </section>
 
-    // ---------- Smart Clock (Slow Mode after 1min) ----------
-    function startClock() {
-      const clockEl = document.getElementById('clock');
-      let start = Date.now(), slowActive = false;
-      setInterval(() => {
-        let elapsed = Date.now() - start;
-        if (elapsed > 60000 && !slowActive) slowActive = true;
-        let displayMs = slowActive ? 60000 + (elapsed-60000)/6 : elapsed;
-        let d = new Date(start + displayMs);
-        clockEl.textContent = d.toTimeString().slice(0,8);
-      }, 1000);
-    }
+            <!-- ===== CART PAGE ===== -->
+            <section class="page" id="page-cart">
+                <div class="glass-card" style="min-height:200px;">
+                    <h3><i class="fas fa-shopping-cart text-primary"></i> စျေးဝယ်တောင်း</h3>
+                    <div id="cartItems" style="margin-top:16px;">
+                        <div class="text-muted" style="text-align:center; padding:30px 0;">
+                            <i class="fas fa-cart-plus" style="font-size:36px; opacity:0.3;"></i>
+                            <p>စျေးဝယ်တောင်း ဗလာဖြစ်နေသည်</p>
+                        </div>
+                    </div>
+                    <div id="cartSummary" style="display:none; margin-top:16px; border-top:1px solid var(--card-border); padding-top:16px;">
+                        <div class="flex-between">
+                            <span class="fw-700">စုစုပေါင်း</span>
+                            <span class="fw-700 text-primary" id="cartTotal">Ks 0</span>
+                        </div>
+                        <button id="checkoutBtn" style="width:100%; margin-top:12px; padding:14px; background:var(--primary); color:#fff; border:none; border-radius:40px; font-weight:700; font-size:16px; cursor:pointer; transition:all var(--transition);">ဝယ်မည် <i class="fas fa-arrow-right"></i></button>
+                    </div>
+                </div>
+            </section>
 
-    // ---------- Admin Login ----------
-    function showAdminLogin() {
-      document.getElementById('app').innerHTML = `
-        <div class="modal">
-          <div class="modal-box">
-            <h3>Admin Login</h3>
-            <input id="adm-email" placeholder="#step"><br>
-            <input id="adm-pass" type="password" placeholder="2003"><br>
-            <button class="btn" onclick="adminLogin()">ဝင်မည်</button>
-            <p id="login-err" style="color:red;display:none;">မှားယွင်းနေပါသည်</p>
-          </div>
-        </div>`;
-    }
+            <!-- ===== PROFILE PAGE ===== -->
+            <section class="page" id="page-profile">
+                <div class="glass-card" style="text-align:center; padding:24px;">
+                    <div style="width:80px; height:80px; border-radius:50%; background:var(--primary); margin:0 auto 12px; display:flex; align-items:center; justify-content:center; font-size:36px; color:#fff; box-shadow:0 8px 24px rgba(225,27,27,0.25);">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <h3 id="profileName">ဝယ်သူ</h3>
+                    <p class="text-muted" id="profilePhone">09-XXX-XXX-XXX</p>
+                </div>
 
-    function adminLogin() {
-      const e = document.getElementById('adm-email').value.trim();
-      const p = document.getElementById('adm-pass').value.trim();
-      if (e === '#step' && p === '2003') {
-        localStorage.setItem('adminToken','1');
-        document.getElementById('app').innerHTML = '<div style="padding:20px; text-align:center;"><h2>Admin Panel</h2><p>အောင်မြင်စွာဝင်ရောက်ပြီး</p><button class="btn" onclick="localStorage.removeItem(\'adminToken\'); location.reload();">ထွက်မည်</button></div>';
-      } else {
-        document.getElementById('login-err').style.display='block';
-      }
-    }
+                <!-- Viber-style Profile Menu -->
+                <div style="margin-top:12px; display:flex; flex-direction:column; gap:6px;">
+                    <button class="profile-menu-item" data-hash="#orders"><i class="fas fa-box" style="color:#e11b1b;"></i> ကျွန်ုပ်၏ အော်ဒါများ <i class="fas fa-chevron-right" style="margin-left:auto; opacity:0.3;"></i></button>
+                    <button class="profile-menu-item" data-hash="#tracking"><i class="fas fa-map-marked-alt" style="color:#ff6b00;"></i> ခြေရာခံခြင်း <i class="fas fa-chevron-right" style="margin-left:auto; opacity:0.3;"></i></button>
+                    <button class="profile-menu-item" data-hash="#wishlist"><i class="fas fa-heart" style="color:#e11b1b;"></i> သိမ်းဆည်းထားသော ပစ္စည်းများ <i class="fas fa-chevron-right" style="margin-left:auto; opacity:0.3;"></i></button>
+                    <button class="profile-menu-item" data-hash="#address"><i class="fas fa-map-pin" style="color:#22c55e;"></i> ပို့ရန်လိပ်စာ <i class="fas fa-chevron-right" style="margin-left:auto; opacity:0.3;"></i></button>
+                    <button class="profile-menu-item" data-hash="#messages"><i class="fas fa-headset" style="color:#3b82f6;"></i> အကူအညီ <i class="fas fa-chevron-right" style="margin-left:auto; opacity:0.3;"></i></button>
+                    <button class="profile-menu-item" data-hash="#settings"><i class="fas fa-cog" style="color:#6b7280;"></i> ဆက်တင်များ <i class="fas fa-chevron-right" style="margin-left:auto; opacity:0.3;"></i></button>
+                    <button class="profile-menu-item" id="logoutBtn" style="color:var(--primary);"><i class="fas fa-sign-out-alt" style="color:var(--primary);"></i> အကောင့်ထွက်ရန် <i class="fas fa-chevron-right" style="margin-left:auto; opacity:0.3;"></i></button>
+                </div>
+            </section>
 
-    // ---------- Init ----------
-    window.addEventListener('load', () => {
-      startClock();
-      if (window.location.hash === '#step') showAdminLogin();
-      else {
-        currentPage = window.location.hash.slice(1) || 'home';
-        renderPage();
-        updateNav();
-      }
-    });
-  </script>
-</body>
-</html>
+            <!-- ===== OTHER PAGES (placeholders for routing) ===== -->
+            <section class="page" id="page-orders">
+                <div class="glass-card page-placeholder">
+                    <i class="fas fa-box-open"></i>
+                    <h3>ကျွန်ုပ်၏ အော်ဒါများ</h3>
+                    <p>သင်၏ အော်ဒါမှတ်တမ်းများကို ဤနေရာတွင် ကြည့်ရှုနိုင်သည်။</p>
+                </div>
+            </section>
+            <section class="page" id="page-tracking">
+                <div class="glass-card page-placeholder">
+                    <i class="fas fa-map-marked-alt"></i>
+                    <h3>ခြေရာခံခြင်း</h3>
+                    <p>မြေပုံပေါ်တွင် အော်ဒါတိုးတက်မှုကို ကြည့်ရှုပါ။</p>
+                    <div id="trackingMap" style="height:200px; border-radius:12px; margin-top:12px; background:#e5e7eb;"></div>
+                </div>
+            </section>
+            <section class="page" id="page-wishlist">
+                <div class="glass-card page-placeholder">
+                    <i class="fas fa-heart" style="color:var(--primary);"></i>
+                    <h3>သိမ်းဆည်းထားသော ပစ္စည်းများ</h3>
+                    <p>သင် နှစ်သက်သော ပစ္စည်းများစာရင်း</p>
+                </div>
+            </section>
+            <section class="page" id="page-address">
+                <div class="glass-card page-placeholder">
+                    <i class="fas fa-map-pin" style="color:#22c55e;"></i>
+                    <h3>ပို့ရန်လိပ်စာ</h3>
+                    <p>သင်၏ ပို့ရန်လိပ်စာနှင့် ဖုန်းနံပါတ် ဖြည့်သွင်းပါ။</p>
+                </div>
+            </section>
+            <section class="page" id="page-settings">
+                <div class="glass-card page-placeholder">
+                    <i class="fas fa-cog"></i>
+                    <h3>ဆက်တင်များ</h3>
+                    <p>Website ဆက်တင်များ ပြင်ဆင်ပါ။</p>
+                </div>
+            </section>
+            <section class="page" id="page-product">
+                <!-- Product detail will be rendered by JS -->
+                <div class="glass-card" id="productDetailContainer">
+                    <div class="text-muted" style="text-align:center; padding:30px 0;">
+                        <i class="fas fa-spinner fa-pulse" style="font-size:28px;"></i>
+                        <p>ပစ္စည်းအချက်အလက် ဖွင့်နေသည်...</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===== CHECKOUT PAGES (step by step) ===== -->
+            <section class="page" id="page-checkout-address">
+                <div class="glass-card">
+                    <h3><i class="fas fa-map-pin text-primary"></i> လိပ်စာနှင့် အချက်အလက်</h3>
+                    <form id="checkoutForm1" style="margin-top:16px;">
+                        <input type="text" placeholder="အမည်" id="chkName" style="width:100%; padding:14px; border-radius:12px; border:1px solid var(--card-border); background:var(--card-bg); color:var(--text-primary); margin-bottom:12px; font-size:15px;" required />
+                        <input type="tel" placeholder="ဖုန်းနံပါတ်" id="chkPhone" style="width:100%; padding:14px; border-radius:12px; border:1px solid var(--card-border); background:var(--card-bg); color:var(--text-primary); margin-bottom:12px; font-size:15px;" required />
+                        <textarea placeholder="နေရပ်လိပ်စာ အပြည့်အစုံ" id="chkAddress" rows="3" style="width:100%; padding:14px; border-radius:12px; border:1px solid var(--card-border); background:var(--card-bg); color:var(--text-primary); margin-bottom:12px; font-size:15px; resize:vertical;" required></textarea>
+                        <button type="submit" style="width:100%; padding:14px; background:var(--primary); color:#fff; border:none; border-radius:40px; font-weight:700; font-size:16px; cursor:pointer;">ရှေ့ဆက်မည် <i class="fas fa-arrow-right"></i></button>
+                    </form>
+                </div>
+            </section>
+            <section class="page" id="page-checkout-payment">
+                <div class="glass-card" style="text-align:center;">
+                    <h3><i class="fas fa-credit-card text-secondary"></i> ငွေလွှဲပါ (Wave Pay)</h3>
+                    <p style="margin:12px 0 8px; font-size:15px;">အကောင့်အမည်: <strong>Thae Su Phuo Ko</strong></p>
+                    <p style="font-size:18px; font-weight:700; color:var(--primary);">09 781 145 573</p>
+                    <button id="copyWaveBtn" style="padding:10px 24px; border:none; background:var(--secondary); color:#fff; border-radius:40px; font-weight:600; cursor:pointer; margin-top:8px;"><i class="fas fa-copy"></i> ကူးယူမည်</button>
+                    <div style="margin-top:16px; font-size:14px; color:var(--text-secondary);">ငွေလွှဲရန် ကျန်အချိန်: <span id="countdownTimer" style="font-weight:700; color:var(--primary);">60:00</span></div>
+                    <button id="paidBtn" style="margin-top:16px; padding:14px 32px; background:var(--primary); color:#fff; border:none; border-radius:40px; font-weight:700; font-size:16px; cursor:pointer;">ငွေလွှဲပြီးပါပြီ (Paid)</button>
+                </div>
+            </section>
+            <section class="page" id="page-checkout-screenshot">
+                <div class="glass-card" style="text-align:center;">
+                    <h3><i class="fas fa-image text-primary"></i> Screenshot တင်ရန်</h3>
+                    <div id="dropZone" style="border:2px dashed var(--card-border); border-radius:16px; padding:30px 20px; margin-top:16px; background:var(--card-bg); cursor:pointer;">
+                        <i class="fas fa-cloud-upload-alt" style="font-size:40px; color:var(--text-light);"></i>
+                        <p class="text-muted mt-8">ဓာတ်ပုံဆွဲချ သို့မဟုတ် နှိပ်၍ တင်ရန်</p>
+                        <input type="file" id="screenshotInput" accept="image/*" style="display:none;" />
+                    </div>
+                    <button id="confirmOrderBtn" style="margin-top:16px; padding:14px 32px; background:var(--primary); color:#fff; border:none; border-radius:40px; font-weight:700; font-size:16px; cursor:pointer;">အော်ဒါအပြီးသတ်မည်</button>
+                </div>
+            </section>
+
+            <!-- ===== SUCCESS PAGE ===== -->
+            <section class="page" id="page-success">
+                <div class="glass-card" style="text-align:center; padding:40px 20px;">
+                    <i class="fas fa-check-circle" style="font-size:64px; color:#22c55e;"></i>
+                    <h3 class="mt-8">အော်ဒါ အောင်မြင်ပါသည်!</h3>
+                    <p class="text-muted">ကျေးဇူးတင်ပါတယ်။ သင့်အော်ဒါကို စီမံဆောင်ရွက်နေပါပြီ။</p>
+                    <button id="backHomeBtn" style="margin-top:16px; padding:12px 32px; background:var(--primary); color:#fff; border:none; border-radius:40px; font-weight:600; cursor:pointer;">မူလစာမျက်နှာသို့</button>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- ===== BOTTOM NAVIGATION ===== -->
+        <nav class="bottom-nav" id="bottomNav">
+            <button class="nav-item active" data-hash="#home"><i class="fas fa-home"></i><span>Home</span></button>
+            <button class="nav-item" data-hash="#messages"><i class="fas fa-comment-dots"></i><span>Messages</span><span class="badge hidden" id="msgBadge">0</span></button>
+            <button class="nav-item" data-hash="#cart"><i class="fas fa-shopping-cart"></i><span>Cart</span><span class="badge hidden" id="cartBadge">0</span></button>
+            <button class="nav-item" data-hash="#profile"><i class="fas fa-user"></i><span>Profile</span></button>
+        </nav>
+
+        <!-- ===== FLOATING CHAT WIDGET ===== -->
+        <button class="chat-fab" id="chatFab"><i class="fas fa-comment"></i></button>
+
+    </div>
+    <!-- END #app -->
+
+    <!-- ============================================================ -->
+    <!-- FIREBASE CONFIG (ဤနေရာတွင် ထည့်သွင်းထားသည်) -->
+    <!-- ============================================================ -->
+    <script>
+        // Firebase config object (သတ်မှတ်ထားသော credentials)
+        const firebaseConfig = {
+            apiKey: "AIzaSyDSu2XksfUZ6mAfktUpBqFtNxrgj96h1l4",
+            authDomain: "app-my-caee3.firebaseapp.com",
+            projectId: "app-my-caee3",
+            storageBucket: "app-my-caee3.firebasestorage.app",
+            messagingSenderId: "169669907659",
+            appId: "1:169669907659:web:8fba75e7aed449e3ffb74e",
+            measurementId: "G-RTM9J8L6R1"
+        };
+
+        // Firebase ကို Initialize လုပ်ခြင်း
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+        const storage = firebase.storage();
+
+        // သိမ်းဆည်းထားသော Theme ကို ဖတ်ရန်
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        if (savedTheme === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            document.getElementById('themeToggle').innerHTML = '<i class="fas fa-sun"></i>';
+        }
+
+        console.log('✅ Firebase initialized. Part 1 (Lines 1-300) complete.');
+    </script>
+
+    <!-- ============================================================ -->
+    <!-- ဤနေရာတွင် Part 1 ပြီးဆုံးပါသည်။ လိုင်း ၃၀၀ အတိအကျ -->
+    <!-- ============================================================ -->
+
+  
