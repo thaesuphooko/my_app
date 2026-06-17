@@ -2,9 +2,6 @@
 // firebase-config.js - Firebase Configuration
 // ============================================================
 
-// ========================================================================
-// FIREBASE CONFIG
-// ========================================================================
 const firebaseConfig = {
     apiKey: "AIzaSyDSu2XksfUZ6mAfktUpBqFtNxrgj96h1l4",
     authDomain: "app-my-caee3.firebaseapp.com",
@@ -15,9 +12,6 @@ const firebaseConfig = {
     measurementId: "G-RTM9J8L6R1"
 };
 
-// ========================================================================
-// INITIALIZE FIREBASE
-// ========================================================================
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
