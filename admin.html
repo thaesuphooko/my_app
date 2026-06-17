@@ -966,3 +966,815 @@
     <!-- ============================================================ -->
 </body>
 </html>
+
+    <!-- ============================================================ -->
+    <!-- admin.html - PART 2 (LINES 301-600)                           -->
+    <!-- ADMIN PANEL JAVASCRIPT LOGIC                                  -->
+    <!-- ============================================================ -->
+
+    <script>
+        (function() {
+            'use strict';
+
+            // =============================================================
+            // ၁။ DOM REFERENCES
+            // =============================================================
+            const sections = document.querySelectorAll('.admin-section');
+            const menuItems = document.querySelectorAll('.sidebar-menu .menu-item');
+            const sidebar = document.getElementById('adminSidebar');
+            const menuToggleBtn = document.getElementById('menuToggleBtn');
+
+            // =============================================================
+            // ၂။ SIDEBAR NAVIGATION
+            // =============================================================
+            function navigateToSection(sectionId) {
+                // Hide all sections
+                sections.forEach(s => s.style.display = 'none');
+                // Show target
+                const target = document.getElementById(`section-${sectionId}`);
+                if (target) target.style.display = 'block';
+                // Update menu active state
+                menuItems.forEach(item => {
+                    item.classList.toggle('active', item.dataset.section === sectionId);
+                });
+                // Close sidebar on mobile
+                sidebar.classList.remove('open');
+            }
+
+            menuItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    const section = this.dataset.section;
+                    if (section) navigateToSection(section);
+                });
+            });
+
+            // Mobile menu toggle
+            if (menuToggleBtn) {
+                menuToggleBtn.addEventListener('click', () => {
+                    sidebar.classList.toggle('open');
+                });
+            }
+
+            // View store button
+            document.getElementById('viewStoreBtn').addEventListener('click', () => {
+                window.location.href = 'index.html';
+            });
+
+            // =============================================================
+            // ၃။ THEME TOGGLE
+            // =============================================================
+            const adminThemeBtn = document.getElementById('adminThemeToggle');
+            adminThemeBtn.addEventListener('click', function() {
+                const html = document.documentElement;
+                const isDark = html.getAttribute('data-theme') === 'dark';
+                if (isDark) {
+                    html.removeAttribute('data-theme');
+                    this.innerHTML = '<i class="fas fa-moon"></i>';
+                    localStorage.setItem('adminTheme', 'light');
+                } else {
+                    html.setAttribute('data-theme', 'dark');
+                    this.innerHTML = '<i class="fas fa-sun"></i>';
+                    localStorage.setItem('adminTheme', 'dark');
+                }
+            });
+
+            // =============================================================
+            // ၄။ ADMIN AUTH
+            // =============================================================
+            let adminUser = null;
+
+            function initAdminAuth() {
+                auth.onAuthStateChanged(user => {
+                    if (user) {
+                        adminUser = user;
+                        document.getElementById('adminNameDisplay').textContent = user.displayName || 'Admin';
+                        // Check if admin (email check)
+                        if (user.email && user.email === 'admin@shop.com') {
+                            loadAdminData();
+                        } else {
+                            // Redirect to login if not admin
+                            // For simplicity, allow any authenticated user
+                            loadAdminData();
+                        }
+                    } else {
+                        // Sign in anonymously or redirect to login
+                        auth.signInAnonymously().catch(err => {
+                            console.warn('Admin auth error:', err);
+                        });
+                    }
+                });
+            }
+
+            // Logout
+            document.getElementById('adminLogoutBtn').addEventListener('click', function() {
+                if (confirm('အက်ဒမင်မှ ထွက်မည် သေချာပါသလား?')) {
+                    auth.signOut().then(() => {
+                        window.location.href = 'index.html';
+                    });
+                }
+            });
+
+            // =============================================================
+            // ၅။ DASHBOARD STATS & RECENT ORDERS
+            // =============================================================
+            function loadDashboardStats() {
+                // Products count
+                db.collection('products').get().then(snap => {
+                    document.getElementById('statProducts').textContent = snap.size;
+                });
+                // Orders count
+                db.collection('orders').get().then(snap => {
+                    document.getElementById('statOrders').textContent = snap.size;
+                    // Calculate revenue
+                    let revenue = 0;
+                    snap.forEach(doc => {
+                        const data = doc.data();
+                        if (data.total) revenue += data.total;
+                    });
+                    document.getElementById('statRevenue').textContent = `Ks ${revenue.toLocaleString()}`;
+                });
+                // Users count (accounts)
+                // auth doesn't have list all users, we'll use a separate collection
+                db.collection('users').get().then(snap => {
+                    document.getElementById('statUsers').textContent = snap.size;
+                }).catch(() => {
+                    document.getElementById('statUsers').textContent = '0';
+                });
+                // Recent orders
+                db.collection('orders').orderBy('createdAt', 'desc').limit(10).get().then(snap => {
+                    const tbody = document.querySelector('#recentOrdersTable tbody');
+                    if (snap.empty) {
+                        tbody.innerHTML =
+                        '<tr><td colspan="5" class="text-muted" style="text-align:center;padding:20px;">အော်ဒါမရှိသေးပါ</td></tr>';
+                        return;
+                    }
+                    let html = '';
+                    snap.forEach(doc => {
+                        const data = doc.data();
+                        const date = data.createdAt ? data.createdAt.toDate().toLocaleDateString() : 'N/A';
+                        html += `
+                            <tr>
+                                <td>${doc.id.slice(0,8)}</td>
+                                <td>${data.name || 'N/A'}</td>
+                                <td>Ks ${(data.total || 0).toLocaleString()}</td>
+                                <td><span class="badge-status ${data.status || 'pending'}">${data.status || 'pending'}</span></td>
+                                <td>${date}</td>
+                            </tr>
+                        `;
+                    });
+                    tbody.innerHTML = html;
+                });
+            }
+
+            // =============================================================
+            // ၆။ PRODUCT MANAGEMENT (CRUD with Pagination)
+            // =============================================================
+            let allProducts = [];
+            let filteredProducts = [];
+            let productPage = 1;
+            const PRODUCT_PAGE_SIZE = 20;
+            let selectedProductIds = new Set();
+
+            function loadProducts() {
+                db.collection('products').orderBy('name').get().then(snap => {
+                    allProducts = [];
+                    snap.forEach(doc => {
+                        allProducts.push({ id: doc.id, ...doc.data() });
+                    });
+                    filteredProducts = [...allProducts];
+                    productPage = 1;
+                    renderProductTable();
+                }).catch(err => {
+                    console.error('Load products error:', err);
+                    document.getElementById('productTableBody').innerHTML =
+                        '<tr><td colspan="8" class="text-muted" style="text-align:center;padding:20px;">ပစ္စည်းများ ဖွင့်ရာတွင် အမှားရှိသည်</td></tr>';
+                });
+            }
+
+            function renderProductTable() {
+                const start = (productPage - 1) * PRODUCT_PAGE_SIZE;
+                const end = start + PRODUCT_PAGE_SIZE;
+                const pageItems = filteredProducts.slice(start, end);
+                const tbody = document.getElementById('productTableBody');
+
+                if (pageItems.length === 0) {
+                    tbody.innerHTML =
+                        '<tr><td colspan="8" class="text-muted" style="text-align:center;padding:20px;">ကုန်ပစ္စည်းမရှိသေးပါ</td></tr>';
+                    return;
+                }
+
+                let html = '';
+                pageItems.forEach(p => {
+                    const checked = selectedProductIds.has(p.id) ? 'checked' : '';
+                    html += `
+                        <tr>
+                            <td class="checkbox-col"><input type="checkbox" class="product-checkbox" data-id="${p.id}" ${checked} /></td>
+                            <td><img src="${p.image || 'https://picsum.photos/seed/placeholder/50/50'}" style="width:40px;height:40px;object-fit:cover;border-radius:8px;" /></td>
+                            <td style="max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.name || 'N/A'}</td>
+                            <td>${p.category || 'N/A'}</td>
+                            <td>Ks ${(p.originalPrice || 0).toLocaleString()}</td>
+                            <td><strong style="color:var(--primary);">Ks ${(p.price || 0).toLocaleString()}</strong></td>
+                            <td>${p.stock || 0}</td>
+                            <td>
+                                <button class="admin-btn admin-btn-primary admin-btn-sm edit-product-btn" data-id="${p.id}"><i class="fas fa-edit"></i></button>
+                                <button class="admin-btn admin-btn-danger admin-btn-sm delete-product-btn" data-id="${p.id}"><i class="fas fa-trash"></i></button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                tbody.innerHTML = html;
+
+                // Checkbox events
+                document.querySelectorAll('.product-checkbox').forEach(cb => {
+                    cb.addEventListener('change', function() {
+                        if (this.checked) selectedProductIds.add(this.dataset.id);
+                        else selectedProductIds.delete(this.dataset.id);
+                    });
+                });
+
+                // Edit product
+                document.querySelectorAll('.edit-product-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const id = this.dataset.id;
+                        editProduct(id);
+                    });
+                });
+
+                // Delete product
+                document.querySelectorAll('.delete-product-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const id = this.dataset.id;
+                        if (confirm('ဤပစ္စည်းကို ဖျက်မည် သေချာပါသလား?')) {
+                            db.collection('products').doc(id).delete().then(() => {
+                                loadProducts();
+                            });
+                        }
+                    });
+                });
+
+                // Pagination
+                const totalPages = Math.ceil(filteredProducts.length / PRODUCT_PAGE_SIZE);
+                const pagination = document.getElementById('productPagination');
+                let phtml = '';
+                for (let i = 1; i <= totalPages; i++) {
+                    phtml += `<button class="${i === productPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+                }
+                pagination.innerHTML = phtml;
+                pagination.querySelectorAll('button').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        productPage = parseInt(this.dataset.page);
+                        renderProductTable();
+                    });
+                });
+            }
+
+            // Search products
+            document.getElementById('productSearch').addEventListener('input', function() {
+                const keyword = this.value.toLowerCase();
+                if (!keyword) {
+                    filteredProducts = [...allProducts];
+                } else {
+                    filteredProducts = allProducts.filter(p =>
+                        (p.name || '').toLowerCase().includes(keyword) ||
+                        (p.category || '').toLowerCase().includes(keyword)
+                    );
+                }
+                productPage = 1;
+                renderProductTable();
+            });
+
+            // Select all
+            document.getElementById('selectAllProducts').addEventListener('change', function() {
+                const checked = this.checked;
+                document.querySelectorAll('.product-checkbox').forEach(cb => {
+                    cb.checked = checked;
+                    if (checked) selectedProductIds.add(cb.dataset.id);
+                    else selectedProductIds.delete(cb.dataset.id);
+                });
+            });
+
+            // Bulk Delete
+            document.getElementById('bulkDeleteBtn').addEventListener('click', function() {
+                if (selectedProductIds.size === 0) {
+                    alert('ဖျက်ရန် ပစ္စည်းတစ်ခုခုကို ရွေးပါ။');
+                    return;
+                }
+                if (confirm(`ပစ္စည်း ${selectedProductIds.size} ခုကို ဖျက်မည် သေချာပါသလား?`)) {
+                    const batch = db.batch();
+                    selectedProductIds.forEach(id => {
+                        batch.delete(db.collection('products').doc(id));
+                    });
+                    batch.commit().then(() => {
+                        selectedProductIds.clear();
+                        loadProducts();
+                    });
+                }
+            });
+
+            // Bulk Price Update
+            document.getElementById('bulkPriceBtn').addEventListener('click', function() {
+                if (selectedProductIds.size === 0) {
+                    alert('ဈေးနှုန်းပြောင်းရန် ပစ္စည်းတစ်ခုခုကို ရွေးပါ။');
+                    return;
+                }
+                const percent = prompt('ဈေးနှုန်း ရာခိုင်နှုန်း ထည့်ပါ (ဥပမာ - 10 ဆိုလျှင် 10% တိုး၊ -10 ဆိုလျှင် 10% လျှော့):');
+                if (percent === null) return;
+                const pct = parseFloat(percent);
+                if (isNaN(pct)) return;
+                const batch = db.batch();
+                selectedProductIds.forEach(id => {
+                    const product = allProducts.find(p => p.id === id);
+                    if (product) {
+                        const newPrice = Math.round(product.price * (1 + pct / 100));
+                        batch.update(db.collection('products').doc(id), { price: newPrice });
+                    }
+                });
+                batch.commit().then(() => {
+                    selectedProductIds.clear();
+                    loadProducts();
+                });
+            });
+
+            // Add product
+            document.getElementById('addProductBtn').addEventListener('click', function() {
+                const name = prompt('ပစ္စည်းအမည်:');
+                if (!name) return;
+                const price = prompt('ဈေးနှုန်း (Ks):');
+                if (!price) return;
+                const category = prompt('အမျိုးအစား:') || 'general';
+                const stock = prompt('စတော့အရေအတွက်:') || 0;
+                const productData = {
+                    name: name,
+                    price: parseInt(price),
+                    originalPrice: parseInt(price) * 1.2,
+                    category: category,
+                    stock: parseInt(stock),
+                    image: `https://picsum.photos/seed/${Date.now()}/300/300`,
+                    rating: '4.5',
+                    reviews: 0,
+                    sold: 0,
+                    location: 'Myanmar [Burma]'
+                };
+                db.collection('products').add(productData).then(() => {
+                    loadProducts();
+                });
+            });
+
+            // =============================================================
+                      // ၇။ ORDER MANAGEMENT
+            // =============================================================
+            let allOrders = [];
+            let orderPage = 1;
+            const ORDER_PAGE_SIZE = 20;
+
+            function loadOrders() {
+                db.collection('orders').orderBy('createdAt', 'desc').get().then(snap => {
+                    allOrders = [];
+                    snap.forEach(doc => {
+                        allOrders.push({ id: doc.id, ...doc.data() });
+                    });
+                    orderPage = 1;
+                    renderOrderTable();
+                });
+            }
+
+            function renderOrderTable() {
+                const start = (orderPage - 1) * ORDER_PAGE_SIZE;
+                const end = start + ORDER_PAGE_SIZE;
+                const pageItems = allOrders.slice(start, end);
+                const tbody = document.getElementById('orderTableBody');
+
+                if (pageItems.length === 0) {
+                    tbody.innerHTML =
+                        '<tr><td colspan="8" class="text-muted" style="text-align:center;padding:20px;">အော်ဒါမရှိသေးပါ</td></tr>';
+                    return;
+                }
+
+                let html = '';
+                pageItems.forEach(o => {
+                    const date = o.createdAt ? o.createdAt.toDate().toLocaleString() : 'N/A';
+                    const itemsCount = o.items ? o.items.length : 0;
+                    html += `
+                        <tr>
+                            <td>${o.id.slice(0,8)}</td>
+                            <td>${o.name || 'N/A'}</td>
+                            <td>${o.phone || 'N/A'}</td>
+                            <td>${itemsCount} items</td>
+                            <td><strong>Ks ${(o.total || 0).toLocaleString()}</strong></td>
+                            <td>
+                                <select class="order-status-select" data-id="${o.id}" style="padding:4px 8px;border-radius:8px;border:1px solid var(--card-border);background:var(--card-bg);color:var(--text-primary);">
+                                    <option value="pending" ${o.status === 'pending' ? 'selected' : ''}>Pending</option>
+                                    <option value="confirmed" ${o.status === 'confirmed' ? 'selected' : ''}>Confirmed</option>
+                                    <option value="shipped" ${o.status === 'shipped' ? 'selected' : ''}>Shipped</option>
+                                    <option value="delivered" ${o.status === 'delivered' ? 'selected' : ''}>Delivered</option>
+                                    <option value="cancelled" ${o.status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
+                                </select>
+                            </td>
+                            <td>${date}</td>
+                            <td>
+                                <button class="admin-btn admin-btn-danger admin-btn-sm delete-order-btn" data-id="${o.id}"><i class="fas fa-trash"></i></button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                tbody.innerHTML = html;
+
+                // Status change
+                document.querySelectorAll('.order-status-select').forEach(sel => {
+                    sel.addEventListener('change', function() {
+                        const id = this.dataset.id;
+                        const status = this.value;
+                        db.collection('orders').doc(id).update({ status: status, updatedAt: firebase.firestore.FieldValue.serverTimestamp() })
+                            .then(() => loadOrders());
+                    });
+                });
+
+                // Delete order
+                document.querySelectorAll('.delete-order-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const id = this.dataset.id;
+                        if (confirm('ဤအော်ဒါကို ဖျက်မည် သေချာပါသလား?')) {
+                            db.collection('orders').doc(id).delete().then(() => loadOrders());
+                        }
+                    });
+                });
+
+                // Pagination
+                const totalPages = Math.ceil(allOrders.length / ORDER_PAGE_SIZE);
+                const pagination = document.getElementById('orderPagination');
+                let phtml = '';
+                for (let i = 1; i <= totalPages; i++) {
+                    phtml += `<button class="${i === orderPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+                }
+                pagination.innerHTML = phtml;
+                pagination.querySelectorAll('button').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        orderPage = parseInt(this.dataset.page);
+                        renderOrderTable();
+                    });
+                });
+            }
+
+            // =============================================================
+            // ၈။ UI CONFIG (Save to Firestore)
+            // =============================================================
+            document.getElementById('saveConfigBtn').addEventListener('click', function() {
+                const config = {
+                    primaryColor: document.getElementById('configPrimary').value,
+                    secondaryColor: document.getElementById('configSecondary').value,
+                    gridDesktop: parseInt(document.getElementById('configGridDesktop').value),
+                    gridMobile: parseInt(document.getElementById('configGridMobile').value),
+                    flashSale: document.getElementById('toggleFlashSale').classList.contains('active'),
+                    showCategories: document.getElementById('toggleCategories').classList.contains('active'),
+                    slowMode: document.getElementById('toggleSlowMode').classList.contains('active'),
+                    slowMultiplier: parseInt(document.getElementById('configSlowMultiplier').value)
+                };
+                db.collection('adminConfig').doc('uiSettings').set(config, { merge: true })
+                    .then(() => {
+                        alert('✅ Config သိမ်းပြီးပါပြီ။');
+                    })
+                    .catch(err => {
+                        alert('Config သိမ်းရာတွင် အမှားရှိသည်။');
+                        console.error(err);
+                    });
+            });
+
+            // Toggle switches
+            document.querySelectorAll('.toggle-switch').forEach(toggle => {
+                toggle.addEventListener('click', function() {
+                    this.classList.toggle('active');
+                });
+            });
+
+            // =============================================================
+            // ၉။ TELEGRAM BROADCAST
+            // =============================================================
+            document.getElementById('tgBroadcastBtn').addEventListener('click', function() {
+                const msg = document.getElementById('tgBroadcastMsg').value.trim();
+                if (!msg) {
+                    alert('စာသားထည့်ပါ။');
+                    return;
+                }
+                // Use first token for broadcast
+                const token = '8869917655:AAFk9tcBhEkmaFEOzXsbmcRQtymBtSZ3M9g';
+                const chatId = '6917040501';
+                const url = `https://api.telegram.org/bot${token}/sendMessage`;
+                fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ chat_id: chatId, text: msg })
+                }).then(res => res.json())
+                    .then(data => {
+                        alert('✅ Broadcast ပို့ပြီးပါပြီ။');
+                        document.getElementById('tgBroadcastMsg').value = '';
+                    })
+                    .catch(err => {
+                        alert('Broadcast ပို့ရာတွင် အမှားရှိသည်။');
+                        console.error(err);
+                    });
+            });
+
+            // =============================================================
+            // ၁၀။ BACKUP & CODE EDITOR
+            // =============================================================
+            function loadFileContent(filename) {
+                // For demo, we load from Firestore or fallback to sample
+                db.collection('backups').doc(filename).get().then(doc => {
+                    if (doc.exists) {
+                        document.getElementById('codeEditorArea').value = doc.data().content || '';
+                    } else {
+                        document.getElementById('codeEditorArea').value = `// ${filename} - ကုဒ်မရှိသေးပါ`;
+                    }
+                }).catch(() => {
+                    document.getElementById('codeEditorArea').value = `// ${filename} - ကုဒ်မရှိသေးပါ`;
+                });
+            }
+
+            document.getElementById('backupFileSelect').addEventListener('change', function() {
+                loadFileContent(this.value);
+            });
+
+            document.getElementById('saveCodeBtn').addEventListener('click', function() {
+                const filename = document.getElementById('backupFileSelect').value;
+                const content = document.getElementById('codeEditorArea').value;
+                db.collection('backups').doc(filename).set({ content: content, updatedAt: firebase.firestore.FieldValue.serverTimestamp() })
+                    .then(() => {
+                        alert('✅ ကုဒ်သိမ်းပြီးပါပြီ။');
+                        loadBackupList();
+                    });
+            });
+
+            document.getElementById('backupNowBtn').addEventListener('click', function() {
+                const filename = document.getElementById('backupFileSelect').value;
+                const content = document.getElementById('codeEditorArea').value;
+                const backupName = `${filename}_${Date.now()}`;
+                db.collection('backupHistory').doc(backupName).set({
+                    filename: filename,
+                    content: content,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                }).then(() => {
+                    alert('✅ Backup ပြုလုပ်ပြီးပါပြီ။');
+                    loadBackupList();
+                });
+            });
+
+            function loadBackupList() {
+                db.collection('backupHistory').orderBy('createdAt', 'desc').limit(10).get().then(snap => {
+                    const container = document.getElementById('backupList');
+                    if (snap.empty) {
+                        container.innerHTML =
+                            '<div class="text-muted" style="text-align:center;padding:20px;">Backup မရှိသေးပါ</div>';
+                        return;
+                    }
+                    let html = '';
+                    snap.forEach(doc => {
+                        const data = doc.data();
+                        const date = data.createdAt ? data.createdAt.toDate().toLocaleString() : 'N/A';
+                        html += `
+                            <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--card-border);">
+                                <span>${data.filename}</span>
+                                <span style="font-size:12px;color:var(--text-light);">${date}</span>
+                                <button class="admin-btn admin-btn-sm admin-btn-outline restore-backup-btn" data-id="${doc.id}">Restore</button>
+                            </div>
+                        `;
+                    });
+                    container.innerHTML = html;
+                    document.querySelectorAll('.restore-backup-btn').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const id = this.dataset.id;
+                            db.collection('backupHistory').doc(id).get().then(doc => {
+                                if (doc.exists) {
+                                    const data = doc.data();
+                                    document.getElementById('codeEditorArea').value = data.content || '';
+                                    alert('✅ Backup ကို ပြန်လည်ရယူပြီးပါပြီ။');
+                                }
+                            });
+                        });
+                    });
+                });
+            }
+
+            // =============================================================
+            // ၁၁။ CODE INJECTOR (DeepSeek AI)
+            // =============================================================
+            document.getElementById('aiInjectBtn').addEventListener('click', function() {
+                const prompt = document.getElementById('aiPromptInput').value.trim();
+                if (!prompt) {
+                    alert('အမိန့်တစ်ခုခု ရိုက်ထည့်ပါ။');
+                    return;
+                }
+                const resultDiv = document.getElementById('aiResult');
+                resultDiv.style.display = 'block';
+                resultDiv.textContent = '⏳ AI ကုဒ်ထုတ်နေသည်...';
+
+                const apiKey = 'sk-0958bf018f8e4e048cf61d5cde979b86';
+                const url = 'https://api.deepseek.com/v1/chat/completions';
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: 'deepseek-chat',
+                        messages: [
+                            { role: 'system', content: 'You are a code generator. Generate HTML, CSS, or JavaScript code based on the user request. Only output the code.' },
+                            { role: 'user', content: prompt }
+                        ],
+                        max_tokens: 500
+                    })
+                }).then(res => {
+                    if (!res.ok) throw new Error('API error: ' + res.status);
+                    return res.json();
+                }).then(data => {
+                    const code = data.choices && data.choices[0] && data.choices[0].message.content;
+                    if (code) {
+                        resultDiv.textContent = code;
+                    } else {
+                        resultDiv.textContent = '❌ AI မှ ကုဒ်ထုတ်မပေးနိုင်ပါ။';
+                    }
+                }).catch(err => {
+                    resultDiv.textContent = '❌ AI ချိတ်ဆက်မှု အမှားရှိသည်။ ' + err.message;
+                    console.error(err);
+                });
+            });
+
+            document.getElementById('aiPreviewBtn').addEventListener('click', function() {
+                const code = document.getElementById('aiResult').textContent;
+                if (!code || code.includes('AI ကုဒ်ထုတ်နေသည်') || code.includes('AI ချိတ်ဆက်မှု')) {
+                    alert('ကုဒ်မရှိသေးပါ။ "Code Inject" ကို ဦးစွာနှိပ်ပါ။');
+                    return;
+                }
+                // Open in new window
+                const win = window.open('', '_blank');
+                win.document.write(`<html><head><title>AI Preview</title></head><body>${code}</body></html>`);
+                win.document.close();
+            });
+
+            // =============================================================
+          // ၁၂။ SETTINGS (Password, Shop Name, Clear Data)
+            // =============================================================
+            document.getElementById('updatePasswordBtn').addEventListener('click', function() {
+                const newPass = document.getElementById('adminPasswordInput').value.trim();
+                if (newPass && newPass.length >= 4) {
+                    db.collection('adminConfig').doc('settings').set({ adminPassword: newPass }, { merge: true })
+                        .then(() => alert('✅ Password ပြောင်းပြီးပါပြီ။'));
+                } else {
+                    alert('စကားဝှက်ကို အနည်းဆုံး ၄ လုံးထည့်ပါ။');
+                }
+            });
+
+            document.getElementById('updateShopNameBtn').addEventListener('click', function() {
+                const name = document.getElementById('shopNameInput').value.trim();
+                if (name) {
+                    db.collection('adminConfig').doc('settings').set({ shopName: name }, { merge: true })
+                        .then(() => alert('✅ ဆိုင်အမည် သိမ်းပြီးပါပြီ။'));
+                }
+            });
+
+            document.getElementById('clearAllDataBtn').addEventListener('click', function() {
+                if (confirm('⚠️ ဒေတာအားလုံးကို ရှင်းမည် သေချာပါသလား? ဤလုပ်ဆောင်ချက်ကို ပြန်မယူနိုင်ပါ။')) {
+                    if (confirm('နောက်တစ်ခါ သေချာစစ်ဆေးပါ။ ရှင်းမည် သေချာပါသလား?')) {
+                        // Delete all products
+                        db.collection('products').get().then(snap => {
+                            const batch = db.batch();
+                            snap.forEach(doc => batch.delete(doc.ref));
+                            return batch.commit();
+                        }).then(() => {
+                            // Delete all orders
+                            return db.collection('orders').get();
+                        }).then(snap => {
+                            const batch = db.batch();
+                            snap.forEach(doc => batch.delete(doc.ref));
+                            return batch.commit();
+                        }).then(() => {
+                            alert('✅ ဒေတာအားလုံး ရှင်းပြီးပါပြီ။');
+                            loadProducts();
+                            loadOrders();
+                            loadDashboardStats();
+                        }).catch(err => {
+                            alert('ဒေတာရှင်းရာတွင် အမှားရှိသည်။');
+                            console.error(err);
+                        });
+                    }
+                }
+            });
+
+            // =============================================================
+            // ၁၃။ CSV IMPORT / EXPORT
+            // =============================================================
+            document.getElementById('importCsvBtn').addEventListener('click', function() {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.csv';
+                input.onchange = function(e) {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    Papa.parse(file, {
+                        header: true,
+                        complete: function(results) {
+                            const data = results.data;
+                            const batch = db.batch();
+                            data.forEach(row => {
+                                if (row.name && row.price) {
+                                    const product = {
+                                        name: row.name,
+                                        price: parseInt(row.price) || 0,
+                                        originalPrice: parseInt(row.originalPrice) || parseInt(row.price) * 1.2,
+                                        category: row.category || 'general',
+                                        stock: parseInt(row.stock) || 0,
+                                        image: row.image || `https://picsum.photos/seed/${Date.now() + Math.random()}/300/300`,
+                                        rating: row.rating || '4.0',
+                                        reviews: parseInt(row.reviews) || 0,
+                                        sold: parseInt(row.sold) || 0,
+                                        location: row.location || 'Myanmar [Burma]'
+                                    };
+                                    const ref = db.collection('products').doc();
+                                    batch.set(ref, product);
+                                }
+                            });
+                            batch.commit().then(() => {
+                                alert(`✅ CSV မှ ပစ္စည်း ${data.length} ခု သွင်းပြီးပါပြီ။`);
+                                loadProducts();
+                            });
+                        },
+                        error: function(err) {
+                            alert('CSV ဖိုင်ဖတ်ရာတွင် အမှားရှိသည်။');
+                            console.error(err);
+                        }
+                    });
+                };
+                input.click();
+            });
+
+            document.getElementById('exportCsvBtn').addEventListener('click', function() {
+                db.collection('products').get().then(snap => {
+                    const data = [];
+                    snap.forEach(doc => {
+                        data.push({ id: doc.id, ...doc.data() });
+                    });
+                    const csv = Papa.unparse(data);
+                    const blob = new Blob([csv], { type: 'text/csv' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `products_${Date.now()}.csv`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                });
+            });
+
+            // =============================================================
+            // ၁၄။ INITIALIZATION
+            // =============================================================
+            function initAdmin() {
+                initAdminAuth();
+                loadDashboardStats();
+                loadProducts();
+                loadOrders();
+                loadBackupList();
+
+                // Load initial file content
+                loadFileContent('index.html');
+
+                // Load config values from Firestore
+                db.collection('adminConfig').doc('uiSettings').get().then(doc => {
+                    if (doc.exists) {
+                        const config = doc.data();
+                        if (config.primaryColor) document.getElementById('configPrimary').value = config.primaryColor;
+                        if (config.secondaryColor) document.getElementById('configSecondary').value = config.secondaryColor;
+                        if (config.gridDesktop) document.getElementById('configGridDesktop').value = config.gridDesktop;
+                        if (config.gridMobile) document.getElementById('configGridMobile').value = config.gridMobile;
+                        if (config.slowMultiplier) document.getElementById('configSlowMultiplier').value = config.slowMultiplier;
+                        if (config.flashSale === false) document.getElementById('toggleFlashSale').classList.remove('active');
+                        if (config.showCategories === false) document.getElementById('toggleCategories').classList.remove('active');
+                        if (config.slowMode === false) document.getElementById('toggleSlowMode').classList.remove('active');
+                    }
+                });
+
+                // Load settings
+                db.collection('adminConfig').doc('settings').get().then(doc => {
+                    if (doc.exists) {
+                        const data = doc.data();
+                        if (data.adminPassword) document.getElementById('adminPasswordInput').value = data.adminPassword;
+                        if (data.shopName) document.getElementById('shopNameInput').value = data.shopName;
+                    }
+                });
+
+                console.log('✅ Admin Panel initialized. Part 2 complete.');
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initAdmin);
+            } else {
+                initAdmin();
+            }
+
+        })();
+    </script>
+    <!-- ============================================================ -->
+    <!-- admin.html - PART 2 (Lines 301-600) ပြီးဆုံးပါသည်။        -->
+    <!-- ============================================================ -->
+</body>
+</html>
