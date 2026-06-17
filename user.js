@@ -1009,3 +1009,201 @@ document.addEventListener("DOMContentLoaded", function() {
 
     console.log("✅ User page ready!");
 })();
+// ============================================================
+// ADD TO user.js - Order Tracking with Map
+// ============================================================
+
+// ============================================================
+// 1. OPEN TRACKING MODAL
+// ============================================================
+let currentTrackingOrder = null;
+let mapInitialized = false;
+
+function openOrderTracking(orderId) {
+    const orders = JSON.parse(localStorage.getItem(STORAGE_ORDERS) || "[]");
+    const order = orders.find(o => o.id === orderId);
+    if (!order) {
+        showToast("❌ Order not found");
+        return;
+    }
+
+    currentTrackingOrder = order;
+    const config = getTrackingConfig();
+    const elapsed = (Date.now() - order.timestamp) / 1000;
+    const status = getTrackingStatus(order.timestamp, config);
+    const stepProgress = getStepProgress(order.timestamp, config);
+
+    // Render tracking UI
+    const container = document.getElementById("orderTrackingContent");
+    if (container) {
+        container.innerHTML = renderTrackingUI(order.id, order.timestamp, config);
+    }
+
+    // Show modal
+    document.getElementById("orderTrackingModal").style.display = "flex";
+
+    // Initialize map after modal opens
+    setTimeout(() => {
+        initTrackingMapWithOrder(order, config);
+    }, 300);
+}
+
+// ============================================================
+// 2. INIT MAP WITH ORDER
+// ============================================================
+function initTrackingMapWithOrder(order, config) {
+    // Default locations (Yangon area)
+    const shopLat = 16.8661;
+    const shopLng = 96.1951;
+    const userLat = 16.8731;
+    const userLng = 96.1961;
+
+    // Try to get user location from order or profile
+    // For demo, use default
+
+    // Destroy existing map
+    if (mapInstance) {
+        mapInstance.remove();
+        mapInstance = null;
+        markerInstance = null;
+    }
+
+    const containerId = "orderTrackingMapContainer";
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    // Re-init map
+    const coords = initTrackingMap(containerId, shopLat, shopLng, userLat, userLng);
+    if (!coords) return;
+
+    // Get bike progress
+    const status = getTrackingStatus(order.timestamp, config);
+    const progress = getBikeProgress(status.key);
+    updateBikePosition(progress, coords.shopLat, coords.shopLng, coords.userLat, coords.userLng);
+
+    // Start animation if not delivered
+    if (status.key !== 'delivered') {
+        startMapAnimation(containerId, order.timestamp, config, coords.shopLat, coords.shopLng, coords.userLat, coords.userLng);
+    } else {
+        // If delivered, move bike to home
+        updateBikePosition(1, coords.shopLat, coords.shopLng, coords.userLat, coords.userLng);
+    }
+
+    mapInitialized = true;
+}
+
+// ============================================================
+// 3. MODIFY CHECKOUT TO SAVE ORDER WITH TRACKING
+// ============================================================
+// In setupScreenshotUpload, after order confirmation, add:
+// Save order with tracking timestamp
+function saveOrderWithTracking(order) {
+    // Order already saved in localStorage
+    // Tracking uses order.timestamp
+    // Just ensure order has timestamp
+    if (!order.timestamp) {
+        order.timestamp = Date.now();
+        const orders = JSON.parse(localStorage.getItem(STORAGE_ORDERS) || "[]");
+        const idx = orders.findIndex(o => o.id === order.id);
+        if (idx !== -1) {
+            orders[idx].timestamp = order.timestamp;
+            localStorage.setItem(STORAGE_ORDERS, JSON.stringify(orders));
+        }
+    }
+}
+
+// Override the order creation in setupCheckoutForm to include timestamp
+// Already has timestamp: Date.now()
+
+// ============================================================
+// 4. ORDER LIST (User can view their orders)
+// ============================================================
+function renderUserOrders() {
+    const orders = JSON.parse(localStorage.getItem(STORAGE_ORDERS) || "[]");
+    const user = getCurrentUser();
+    const userOrders = user ? orders.filter(o => o.name === user.username || o.phone === user.username) : [];
+
+    if (userOrders.length === 0) {
+        return `<div style="text-align:center;padding:1rem;color:#888;">No orders found</div>`;
+    }
+
+    return userOrders.map(o => {
+        const status = getTrackingStatus(o.timestamp || o.createdAt || Date.now());
+        const statusLabel = TRACKING_STATUSES.find(s => s.key === status.key)?.label || status.key;
+        return `
+            <div style="display:flex;justify-content:space-between;padding:0.5rem;border-bottom:1px solid #eee;align-items:center;font-size:0.85rem;">
+                <div>
+                    <strong>${o.id}</strong>
+                    <span style="color:#888;font-size:0.7rem;">${new Date(o.timestamp || o.createdAt || Date.now()).toLocaleString()}</span>
+                </div>
+                <div>
+                    <span style="color:${status.key === 'delivered' ? '#28a745' : '#007bff'};">${statusLabel}</span>
+                    <button class="btn btn-outline btn-sm" style="font-size:0.7rem;padding:0.1rem 0.5rem;" onclick="openOrderTracking('${o.id}')">👁️</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// ============================================================
+// 5. MODAL CLOSE EVENTS
+// ============================================================
+document.getElementById("closeTrackingDetailBtn")?.addEventListener("click", function() {
+    document.getElementById("orderTrackingModal").style.display = "none";
+    if (animationInterval) {
+        clearInterval(animationInterval);
+        animationInterval = null;
+    }
+    mapInitialized = false;
+});
+
+document.getElementById("refreshTrackingBtn")?.addEventListener("click", function() {
+    if (currentTrackingOrder) {
+        openOrderTracking(currentTrackingOrder.id);
+    }
+});
+
+document.getElementById("orderTrackingModal")?.addEventListener("click", function(e) {
+    if (e.target === this) {
+        this.style.display = "none";
+        if (animationInterval) {
+            clearInterval(animationInterval);
+            animationInterval = null;
+        }
+        mapInitialized = false;
+    }
+});
+
+// ============================================================
+// 6. ADD ORDER HISTORY TO USER MODAL
+// ============================================================
+// In user.js, inside user chat mode, add a tab for orders
+// After openUserChatMode, add this:
+function openUserOrdersMode() {
+    const container = document.getElementById("userChatContainer");
+    if (container) {
+        const ordersHtml = renderUserOrders();
+        container.innerHTML = `
+            <h3>📦 ကျွန်ုပ်၏ အော်ဒါများ</h3>
+            ${ordersHtml}
+            <button class="btn btn-outline" id="ordersBackBtn" style="margin-top:0.5rem;">Back</button>
+        `;
+        document.getElementById("ordersBackBtn")?.addEventListener("click", function() {
+            openUserChatMode();
+        });
+    }
+}
+
+// Update user badge click to show orders if logged in
+// Modify the user badge click handler
+document.getElementById("userBadge")?.addEventListener("click", () => {
+    const user = getCurrentUser();
+    if (user) {
+        // Show orders by default instead of profile
+        openUserOrdersMode();
+        document.getElementById("userModalTitle").innerText = `👤 ${user.username} - Orders`;
+        document.getElementById("userModal").style.display = "flex";
+        return;
+    }
+    // ... existing login/register
+});
