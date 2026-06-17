@@ -1,5 +1,5 @@
 // ============================================================
-// user.js - User JavaScript (အပိုင်း ၁/၄)
+// user.js - User JavaScript (အပိုင်း ၁/၅)
 // Render & Product Detail
 // ============================================================
 
@@ -155,9 +155,8 @@ function renderComments(productId) {
         </div>`
     ).join("");
 }
-
 // ============================================================
-// user.js - User JavaScript (အပိုင်း ၂/၄)
+// user.js - User JavaScript (အပိုင်း ၂/၅)
 // Cart & Checkout
 // ============================================================
 
@@ -361,9 +360,8 @@ function updateOrderStatus(orderId, status) {
         localStorage.setItem(STORAGE_ORDERS, JSON.stringify(orders));
     }
 }
-
 // ============================================================
-// user.js - User JavaScript (အပိုင်း ၃/၄)
+// user.js - User JavaScript (အပိုင်း ၃/၅)
 // Screenshot, Tracking, Map
 // ============================================================
 
@@ -665,10 +663,9 @@ function renderUserOrders() {
         `;
     }).join('');
 }
-
 // ============================================================
-// user.js - User JavaScript (အပိုင်း ၄/၄)
-// Chat, Firebase Load, User Modal, Init
+// user.js - User JavaScript (အပိုင်း ၄/၅)
+// Chat & Firebase Load
 // ============================================================
 
 // ============================================================
@@ -791,6 +788,10 @@ async function loadProductsFromFirestore() {
         return false;
     }
 }
+// ============================================================
+// user.js - User JavaScript (အပိုင်း ၅/၅)
+// User Modal & Init
+// ============================================================
 
 // ============================================================
 // 14. USER MODAL EVENTS
@@ -977,7 +978,7 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 
     // ============================================================
-    // GO TO CHAT & ORDERS BUTTON (NEW)
+    // GO TO CHAT & ORDERS BUTTON
     // ============================================================
     document.getElementById("goToChatBtn")?.addEventListener("click", function() {
         // Open chat/orders mode
@@ -1109,7 +1110,7 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 
     // ============================================================
-       // USER CHAT (in modal)
+    // USER CHAT (in modal)
     // ============================================================
     let currentChatTarget = null;
 
@@ -1188,7 +1189,7 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 
     // ============================================================
-    // ORDERS VIEW
+       // ORDERS VIEW
     // ============================================================
     document.getElementById("ordersViewBtn")?.addEventListener("click", function() {
         const container = document.getElementById("userChatContainer");
@@ -1284,4 +1285,3 @@ document.addEventListener("DOMContentLoaded", function() {
 
     console.log("✅ User page ready!");
 })();
-```
