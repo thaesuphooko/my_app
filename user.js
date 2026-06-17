@@ -1,6 +1,6 @@
 // ============================================================
 // user.js - User JavaScript (အပိုင်း ၁/၇)
-// Categories, Search, Render
+// Categories, Search, Render, UI Config
 // ============================================================
 
 // ========================================================================
@@ -23,9 +23,16 @@ function getCategories() {
 function saveCategories(categories) { localStorage.setItem(STORAGE_CATEGORIES, JSON.stringify(categories)); }
 
 function renderCategories() {
+    const config = getUIConfig();
     const categories = getCategories();
     const bar = document.getElementById('categoriesBar');
     if (!bar) return;
+    if (!config.showCategories) {
+        bar.innerHTML = '';
+        bar.style.display = 'none';
+        return;
+    }
+    bar.style.display = 'flex';
     bar.innerHTML = categories.map(cat => `<a data-cat="${cat.id}">${cat.emoji} ${cat.label}</a>`).join('');
     bar.querySelectorAll('a').forEach(link => {
         link.addEventListener('click', function(e) {
@@ -70,8 +77,51 @@ function getSearchConfig() {
 function saveSearchConfig(config) { localStorage.setItem('shop_search_config', JSON.stringify(config)); }
 
 // ========================================================================
-// 3. RENDER USER PAGE (Home)
+// 3. UI CONFIG APPLY (Colors, Background, etc.)
 // ========================================================================
+function applyUIConfig(config) {
+    const c = config || getUIConfig();
+    // Apply colors
+    document.documentElement.style.setProperty('--primary-color', c.primaryColor);
+    document.documentElement.style.setProperty('--secondary-color', c.secondaryColor);
+    document.documentElement.style.setProperty('--bg-color', c.bgColor);
+    document.documentElement.style.setProperty('--card-bg-color', c.cardBgColor);
+    // Apply background color
+    document.body.style.backgroundColor = c.bgColor || '#fce4ec';
+
+    // Apply grid
+    const grid = document.querySelector('.products-grid');
+    if (grid) {
+        const cols = window.innerWidth < 640 ? c.gridMobile : window.innerWidth < 1024 ? c.gridTablet : c.gridDesktop;
+        grid.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
+        grid.style.gap = c.cardSpacing + 'px';
+    }
+
+    // Toggle sections
+    const flashSaleSection = document.querySelector('.flash-sale-section');
+    if (flashSaleSection) {
+        flashSaleSection.style.display = c.showFlashSale ? 'block' : 'none';
+    }
+    const categoriesBar = document.getElementById('categoriesBar');
+    if (categoriesBar) {
+        categoriesBar.style.display = c.showCategories ? 'flex' : 'none';
+        if (c.showCategories) renderCategories();
+    }
+
+    // Apply to existing product cards
+    document.querySelectorAll('.product-card').forEach(card => {
+        card.style.backgroundColor = c.cardBgColor;
+    });
+}
+
+// ============================================================
+// user.js - User JavaScript (အပိုင်း ၂/၇)
+// Render User Page
+// ============================================================
+
+// ============================================================
+// 4. RENDER USER PAGE (Home)
+// ============================================================
 function renderUserPage() {
     let filtered = allProducts;
     if (currentCategory !== "all") {
@@ -115,6 +165,7 @@ function renderUserPage() {
 
     document.getElementById("app").innerHTML = html;
     applyGlobalGrid(globalGridColumns);
+    applyUIConfig(); // Apply UI config on every render
 
     document.querySelectorAll(".add-to-cart").forEach(btn => {
         btn.onclick = (e) => { e.stopPropagation(); addToCart(btn.dataset.id); };
@@ -138,12 +189,12 @@ function renderUserPage() {
 }
 
 // ============================================================
-// user.js - User JavaScript (အပိုင်း ၂/၇)
+// user.js - User JavaScript (အပိုင်း ၃/၇)
 // Product Detail & Cart
 // ============================================================
 
 // ============================================================
-// 4. PRODUCT DETAIL
+// 5. PRODUCT DETAIL
 // ============================================================
 let currentReviewProductId = null;
 
@@ -180,7 +231,7 @@ function renderComments(productId) {
 }
 
 // ============================================================
-// 5. CART MODAL
+// 6. CART MODAL
 // ============================================================
 function openCartModal() {
     const container = document.getElementById("cartItemsList");
@@ -227,7 +278,7 @@ function openCartModal() {
 }
 
 // ============================================================
-// 6. CART PAGE
+// 7. CART PAGE
 // ============================================================
 function renderCartPage() {
     const container = document.getElementById('cartPageContent');
@@ -282,12 +333,12 @@ function renderCartPage() {
 }
 
 // ============================================================
-// user.js - User JavaScript (အပိုင်း ၃/၇)
+// user.js - User JavaScript (အပိုင်း ၄/၇)
 // Checkout
 // ============================================================
 
 // ============================================================
-// 7. CHECKOUT BUTTON
+// 8. CHECKOUT BUTTON
 // ============================================================
 function setupCheckoutButton() {
     const checkoutBtn = document.getElementById("checkoutBtn");
@@ -304,7 +355,7 @@ function setupCheckoutButton() {
 }
 
 // ============================================================
-// 8. CHECKOUT FORM SUBMIT
+// 9. CHECKOUT FORM SUBMIT
 // ============================================================
 function setupCheckoutForm() {
     const form = document.getElementById("checkoutForm");
@@ -339,7 +390,7 @@ function setupCheckoutForm() {
 }
 
 // ============================================================
-// 9. ORDER TIMER
+// 10. ORDER TIMER
 // ============================================================
 let orderTimerInterval = null;
 
@@ -372,7 +423,7 @@ function updateOrderStatus(orderId, status) {
 }
 
 // ============================================================
-// 10. CHECKOUT PAGE
+// 11. CHECKOUT PAGE
 // ============================================================
 function renderCheckoutPage() {
     const container = document.getElementById('checkoutPageContent');
@@ -413,12 +464,12 @@ function renderCheckoutPage() {
 }
 
 // ============================================================
-// user.js - User JavaScript (အပိုင်း ၄/၇)
+// user.js - User JavaScript (အပိုင်း ၅/၇)
 // Screenshot, Tracking, Map
 // ============================================================
 
 // ============================================================
-// 11. SCREENSHOT UPLOAD
+// 12. SCREENSHOT UPLOAD
 // ============================================================
 function setupScreenshotUpload() {
     const uploadBtn = document.getElementById("uploadScreenshotBtn");
@@ -466,7 +517,7 @@ function setupScreenshotUpload() {
 }
 
 // ============================================================
-// 12. SAVE ORDER TO FIREBASE
+// 13. SAVE ORDER TO FIREBASE
 // ============================================================
 async function saveOrderToFirebase(order) {
     if (!db) { console.warn("Firebase not available"); return; }
@@ -480,7 +531,7 @@ async function saveOrderToFirebase(order) {
 }
 
 // ============================================================
-// 13. SHOW TRACKING
+// 14. SHOW TRACKING
 // ============================================================
 function showTracking(order) {
     document.getElementById("trackingOrderId").innerText = order.id;
@@ -492,7 +543,7 @@ function showTracking(order) {
 }
 
 // ============================================================
-// 14. CANCEL ORDER
+// 15. CANCEL ORDER
 // ============================================================
 function setupCancelOrder() {
     const cancelBtn = document.getElementById("cancelOrderBtn");
@@ -513,12 +564,12 @@ function setupCancelOrder() {
 }
 
 // ============================================================
-// user.js - User JavaScript (အပိုင်း ၅/၇)
+// user.js - User JavaScript (အပိုင်း ၆/၇)
 // Map & Order Functions
 // ============================================================
 
 // ============================================================
-// 15. ORDER TRACKING WITH MAP
+// 16. ORDER TRACKING WITH MAP
 // ============================================================
 let mapInstance = null;
 let markerInstance = null;
@@ -607,7 +658,7 @@ function openOrderTracking(orderId) {
 }
 
 // ============================================================
-// 16. ORDER PAGE
+// 17. ORDER PAGE
 // ============================================================
 function renderOrdersPage() {
     const container = document.getElementById('ordersPageContent');
@@ -654,12 +705,12 @@ function renderOrdersPage() {
 }
 
 // ============================================================
-// user.js - User JavaScript (အပိုင်း ၆/၇)
-// Profile & Tracking Page
+// user.js - User JavaScript (အပိုင်း ၇/၇)
+// Profile, Tracking Page, Chat, Firebase Load, Init
 // ============================================================
 
 // ============================================================
-// 17. PROFILE PAGE
+// 18. PROFILE PAGE
 // ============================================================
 function renderProfilePage() {
     const container = document.getElementById('profilePageContent');
@@ -708,7 +759,7 @@ function renderProfilePage() {
 }
 
 // ============================================================
-// 18. TRACKING PAGE
+// 19. TRACKING PAGE
 // ============================================================
 function renderTrackingPage() {
     const container = document.getElementById('trackingPageContent');
@@ -767,12 +818,7 @@ function renderTrackingPage() {
 }
 
 // ============================================================
-// user.js - User JavaScript (အပိုင်း ၇/၇)
-// Chat, Firebase Load, User Modal, Init
-// ============================================================
-
-// ============================================================
-// 19. CHAT WIDGET
+// 20. CHAT WIDGET
 // ============================================================
 let chatOpen = false;
 
@@ -831,7 +877,7 @@ function getAdminReply(text) {
 }
 
 // ============================================================
-// 20. FIREBASE LOAD
+// 21. FIREBASE LOAD
 // ============================================================
 async function loadProductsFromFirestore() {
     if (!db) { console.warn("❌ Firebase not initialized!"); return false; }
@@ -851,7 +897,7 @@ async function loadProductsFromFirestore() {
 }
 
 // ============================================================
-// 21. USER MODAL EVENTS & INIT
+// 22. USER MODAL EVENTS & INIT
 // ============================================================
 document.addEventListener("DOMContentLoaded", function() {
     setupCheckoutButton();
@@ -860,6 +906,8 @@ document.addEventListener("DOMContentLoaded", function() {
     setupCancelOrder();
     renderCategories();
     applySearchSettings();
+    initMusicPlayer();
+    initClockBetter();
 
     document.getElementById("cartIcon")?.addEventListener("click", openCartModal);
     document.getElementById("closeCartBtn")?.addEventListener("click", () => { document.getElementById("cartModal")
@@ -914,6 +962,11 @@ document.addEventListener("DOMContentLoaded", function() {
     });
     document.getElementById("chatInputWidget")?.addEventListener("keypress", (e) => { if (e.key === "Enter") document
             .getElementById("chatSendWidgetBtn").click(); });
+
+        // Music Play Button
+    document.getElementById('musicPlayBtn')?.addEventListener('click', toggleMusic);
+
+    // Search
     document.getElementById("searchBtn")?.addEventListener("click", () => {
         searchQuery = document.getElementById("searchInput").value;
         currentPage = 1;
@@ -1084,13 +1137,15 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 // ============================================================
-// 22. PAGE INIT
+// 23. PAGE INIT
 // ============================================================
 (async function initPage() {
     console.log("🚀 User page loading...");
     const cols = await loadGridLayout();
     globalGridColumns = cols;
     applyGlobalGrid(cols);
+    // Apply UI config
+    applyUIConfig();
     const loaded = await loadProductsFromFirestore();
     if (!loaded) { loadProducts();
         console.log("📦 Loaded from Local Storage"); }
@@ -1105,4 +1160,4 @@ document.addEventListener("DOMContentLoaded", function() {
     }
     logUserAction(`🌐 Page Visit`, `Device: ${getDeviceId()}`);
     console.log("✅ User page ready!");
-})(); 
+})();
