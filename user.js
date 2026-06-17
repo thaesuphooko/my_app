@@ -260,6 +260,11 @@ function setupCheckoutButton() {
 // ========================================================================
 // 5. CHECKOUT FORM SUBMIT
 // ========================================================================
+// ============================================================
+// CHECKOUT - Chat ကို Modal ပိတ်မှ ပွင့်အောင်
+// ============================================================
+
+// ဒီ function ကို ရှာပြီး အစားထိုးပါ
 function setupCheckoutForm() {
   const form = document.getElementById("checkoutForm");
   if (!form) {
@@ -304,60 +309,15 @@ function setupCheckoutForm() {
     localStorage.setItem(STORAGE_ORDERS, JSON.stringify(orders));
 
     logUserAction(`📦 Checkout`, `Order #${window.currentOrder.id}, Total: ${window.currentOrder.total}`);
-
-    // Chat after 2 seconds
-    setTimeout(() => {
-      const orderSummary = `📦 Order #${window.currentOrder.id}\n👤 ${name}\n📞 ${phone}\n📍 ${address}\n🛒 ${window.currentOrder.items.map(i => `${i.name} x ${i.quantity}`).join(', ')}\n💰 ${window.currentOrder.total.toLocaleString()} MMK`;
-
-      openChatWidget();
-      addChatMessage("bot", `✅ ဟုတ်ကဲ့ခင်ဗျာ၊ သင့်အော်ဒါကို လက်ခံရရှိပါပြီ။\n${orderSummary}\n\n💬 မေးမြန်းစုံစမ်းလိုပါက ဤနေရာတွင် ရေးသားနိုင်ပါသည်။`);
-      addChatMessage("bot", "🙏 ကျေးဇူးတင်ပါသည်။ ငွေလွဲပြီးပါက Screenshot ကို ဤနေရာတွင် တင်ပေးပါ။");
-    }, 2000);
+    
+    // 🔥 Chat ကို ဒီနေရာမှာ မပွင့်တော့ဘူး - Modal ပိတ်မှ ပွင့်မယ်
   });
 }
 
-// ========================================================================
-// 6. ORDER TIMER
-// ========================================================================
-let orderTimerInterval = null;
+// ============================================================
+// Screenshot Upload ပြီးရင် Chat ပွင့်ဖို့
+// ============================================================
 
-function startOrderTimer() {
-  let timeLeft = 3600;
-  const timerEl = document.getElementById("orderTimer");
-
-  if (orderTimerInterval) clearInterval(orderTimerInterval);
-
-  orderTimerInterval = setInterval(() => {
-    timeLeft--;
-    const mins = Math.floor(timeLeft / 60);
-    const secs = timeLeft % 60;
-    timerEl.innerText = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-
-    if (timeLeft <= 0) {
-      clearInterval(orderTimerInterval);
-      orderTimerInterval = null;
-      document.getElementById("orderStatusMsg").innerHTML = `<span class="cancelled">⛔ Order Cancelled</span>`;
-      if (window.currentOrder) {
-        window.currentOrder.status = "cancelled";
-        updateOrderStatus(window.currentOrder.id, "cancelled");
-        logUserAction(`⛔ Order cancelled (timeout)`, `#${window.currentOrder.id}`);
-      }
-    }
-  }, 1000);
-}
-
-function updateOrderStatus(orderId, status) {
-  const orders = JSON.parse(localStorage.getItem(STORAGE_ORDERS) || "[]");
-  const idx = orders.findIndex(o => o.id === orderId);
-  if (idx !== -1) {
-    orders[idx].status = status;
-    localStorage.setItem(STORAGE_ORDERS, JSON.stringify(orders));
-  }
-}
-
-// ========================================================================
-// 7. SCREENSHOT UPLOAD
-// ========================================================================
 function setupScreenshotUpload() {
   const uploadBtn = document.getElementById("uploadScreenshotBtn");
   if (!uploadBtn) {
@@ -391,6 +351,9 @@ function setupScreenshotUpload() {
         window.currentOrder.screenshot = e.target.result;
         updateOrderStatus(window.currentOrder.id, "confirmed");
         logUserAction(`✅ Order confirmed with screenshot`, `#${window.currentOrder.id}`);
+        
+        // 🔥 အော်ဒါကို Firebase မှာလည်း သိမ်းမယ်
+        saveOrderToFirebase(window.currentOrder);
       }
 
       document.getElementById("orderStatusMsg").innerHTML = `<span class="success">✅ Order Confirmed!</span>`;
@@ -407,11 +370,43 @@ function setupScreenshotUpload() {
         saveCart();
         updateCartBadge();
         showToast("🎉 Order confirmed!");
-        addChatMessage("bot", `🎉 ဟုတ်ကဲ့ခင်ဗျာ၊ သင့်အော်ဒါ #${window.currentOrder.id} အတည်ပြုပြီးပါပြီ။ ကျွန်ုပ်တို့ ပို့ဆောင်ပေးပါမည်။ ကျေးဇူးပါ။`);
+        
+        // 🔥 Modal ပိတ်ပြီးမှ Chat ပွင့်မယ်
+        const orderSummary = `📦 Order #${window.currentOrder.id}\n👤 ${window.currentOrder.name}\n📞 ${window.currentOrder.phone}\n📍 ${window.currentOrder.address}\n🛒 ${window.currentOrder.items.map(i => `${i.name} x ${i.quantity}`).join(', ')}\n💰 ${window.currentOrder.total.toLocaleString()} MMK`;
+        
+        openChatWidget();
+        addChatMessage("bot", `🎉 ဟုတ်ကဲ့ခင်ဗျာ၊ သင့်အော်ဒါ #${window.currentOrder.id} အတည်ပြုပြီးပါပြီ။\n${orderSummary}\n\n💬 မေးမြန်းစုံစမ်းလိုပါက ဤနေရာတွင် ရေးသားနိုင်ပါသည်။`);
+        addChatMessage("bot", "🙏 ကျေးဇူးတင်ပါသည်။ ကျွန်ုပ်တို့ ပို့ဆောင်ပေးပါမည်။");
       }, 1500);
     };
     reader.readAsDataURL(fileInput.files[0]);
   });
+}
+
+// ============================================================
+// SAVE ORDER TO FIREBASE
+// ============================================================
+
+async function saveOrderToFirebase(order) {
+  if (!db) {
+    console.warn("Firebase not available, order saved locally only.");
+    return;
+  }
+
+  try {
+    const ordersRef = db.collection('orders');
+    const docRef = ordersRef.doc(order.id);
+    await docRef.set({
+      ...order,
+      savedAt: new Date().toISOString(),
+      deviceId: getDeviceId()
+    });
+    console.log("✅ Order saved to Firebase:", order.id);
+    logUserAction(`📦 Order saved to Firebase`, `#${order.id}`);
+  } catch (error) {
+    console.error("❌ Failed to save order to Firebase:", error);
+    // Fallback: Local Storage မှာ ရှိပြီးသား
+  }
 }
 
 // ========================================================================
