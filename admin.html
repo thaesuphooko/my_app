@@ -5,13 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Admin Panel - Shop.com.mm</title>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js">
+    </script>
 
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js">
+    </script>
 
     <script>
         const firebaseConfig = {
@@ -51,15 +53,25 @@
         .status-msg.error { background: #f8d7da; color: #721c24; }
         .status-msg.info { background: #d1ecf1; color: #0c5460; }
         @media (max-width: 768px) { .admin-grid-2 { grid-template-columns: 1fr; } }
-        .grid-col-btn { min-width: 80px; }
-        .grid-col-btn.btn-primary { background: #e11b1b; color: #fff; border-color: #e11b1b; }
-        .grid-col-btn.btn-primary:hover { background: #c00; }
-        .admin-bulk-actions { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; padding: 0.5rem 0.8rem; background: #f8f9fa; border-radius: 8px; }
-        .admin-bulk-actions label { display: flex; align-items: center; gap: 0.3rem; font-size: 0.85rem; cursor: pointer; }
-        .admin-bulk-actions .btn-danger { background: #dc3545; color: #fff; }
-        .admin-bulk-actions .btn-danger:hover { background: #b02a37; }
-        .tracking-map-container { width: 100%; height: 300px; border-radius: 12px; overflow: hidden; border: 1px solid #ddd; margin-top: 0.5rem; }
-        .tracking-map-container .leaflet-container { width: 100%; height: 100%; }
+
+        .code-editor { background: #1e1e1e; border-radius: 8px; padding: 1rem; color: #d4d4d4; font-family: 'Courier New', monospace; font-size: 0.85rem; overflow-x: auto; min-height: 300px; white-space: pre-wrap; word-wrap: break-word; border: 1px solid #333; }
+        .code-editor:focus { outline: 2px solid #e11b1b; }
+        .file-list { max-height: 200px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; padding: 0.3rem; }
+        .file-item { display: flex; justify-content: space-between; padding: 0.3rem 0.5rem; border-bottom: 1px solid #f0f0f0; font-size: 0.85rem; align-items: center; }
+        .file-item .file-name { cursor: pointer; color: #007bff; }
+        .file-item .file-name:hover { text-decoration: underline; }
+        .file-item .file-actions button { background: none; border: none; cursor: pointer; font-size: 0.8rem; padding: 0 0.3rem; }
+        .file-item .file-actions .delete-btn { color: #dc3545; }
+        .file-item .file-actions .delete-btn:hover { color: #b02a37; }
+
+        .color-picker-group { display: flex; align-items: center; gap: 0.5rem; }
+        .color-picker-group input[type="color"] { width: 40px; height: 40px; border: none; border-radius: 8px; cursor: pointer; padding: 0; }
+        .color-picker-group input[type="text"] { flex: 1; }
+        .toggle-switch { position: relative; width: 50px; height: 26px; background: #ccc; border-radius: 30px; cursor: pointer; transition: 0.3s; display: inline-block; }
+        .toggle-switch.active { background: #28a745; }
+        .toggle-switch .toggle-knob { position: absolute; top: 2px; left: 2px; width: 22px; height: 22px; background: #fff; border-radius: 50%; transition: 0.3s; }
+        .toggle-switch.active .toggle-knob { left: 26px; }
+        .toggle-label { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; }
     </style>
 </head>
 <body>
@@ -73,20 +85,138 @@
             </div>
         </div>
 
-        <!-- ===== GRID LAYOUT CONTROLLER ===== -->
+        <!-- ========================================================== -->
+        <!-- UI CONFIG SYSTEM (Firebase)                                -->
+        <!-- ========================================================== -->
         <div class="admin-section">
-            <h3>📐 Product Grid Layout</h3>
-            <p style="font-size:0.85rem;color:#888;margin-bottom:0.5rem;">ပစ္စည်းများ၏ အရွယ်အစားကို Admin မှ ချိန်ညှိနိုင်ပါသည်။</p>
-            <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
-                <button class="btn grid-col-btn" data-cols="2">2 Columns</button>
-                <button class="btn grid-col-btn" data-cols="3">3 Columns</button>
-                <button class="btn grid-col-btn" data-cols="4">4 Columns</button>
-                <button class="btn grid-col-btn" data-cols="5">5 Columns</button>
+            <h3>🎨 UI Configuration (Firebase Real-time)</h3>
+            <p style="font-size:0.85rem;color:#888;margin-bottom:0.5rem;">
+                Website ရဲ့ Layout, Theme, Spacing တွေကို တစ်ခါတည်းပြင်ဆင်နိုင်ပါသည်။
+            </p>
+
+            <div class="admin-grid-2">
+                <div>
+                    <label>Primary Color</label>
+                    <div class="color-picker-group">
+                        <input type="color" id="uiPrimaryColor" value="#e11b1b" />
+                        <input type="text" id="uiPrimaryColorText" value="#e11b1b" />
+                    </div>
+                </div>
+                <div>
+                    <label>Secondary Color</label>
+                    <div class="color-picker-group">
+                        <input type="color" id="uiSecondaryColor" value="#ff6b00" />
+                        <input type="text" id="uiSecondaryColorText" value="#ff6b00" />
+                    </div>
+                </div>
+                <div>
+                    <label>Background Color</label>
+                    <div class="color-picker-group">
+                        <input type="color" id="uiBgColor" value="#f5f5f5" />
+                        <input type="text" id="uiBgColorText" value="#f5f5f5" />
+                    </div>
+                </div>
+                <div>
+                    <label>Card Background</label>
+                    <div class="color-picker-group">
+                        <input type="color" id="uiCardBgColor" value="#ffffff" />
+                        <input type="text" id="uiCardBgColorText" value="#ffffff" />
+                    </div>
+                </div>
+                <div>
+                    <label>Grid Columns (Mobile)</label>
+                    <input type="number" id="uiGridMobile" value="2" min="1" max="4" />
+                </div>
+                <div>
+                    <label>Grid Columns (Tablet)</label>
+                    <input type="number" id="uiGridTablet" value="3" min="1" max="4" />
+                </div>
+                <div>
+                    <label>Grid Columns (Desktop)</label>
+                    <input type="number" id="uiGridDesktop" value="4" min="1" max="6" />
+                </div>
+                <div>
+                    <label>Card Spacing (px)</label>
+                    <input type="number" id="uiCardSpacing" value="10" min="2" max="30" />
+                </div>
+                <div>
+                    <div class="toggle-label">
+                        <span>Show Flash Sale Section</span>
+                        <div class="toggle-switch active" id="uiFlashSaleToggle" data-key="showFlashSale">
+                            <div class="toggle-knob"></div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div class="toggle-label">
+                        <span>Show Categories Bar</span>
+                        <div class="toggle-switch active" id="uiCategoriesToggle" data-key="showCategories">
+                            <div class="toggle-knob"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div id="gridStatus" style="margin-top:0.5rem;font-size:0.85rem;color:#888;">Current: <span id="currentGridDisplay">4</span> columns</div>
+            <button class="btn btn-success" id="saveUIConfigBtn">💾 Save UI Config</button>
+            <div id="uiStatus" class="status-msg" style="display:none;"></div>
         </div>
 
-        <!-- ===== ADMIN ROUTE SETTINGS ===== -->
+        <!-- ========================================================== -->
+        <!-- SMART CODE INJECTOR (DeepSeek API)                         -->
+        <!-- ========================================================== -->
+        <div class="admin-section">
+            <h3>🤖 Smart Code Injector (DeepSeek AI)</h3>
+            <p style="font-size:0.85rem;color:#888;margin-bottom:0.5rem;">
+                ကုဒ်တွေကို သင်ပြောတဲ့အတိုင်း AI က ရှာပြီး ထည့်ပေးမယ်။
+            </p>
+            <label>DeepSeek API Key</label>
+            <input type="text" id="deepseekApiKey" value="sk-0958bf018f8e4e048cf61d5cde979b86" />
+            <label>What do you want to do?</label>
+            <textarea id="codePromptInput" rows="3" placeholder='e.g. "style.css ရဲ့ .product-card class ထဲမှာ border-radius: 16px; ထည့်ပေးပါ"'></textarea>
+            <div class="btn-group">
+                <button class="btn btn-primary" id="injectCodeBtn">🧠 Inject Code with AI</button>
+                <button class="btn btn-outline" id="previewCodeBtn">👁️ Preview</button>
+            </div>
+            <div id="codeInjectStatus" class="status-msg" style="display:none;"></div>
+            <div id="codePreviewResult" style="display:none;margin-top:0.5rem;padding:0.5rem;background:#f8f9fa;border-radius:8px;font-size:0.85rem;max-height:200px;overflow-y:auto;"></div>
+        </div>
+
+        <!-- ========================================================== -->
+        <!-- FILE MANAGER & CODE EDITOR                                 -->
+        <!-- ========================================================== -->
+        <div class="admin-section">
+            <h3>📂 File Manager & Code Editor</h3>
+            <p style="font-size:0.85rem;color:#888;margin-bottom:0.5rem;">
+                Website ရဲ့ Code ဖိုင်တွေကို တိုက်ရိုက်ပြင်ဆင်နိုင်ပါသည်။ (Auto-backup ပါ)
+            </p>
+            <div style="display:flex;gap:1rem;flex-wrap:wrap;">
+                <div style="flex:1;min-width:200px;">
+                    <h4 style="font-size:0.95rem;margin-bottom:0.3rem;">📄 Files</h4>
+                    <div id="fileList" class="file-list">
+                        <div style="color:#888;font-size:0.85rem;text-align:center;padding:0.5rem;">Loading files...</div>
+                    </div>
+                    <div style="display:flex;gap:0.3rem;margin-top:0.3rem;">
+                        <input type="text" id="newFileName" placeholder="filename.js" style="flex:2;padding:0.3rem;border:1px solid #ddd;border-radius:6px;font-size:0.8rem;" />
+                        <button class="btn btn-success" id="createFileBtn" style="font-size:0.7rem;padding:0.2rem 0.6rem;">Create</button>
+                    </div>
+                </div>
+                <div style="flex:2;min-width:300px;">
+                    <h4 style="font-size:0.95rem;margin-bottom:0.3rem;">✏️ Editor</h4>
+                    <div id="editorContainer">
+                        <div style="color:#888;font-size:0.85rem;text-align:center;padding:1rem;">Select a file to edit</div>
+                    </div>
+                    <div style="display:flex;gap:0.5rem;margin-top:0.3rem;">
+                        <input type="text" id="currentFileDisplay" readonly style="flex:2;padding:0.3rem;border:1px solid #ddd;border-radius:6px;font-size:0.8rem;background:#f8f8f8;" placeholder="No file selected" />
+                        <button class="btn btn-primary" id="saveCodeBtn" style="font-size:0.7rem;padding:0.2rem 0.6rem;">💾 Save</button>
+                        <button class="btn btn-outline" id="restoreBackupBtn" style="font-size:0.7rem;padding:0.2rem 0.6rem;">↩️ Restore</button>
+                    </div>
+                    <div id="codeStatus" class="status-msg" style="display:none;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================================== -->
+        <!-- ADMIN ROUTE SETTINGS                                       -->
+        <!-- ========================================================== -->
         <div class="admin-section">
             <h3>🔗 Admin Route Settings</h3>
             <div class="admin-grid-2">
@@ -97,7 +227,9 @@
             <div id="routeStatus" class="status-msg" style="display:none;"></div>
         </div>
 
-        <!-- ===== STORE CUSTOMIZATION ===== -->
+        <!-- ========================================================== -->
+        <!-- STORE CUSTOMIZATION                                        -->
+        <!-- ========================================================== -->
         <div class="admin-section">
             <h3>🏪 Store Customization</h3>
             <div class="admin-grid-2">
@@ -111,7 +243,9 @@
             <div id="storeStatus" class="status-msg" style="display:none;"></div>
         </div>
 
-        <!-- ===== ADMIN PASSWORD ===== -->
+        <!-- ========================================================== -->
+        <!-- ADMIN PASSWORD                                             -->
+        <!-- ========================================================== -->
         <div class="admin-section">
             <h3>🔑 Admin Password</h3>
             <div class="admin-grid-2">
@@ -122,7 +256,9 @@
             <div id="adminPwdStatus" class="status-msg" style="display:none;"></div>
         </div>
 
-        <!-- ===== CHECKOUT SETTINGS ===== -->
+        <!-- ========================================================== -->
+        <!-- CHECKOUT SETTINGS                                          -->
+        <!-- ========================================================== -->
         <div class="admin-section">
             <h3>📦 Checkout Settings</h3>
             <div class="admin-grid-2">
@@ -137,7 +273,9 @@
             <div id="checkoutStatus" class="status-msg" style="display:none;"></div>
         </div>
 
-        <!-- ===== TELEGRAM SETTINGS ===== -->
+        <!-- ========================================================== -->
+        <!-- TELEGRAM SETTINGS                                          -->
+        <!-- ========================================================== -->
         <div class="admin-section">
             <h3>📨 Telegram Settings</h3>
             <label>Bot Tokens (one per line)</label><textarea id="telegramTokens" placeholder="Bot tokens..."></textarea>
@@ -150,7 +288,9 @@
             <div id="telegramStatus" class="status-msg" style="display:none;"></div>
         </div>
 
-        <!-- ===== TELEGRAM BROADCAST ===== -->
+        <!-- ========================================================== -->
+        <!-- TELEGRAM BROADCAST                                         -->
+        <!-- ========================================================== -->
         <div class="admin-section">
             <h3>📢 Telegram Broadcast</h3>
             <p style="font-size:0.85rem;color:#888;margin-bottom:0.5rem;">Send message to any user via Telegram (by username or phone)</p>
@@ -163,14 +303,18 @@
             <div id="broadcastStatus" class="status-msg" style="display:none;"></div>
         </div>
 
-        <!-- ===== API LIMITS DISPLAY ===== -->
+        <!-- ========================================================== -->
+        <!-- API LIMITS DISPLAY                                         -->
+        <!-- ========================================================== -->
         <div class="admin-section">
             <h3>📊 API Limits & Usage</h3>
             <div id="apiLimitDisplay"><div style="color:#888;font-size:0.85rem;">Loading limits...</div></div>
             <button class="btn btn-outline" id="refreshLimitsBtn" style="margin-top:0.5rem;">🔄 Refresh Limits</button>
         </div>
 
-        <!-- ===== AMAZON API SYNC ===== -->
+        <!-- ========================================================== -->
+        <!-- AMAZON API SYNC                                            -->
+        <!-- ========================================================== -->
         <div class="admin-section">
             <h3>🛒 Amazon API Sync</h3>
             <div style="margin:0.5rem 0;padding:0.5rem;background:#f8f9fa;border-radius:8px;">
@@ -195,7 +339,9 @@
             </div>
         </div>
 
-        <!-- ===== GOOGLE SHEETS SYNC ===== -->
+        <!-- ========================================================== -->
+        <!-- GOOGLE SHEETS SYNC                                         -->
+        <!-- ========================================================== -->
         <div class="admin-section">
             <h3>📊 Google Sheets Sync</h3>
             <label>Published CSV URL</label><input type="text" id="adminSheetUrl" placeholder="https://docs.google.com/spreadsheets/d/e/.../pub?output=csv" />
@@ -203,7 +349,9 @@
             <div id="sheetSyncStatus" class="status-msg" style="display:none;"></div>
         </div>
 
-        <!-- ===== TRACKING SETTINGS ===== -->
+        <!-- ========================================================== -->
+        <!-- TRACKING SETTINGS                                          -->
+        <!-- ========================================================== -->
         <div class="admin-section">
             <h3>🚚 Order Tracking Settings</h3>
             <p style="font-size:0.85rem;color:#888;margin-bottom:0.5rem;">အော်ဒါတစ်ခုစီ၏ အဆင့်များအတွက် အချိန်သတ်မှတ်ချက်များ (စက္ကန့်ဖြင့်)</p>
@@ -217,7 +365,9 @@
             <div id="trackingStatus" class="status-msg" style="display:none;"></div>
         </div>
 
-        <!-- ===== BULK PRICE UPDATE ===== -->
+        <!-- ========================================================== -->
+        <!-- BULK PRICE UPDATE                                          -->
+        <!-- ========================================================== -->
         <div class="admin-section">
             <h3>💰 Bulk Price Update</h3>
             <div class="admin-grid-2">
@@ -227,7 +377,9 @@
             <div id="bulkStatus" class="status-msg" style="display:none;"></div>
         </div>
 
-        <!-- ===== USER MANAGEMENT ===== -->
+        <!-- ========================================================== -->
+        <!-- USER MANAGEMENT                                            -->
+        <!-- ========================================================== -->
         <div class="admin-section">
             <h3>👥 User Management</h3>
             <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.5rem;">
@@ -237,7 +389,9 @@
             <div id="userListContainer" style="max-height:200px;overflow-y:auto;border:1px solid #ddd;border-radius:8px;padding:0.3rem;"><div style="color:#888;font-size:0.85rem;text-align:center;padding:0.5rem;">Loading users...</div></div>
         </div>
 
-        <!-- ===== USER MESSAGES (Chat) ===== -->
+        <!-- ========================================================== -->
+        <!-- USER MESSAGES (Chat)                                       -->
+        <!-- ========================================================== -->
         <div class="admin-section">
             <h3>💬 User Messages (Chat)</h3>
             <div style="max-height:200px;overflow-y:auto;border:1px solid #ddd;border-radius:8px;padding:0.3rem;" id="adminChatMessages"><div style="color:#888;font-size:0.85rem;text-align:center;padding:0.5rem;">Loading messages...</div></div>
@@ -252,7 +406,9 @@
             </div>
         </div>
 
-        <!-- ===== CSV IMPORT/EXPORT ===== -->
+        <!-- ========================================================== -->
+        <!-- CSV IMPORT/EXPORT                                          -->
+        <!-- ========================================================== -->
         <div class="admin-section">
             <h3>📂 CSV Import / Export</h3>
             <input type="file" id="csvFile" accept=".csv" />
@@ -265,7 +421,9 @@
             <div id="csvStatus" class="status-msg" style="display:none;"></div>
         </div>
 
-        <!-- ===== PRODUCTS WITH BULK DELETE ===== -->
+        <!-- ========================================================== -->
+        <!-- PRODUCTS WITH BULK DELETE                                  -->
+        <!-- ========================================================== -->
         <div class="admin-section">
             <h3>📦 Products ( <span id="productCount">0</span> )</h3>
             <div class="admin-bulk-actions">
@@ -284,7 +442,9 @@
             <div class="pagination" id="adminPagination"></div>
         </div>
 
-        <!-- ===== ORDER TRACKING LIST (ADMIN) ===== -->
+        <!-- ========================================================== -->
+        <!-- ORDER TRACKING LIST (ADMIN)                               -->
+        <!-- ========================================================== -->
         <div class="admin-section">
             <h3>📦 All Orders (Tracking)</h3>
             <div id="adminOrderTrackingList" style="max-height:300px;overflow-y:auto;border:1px solid #eee;border-radius:8px;padding:0.3rem;">
@@ -293,7 +453,9 @@
             <button class="btn btn-outline" id="refreshOrdersBtn" style="margin-top:0.5rem;font-size:0.8rem;padding:0.2rem 1rem;">🔄 Refresh Orders</button>
         </div>
 
-        <!-- ===== BACK TO STORE ===== -->
+        <!-- ========================================================== -->
+        <!-- BACK TO STORE                                              -->
+        <!-- ========================================================== -->
         <div style="text-align:center;margin-top:1rem;">
             <button class="btn btn-outline" id="exitAdminBtn" style="padding:0.5rem 2rem;">🏠 Back to Store</button>
         </div>
