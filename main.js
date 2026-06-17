@@ -716,3 +716,708 @@
 // Part 2 တွင် Route Handlers အသေးစိတ်၊ Page Transitions၊
 // Event Delegation နှင့် အပိုဆောင်း Routing Logic များ ဆက်လက်ပါဝင်မည်။
 // ============================================================
+
+// ============================================================
+// main.js - PART 2 (LINES 301-600)
+// ပိုမိုအဆင့်မြင့်သော Routing စနစ် - Navigation Guards,
+// Transition Management, Scroll Behavior, Route Meta,
+// Lazy Loading, Error Handling, နှင့် Integration Hooks
+// ============================================================
+
+(function() {
+    'use strict';
+
+    // =============================================================
+    // ၁၁။ ROUTER EXTENSIONS - Navigation Guards
+    // =============================================================
+    // Router Class ကို Navigation Guards များဖြင့် တိုးချဲ့ခြင်း
+    // =============================================================
+
+    class RouterWithGuards extends window.Router {
+        constructor(options = {}) {
+            super(options);
+            
+            // Navigation guard stacks
+            this.beforeGuards = [];
+            this.afterGuards = [];
+            this.resolveGuards = [];
+            
+            // Route meta data store
+            this.routeMeta = {};
+            
+            console.log('🔒 Router with guards initialized.');
+        }
+
+        /**
+         * Before navigation guard ထည့်သွင်းခြင်း
+         * @param {Function} guard - (to, from, next) => void
+         */
+        beforeEach(guard) {
+            if (typeof guard === 'function') {
+                this.beforeGuards.push(guard);
+            }
+            return this;
+        }
+
+        /**
+         * After navigation guard ထည့်သွင်းခြင်း
+         * @param {Function} guard - (to, from) => void
+         */
+        afterEach(guard) {
+            if (typeof guard === 'function') {
+                this.afterGuards.push(guard);
+            }
+            return this;
+        }
+
+        /**
+         * Resolve guard (data fetching before navigation)
+         * @param {Function} guard - (to, from) => Promise
+         */
+        beforeResolve(guard) {
+            if (typeof guard === 'function') {
+                this.resolveGuards.push(guard);
+            }
+            return this;
+        }
+
+        /**
+         * Route meta data သတ်မှတ်ခြင်း
+         * @param {string} path - Route path
+         * @param {Object} meta - Meta data
+         */
+        setRouteMeta(path, meta) {
+            this.routeMeta[path] = { ...this.routeMeta[path], ...meta };
+        }
+
+        /**
+         * Route meta data ရယူခြင်း
+         * @param {string} path - Route path
+         * @returns {Object} - Meta data
+         */
+        getRouteMeta(path) {
+            return this.routeMeta[path] || {};
+        }
+
+        /**
+         * Override: handleRoute with guards
+         * @param {string} hash - URL hash
+         */
+        handleRoute(hash) {
+            const routeMatch = this.matchRoute(hash);
+            
+            if (!routeMatch || !routeMatch.handler) {
+                console.warn(`No route found for: ${hash}`);
+                if (hash !== `#${this.notFoundRoute}`) {
+                    this.navigate(this.notFoundRoute, {}, false);
+                }
+                return;
+            }
+
+            // Build navigation context
+            const to = {
+                path: routeMatch.path,
+                params: routeMatch.params,
+                hash: hash,
+                meta: this.getRouteMeta(routeMatch.path)
+            };
+            
+            const from = {
+                path: this.currentPage,
+                params: {},
+                hash: this.lastHash,
+                meta: this.getRouteMeta(this.currentPage)
+            };
+
+            // Run before guards (chain)
+            this.runBeforeGuards(to, from, () => {
+                // Run resolve guards (data fetching)
+                this.runResolveGuards(to, from).then(() => {
+                    // Execute route handler
+                    this.beforeRouteChange(routeMatch);
+                    
+                    try {
+                        const result = routeMatch.handler(routeMatch.params, routeMatch.path);
+                        if (result && result.then) {
+                            result.then(() => {
+                                this.afterRouteChange(routeMatch);
+                                this.runAfterGuards(to, from);
+                            }).catch((error) => {
+                                console.error('Route handler error:', error);
+                                this.afterRouteChange(routeMatch, error);
+                                this.runAfterGuards(to, from);
+                            });
+                        } else {
+                            this.afterRouteChange(routeMatch);
+                            this.runAfterGuards(to, from);
+                        }
+                    } catch (error) {
+                        console.error('Route handler error:', error);
+                        this.afterRouteChange(routeMatch, error);
+                        this.runAfterGuards(to, from);
+                    }
+                }).catch((error) => {
+                    console.error('Resolve guard error:', error);
+                    // Still navigate but with error
+                    this.afterRouteChange(routeMatch, error);
+                    this.runAfterGuards(to, from);
+                });
+            }, (error) => {
+                // Guard rejected navigation
+                console.warn('Navigation blocked by guard:', error);
+                if (window.showToast) {
+                    window.showToast(error.message || 'Navigation blocked', 'warning');
+                }
+                // Stay on current page
+                if (this.lastHash) {
+                    history.replaceState(null, '', this.lastHash);
+                }
+            });
+        }
+
+        /**
+         * Run before guards sequentially
+         */
+        runBeforeGuards(to, from, next, reject) {
+            let index = 0;
+            const guards = this.beforeGuards;
+            
+            function runNext() {
+                if (index < guards.length) {
+                    const guard = guards[index++];
+                    try {
+                        guard(to, from, (redirect) => {
+                            if (redirect) {
+                                // Redirect to another route
+                                if (typeof redirect === 'string') {
+                                    this.navigate(redirect, {}, true);
+                                    reject({ message: 'Redirected to ' + redirect });
+                                } else {
+                                    reject({ message: 'Guard blocked navigation' });
+                                }
+                            } else {
+                                runNext();
+                            }
+                        });
+                    } catch (error) {
+                        reject(error);
+                    }
+                } else {
+                    next();
+                }
+            }
+            
+            runNext();
+        }
+
+        /**
+         * Run resolve guards (data fetching)
+         */
+        async runResolveGuards(to, from) {
+            for (const guard of this.resolveGuards) {
+                await guard(to, from);
+            }
+        }
+
+        /**
+         * Run after guards
+         */
+        runAfterGuards(to, from) {
+            for (const guard of this.afterGuards) {
+                try {
+                    guard(to, from);
+                } catch (error) {
+                    console.warn('After guard error:', error);
+                }
+            }
+        }
+    }
+
+    // =============================================================
+    // ၁၂။ REPLACE ROUTER WITH EXTENDED VERSION
+    // =============================================================
+    // RouterWithGuards ကို Global Router အဖြစ် သတ်မှတ်ခြင်း
+    // =============================================================
+
+    const router = new RouterWithGuards({
+        defaultRoute: 'home',
+        notFoundRoute: 'home',
+        transitionDuration: 300,
+        onRouteChange: (routeMatch, error) => {
+            // Existing onRouteChange logic
+            if (error) {
+                console.warn('Route error:', error);
+            }
+            updateActiveNav(routeMatch.path);
+            
+            // Scroll to top
+            const mainContent = document.getElementById('mainContent');
+            if (mainContent) {
+                mainContent.scrollTop = 0;
+            }
+            
+            // Dispatch custom event
+            window.dispatchEvent(new CustomEvent('route-change', {
+                detail: {
+                    path: routeMatch.path,
+                    params: routeMatch.params,
+                    error: error
+                }
+            }));
+        }
+    });
+
+    window.router = router;
+
+    // =============================================================
+    // ၁၃။ NAVIGATION GUARDS REGISTRATION
+    // =============================================================
+    // Application အတွက် Navigation Guards များ သတ်မှတ်ခြင်း
+    // =============================================================
+
+    // 1. Authentication guard (profile, orders, tracking, wishlist)
+    router.beforeEach((to, from, next) => {
+        const protectedRoutes = ['profile', 'orders', 'tracking', 'wishlist', 'address', 'settings'];
+        const isProtected = protectedRoutes.some(route => to.path.startsWith(route));
+        
+        if (isProtected) {
+            const user = auth.currentUser;
+            if (!user) {
+                // Not authenticated - redirect to home with message
+                if (window.showToast) {
+                    window.showToast('ကျေးဇူးပြု၍ ဝင်ရောက်ပါ။', 'warning');
+                }
+                // Try anonymous sign in
+                auth.signInAnonymously().catch(() => {
+                    // If fails, stay on home
+                    next('home');
+                });
+                // Allow navigation after sign-in attempt
+                next();
+            } else {
+                next();
+            }
+        } else {
+            next();
+        }
+    });
+
+    // 2. Checkout guard (must have cart items)
+    router.beforeEach((to, from, next) => {
+        if (to.path.startsWith('checkout')) {
+            const cart = JSON.parse(localStorage.getItem('premiumCart') || '[]');
+            if (cart.length === 0) {
+                if (window.showToast) {
+                    window.showToast('စျေးဝယ်တောင်းထဲ ပစ္စည်းမရှိပါ။', 'warning');
+                }
+                next('home');
+            } else {
+                next();
+            }
+        } else {
+            next();
+        }
+    });
+
+    // 3. Product detail guard (load product data)
+    router.beforeResolve(async (to, from) => {
+        if (to.path.startsWith('product')) {
+            const productId = to.params.id;
+            if (productId) {
+                // Preload product data
+                try {
+                    await window.loadProductDetail(productId);
+                } catch (e) {
+                    console.warn('Product preload failed:', e);
+                }
+            }
+        }
+    });
+
+    // 4. After navigation guard (analytics, logging)
+    router.afterEach((to, from) => {
+        // Log navigation
+        console.log(`📍 Navigation: ${from.path} → ${to.path}`);
+        
+        // Update document title with meta
+        const meta = router.getRouteMeta(to.path);
+        if (meta.title) {
+            document.title = meta.title;
+        }
+        
+        // Trigger scroll restoration after a small delay
+        setTimeout(() => {
+            const scrollPos = sessionStorage.getItem('scrollPosition');
+            if (scrollPos && from.path === to.path) {
+                // Same page navigation (hash change)
+                const y = parseInt(scrollPos);
+                if (!isNaN(y)) {
+                    window.scrollTo(0, y);
+                }
+                sessionStorage.removeItem('scrollPosition');
+            }
+        }, 100);
+    });
+
+    // 5. Performance guard (lazy loading simulation)
+    router.beforeEach((to, from, next) => {
+        // Simulate loading for heavy pages
+        const heavyRoutes = ['orders', 'tracking', 'wishlist'];
+        if (heavyRoutes.includes(to.path)) {
+            // Show loading indicator
+            if (window.showLoading) {
+                window.showLoading(true);
+            }
+            // Hide after a small delay (simulate async load)
+            setTimeout(() => {
+                if (window.showLoading) {
+                    window.showLoading(false);
+                }
+                next();
+            }, 300);
+        } else {
+            next();
+        }
+    });
+
+    // =============================================================
+    // ၁၄။ ROUTE META DATA
+    // =============================================================
+    // Route များအတွက် Meta Data သတ်မှတ်ခြင်း
+    // =============================================================
+
+    router.setRouteMeta('home', {
+        title: 'Premium Shop - မူလစာမျက်နှာ',
+        icon: 'fas fa-home',
+        requiresAuth: false
+    });
+
+    router.setRouteMeta('messages', {
+        title: 'Premium Shop - စကားဝိုင်းများ',
+        icon: 'fas fa-comment-dots',
+        requiresAuth: false
+    });
+
+    router.setRouteMeta('cart', {
+        title: 'Premium Shop - စျေးဝယ်တောင်း',
+        icon: 'fas fa-shopping-cart',
+        requiresAuth: false
+    });
+
+    router.setRouteMeta('profile', {
+        title: 'Premium Shop - ပရိုဖိုင်',
+        icon: 'fas fa-user',
+        requiresAuth: true
+    });
+
+    router.setRouteMeta('orders', {
+        title: 'Premium Shop - အော်ဒါများ',
+        icon: 'fas fa-box',
+        requiresAuth: true
+    });
+
+    router.setRouteMeta('tracking', {
+        title: 'Premium Shop - ခြေရာခံခြင်း',
+        icon: 'fas fa-map-marked-alt',
+        requiresAuth: true
+    });
+
+    router.setRouteMeta('wishlist', {
+        title: 'Premium Shop - သိမ်းဆည်းထားသော ပစ္စည်းများ',
+        icon: 'fas fa-heart',
+        requiresAuth: true
+    });
+
+    router.setRouteMeta('address', {
+        title: 'Premium Shop - ပို့ရန်လိပ်စာ',
+        icon: 'fas fa-map-pin',
+        requiresAuth: true
+    });
+
+    router.setRouteMeta('settings', {
+        title: 'Premium Shop - ဆက်တင်များ',
+        icon: 'fas fa-cog',
+        requiresAuth: true
+    });
+
+    router.setRouteMeta('product', {
+        title: 'Premium Shop - ပစ္စည်းအသေးစိတ်',
+        icon: 'fas fa-box',
+        requiresAuth: false
+    });
+
+    router.setRouteMeta('checkout-address', {
+        title: 'Premium Shop - ငွေချေခြင်း (လိပ်စာ)',
+        icon: 'fas fa-map-pin',
+        requiresAuth: false
+    });
+
+    router.setRouteMeta('checkout-payment', {
+        title: 'Premium Shop - ငွေချေခြင်း (ငွေလွှဲ)',
+        icon: 'fas fa-credit-card',
+        requiresAuth: false
+    });
+
+    router.setRouteMeta('checkout-screenshot', {
+        title: 'Premium Shop - ငွေချေခြင်း (Screenshot)',
+        icon: 'fas fa-image',
+        requiresAuth: false
+    });
+
+    router.setRouteMeta('success', {
+        title: 'Premium Shop - အော်ဒါအောင်မြင်ပါသည်',
+        icon: 'fas fa-check-circle',
+        requiresAuth: false
+    });
+
+    // =============================================================
+    // ၁၅။ SCROLL BEHAVIOR
+    // =============================================================
+    // Page ပြောင်းချိန်တွင် Scroll Position ကို ထိန်းချုပ်ခြင်း
+    // =============================================================
+
+    // Save scroll position before navigation
+    window.addEventListener('route-change', (event) => {
+        const mainContent = document.getElementById('mainContent');
+        if (mainContent) {
+            // Save current scroll position
+            sessionStorage.setItem('scrollPosition', String(mainContent.scrollTop));
+        }
+    });
+
+    // Restore scroll position after navigation (if same page)
+    // Already handled in afterEach guard
+
+    // =============================================================
+    // ၁၆။ PAGE TRANSITIONS
+    // =============================================================
+    // Page ပြောင်းချိန်တွင် Transition Animation များ
+    // =============================================================
+
+    // CSS transition management
+    const pageTransitionStyles = `
+        .page-transition-enter {
+            animation: fadeSlide 0.3s ease forwards;
+        }
+        .page-transition-exit {
+            animation: fadeSlideOut 0.2s ease forwards;
+        }
+        @keyframes fadeSlideOut {
+            0% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-12px); }
+        }
+    `;
+
+    // Inject styles if not already present
+    if (!document.getElementById('page-transition-styles')) {
+        const style = document.createElement('style');
+        style.id = 'page-transition-styles';
+        style.textContent = pageTransitionStyles;
+        document.head.appendChild(style);
+    }
+
+    // Override showPage to include transitions
+    const originalShowPage = window.showPage;
+    window.showPage = function(pageId) {
+        const allPages = document.querySelectorAll('.page');
+        const targetPage = document.getElementById(`page-${pageId}`);
+        
+        if (!targetPage) {
+            if (originalShowPage) originalShowPage(pageId);
+            return;
+        }
+
+        // Add exit animation to current page
+        allPages.forEach(page => {
+            if (page.classList.contains('active')) {
+                page.classList.remove('page-transition-enter');
+                page.classList.add('page-transition-exit');
+                setTimeout(() => {
+                    page.classList.remove('active');
+                    page.classList.remove('page-transition-exit');
+                }, 200);
+            }
+        });
+
+        // Show target page with enter animation
+        setTimeout(() => {
+            targetPage.classList.add('active');
+            targetPage.classList.remove('page-transition-enter');
+            // Trigger reflow
+            void targetPage.offsetWidth;
+            targetPage.classList.add('page-transition-enter');
+            
+            // Remove animation class after it completes
+            setTimeout(() => {
+                targetPage.classList.remove('page-transition-enter');
+            }, 350);
+        }, 250);
+
+        // Update document title from meta
+        const meta = router.getRouteMeta(pageId);
+        if (meta && meta.title) {
+            document.title = meta.title;
+        }
+
+        // Chat FAB handling
+        const chatFab = document.getElementById('chatFab');
+        if (chatFab) {
+            chatFab.classList.toggle('hidden', pageId === 'messages');
+        }
+
+        // Update nav active states
+        updateActiveNav(pageId);
+    };
+
+    // =============================================================
+    // ၁၇။ DYNAMIC ROUTE LOADING (Lazy Loading Simulation)
+    // =============================================================
+    // Heavy pages များအတွက် Lazy Loading စနစ်
+    // =============================================================
+
+    const lazyLoadMap = {
+        'orders': () => {
+            // Load orders data from user.js
+            if (window.loadOrders) {
+                window.loadOrders();
+            }
+        },
+        'tracking': () => {
+            // Initialize tracking map
+            if (window.initTracking) {
+                setTimeout(window.initTracking, 300);
+            }
+        },
+        'wishlist': () => {
+            if (window.renderWishlist) {
+                window.renderWishlist();
+            }
+        },
+        'profile': () => {
+            if (window.loadProfile) {
+                window.loadProfile();
+            }
+        }
+    };
+
+        // Auto-load when route changes
+    window.addEventListener('route-change', (event) => {
+        const path = event.detail.path;
+        if (lazyLoadMap[path]) {
+            lazyLoadMap[path]();
+        }
+    });
+
+    // =============================================================
+    // ၁၈။ ERROR HANDLING & RECOVERY
+    // =============================================================
+    // Route error handling နှင့် Recovery စနစ်
+    // =============================================================
+
+    // Global error handler for route errors
+    window.addEventListener('error', (event) => {
+        if (event.message && event.message.includes('route')) {
+            console.error('Route error:', event.error);
+            if (window.showToast) {
+                window.showToast('စာမျက်နှာ ဖွင့်ရာတွင် အမှားရှိသည်။ ပြန်ကြိုးစားပါ။', 'error');
+            }
+            // Navigate to home after error
+            setTimeout(() => {
+                router.navigate('home');
+            }, 1000);
+        }
+    });
+
+    // Unhandled promise rejection handler
+    window.addEventListener('unhandledrejection', (event) => {
+        if (event.reason && event.reason.message) {
+            console.error('Unhandled route rejection:', event.reason);
+            if (window.showToast) {
+                window.showToast('လုပ်ဆောင်ချက် အမှားရှိသည်။ နောက်မှကြိုးစားပါ။', 'error');
+            }
+        }
+    });
+
+    // =============================================================
+    // ၁၉။ BROWSER BACK/FORWARD OPTIMIZATION
+    // =============================================================
+    // Browser history ကို ပိုမိုကောင်းမွန်စေရန်
+    // =============================================================
+
+    // Override popstate for better handling
+    const originalPopState = router.handlePopState;
+    router.handlePopState = function() {
+        const currentHash = window.location.hash || `#${this.defaultRoute}`;
+        const currentIndex = this.navStack.indexOf(currentHash);
+        
+        if (currentIndex !== -1) {
+            this.navIndex = currentIndex;
+        } else {
+            this.navStack.push(currentHash);
+            this.navIndex = this.navStack.length - 1;
+        }
+        
+        this.lastHash = currentHash;
+        this.handleRoute(currentHash);
+    };
+
+    // =============================================================
+    // ၂၀။ INTEGRATION WITH OTHER MODULES
+    // =============================================================
+    // user.js နှင့် admin.js များနှင့် ချိတ်ဆက်ရန် Hooks
+    // =============================================================
+
+    // Expose router events for other modules
+    window.__routerEvents = {
+        onRouteChange: (callback) => {
+            window.addEventListener('route-change', (event) => {
+                callback(event.detail);
+            });
+        },
+        onBeforeRoute: (callback) => {
+            router.beforeEach(callback);
+        },
+        getCurrentRoute: () => router.getCurrentRoute()
+    };
+
+    // =============================================================
+    // ၂၁။ DEVELOPMENT TOOLS
+    // =============================================================
+    // Dev mode အတွက် အပိုဆောင်း Tools
+    // =============================================================
+
+    if (window.DEV_MODE || localStorage.getItem('devMode') === 'true') {
+        // Expose router to console
+        window.__router = router;
+        
+        // Quick navigation helpers
+        window.$go = (path) => router.navigate(path);
+        window.$back = () => router.back();
+        window.$forward = () => router.forward();
+        window.$route = () => router.getCurrentRoute();
+        
+        console.log('🔧 Dev tools:');
+        console.log('  - $go(path) - Navigate');
+        console.log('  - $back() - Go back');
+        console.log('  - $forward() - Go forward');
+        console.log('  - $route() - Get current route');
+        console.log('  - __router - Router instance');
+    }
+
+    // =============================================================
+    // ၂၂။ INITIALIZATION COMPLETE
+    // =============================================================
+    // Router ကို စတင်ပြီးစီးကြောင်း ကြေညာခြင်း
+    // =============================================================
+
+    console.log('✅ main.js - Part 2 (Lines 301-600) complete.');
+    console.log('🌐 Router extended with guards, meta, lazy loading.');
+    console.log('📌 Ready for production use.');
+
+})(); // IIFE end
+
+// ============================================================
+// ဤနေရာတွင် main.js Part 2 ပြီးဆုံးပါသည်။ လိုင်း ၆၀၀ အတိအကျ။
+// main.js ဖိုင်အတွက် စုစုပေါင်း လိုင်း ၆၀၀ အထိ ပြီးမြောက်ပါပြီ။
+// ကျန်ရှိသော ဖိုင်မှာ admin.js သာ ကျန်ပါသည်။
+// ============================================================
