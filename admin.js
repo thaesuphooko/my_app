@@ -920,3 +920,264 @@ document.addEventListener("DOMContentLoaded", function() {
 
     console.log("✅ Admin Panel loaded!");
 });
+
+// ============================================================
+// ADD TO admin.js - Bulk Delete & Tracking Settings
+// ============================================================
+
+// ============================================================
+// 1. BULK DELETE PRODUCTS
+// ============================================================
+let selectedProductIds = new Set();
+
+function renderAdminProductsWithCheckbox() {
+    const total = allProducts.length;
+    const totalPages = Math.ceil(total / 20);
+    let adminPage = parseInt(localStorage.getItem("adminPage") || "1");
+    if (adminPage > totalPages) adminPage = Math.max(1, totalPages);
+    const start = (adminPage - 1) * 20;
+    const pageProds = allProducts.slice(start, start + 20);
+
+    const tbody = document.getElementById("adminProductRows");
+    if (!tbody) return;
+
+    tbody.innerHTML = "";
+    for (let p of pageProds) {
+        const imgHtml = p.image ?
+            `<img src="${p.image}" style="width:40px;height:40px;object-fit:contain;border-radius:4px;background:#fafafa;" />` :
+            `<span style="font-size:1.5rem;">${p.emoji || '📦'}</span>`;
+
+        const statusHtml = p.stock_total && p.stock_total > 0 ?
+            `<span style="color:#28a745;font-weight:600;font-size:0.75rem;">✅ In Stock</span>` :
+            `<span style="color:#dc3545;font-weight:600;font-size:0.75rem;">❌ Out of Stock</span>`;
+
+        const isChecked = selectedProductIds.has(String(p.id)) ? 'checked' : '';
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td><input type="checkbox" class="product-checkbox" data-id="${p.id}" ${isChecked} /></td>
+            <td>${p.id}</td>
+            <td>${imgHtml}</td>
+            <td><input type="text" class="edit-name" data-id="${p.id}" value="${escapeHtml(p.name)}" /></td>
+            <td><input type="number" class="edit-price" data-id="${p.id}" value="${p.price}" /></td>
+            <td>${statusHtml}</td>
+            <td>
+                <button class="btn btn-primary btn-sm save-product-btn" data-id="${p.id}">💾</button>
+                <button class="btn btn-danger btn-sm delete-product-btn" data-id="${p.id}">🗑️</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    }
+
+    // Update selected count
+    document.getElementById("selectedCountDisplay").innerText = `${selectedProductIds.size} selected`;
+
+    // Checkbox events
+    document.querySelectorAll(".product-checkbox").forEach(cb => {
+        cb.onchange = function() {
+            const id = this.dataset.id;
+            if (this.checked) {
+                selectedProductIds.add(id);
+            } else {
+                selectedProductIds.delete(id);
+            }
+            updateSelectAllState();
+            document.getElementById("selectedCountDisplay").innerText = `${selectedProductIds.size} selected`;
+        };
+    });
+
+    // Select All
+    const selectAll = document.getElementById("selectAllProductsCheckbox");
+    if (selectAll) {
+        selectAll.onchange = function() {
+            const checked = this.checked;
+            document.querySelectorAll(".product-checkbox").forEach(cb => {
+                cb.checked = checked;
+                const id = cb.dataset.id;
+                if (checked) selectedProductIds.add(id);
+                else selectedProductIds.delete(id);
+            });
+            document.getElementById("selectedCountDisplay").innerText = `${selectedProductIds.size} selected`;
+        };
+    }
+
+    // Pagination (keep existing)
+    const pagDiv = document.getElementById("adminPagination");
+    if (pagDiv) {
+        pagDiv.innerHTML = "";
+        const maxShow = 7;
+        let startPage = Math.max(1, adminPage - 3);
+        let endPage = Math.min(totalPages, adminPage + 3);
+        if (endPage - startPage < maxShow - 1) {
+            if (startPage === 1) endPage = Math.min(totalPages, startPage + maxShow - 1);
+            else if (endPage === totalPages) startPage = Math.max(1, endPage - maxShow + 1);
+        }
+        if (adminPage > 1) {
+            const prevBtn = document.createElement("button");
+            prevBtn.innerText = "‹ Prev";
+            prevBtn.className = "page-btn";
+            prevBtn.onclick = () => { localStorage.setItem("adminPage", adminPage - 1); renderAdminProductsWithCheckbox(); };
+            pagDiv.appendChild(prevBtn);
+        }
+        if (startPage > 1) {
+            const btn = document.createElement("button");
+            btn.innerText = "1";
+            btn.className = "page-btn";
+            btn.onclick = () => { localStorage.setItem("adminPage", 1); renderAdminProductsWithCheckbox(); };
+            pagDiv.appendChild(btn);
+            if (startPage > 2) {
+                const dots = document.createElement("span");
+                dots.innerText = "...";
+                dots.style.padding = "0 0.3rem";
+                pagDiv.appendChild(dots);
+            }
+        }
+        for (let i = startPage; i <= endPage; i++) {
+            const btn = document.createElement("button");
+            btn.innerText = i;
+            btn.className = `page-btn ${i === adminPage ? "active" : ""}`;
+            btn.onclick = () => { localStorage.setItem("adminPage", i); renderAdminProductsWithCheckbox(); };
+            pagDiv.appendChild(btn);
+        }
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) {
+                const dots = document.createElement("span");
+                dots.innerText = "...";
+                dots.style.padding = "0 0.3rem";
+                pagDiv.appendChild(dots);
+            }
+            const btn = document.createElement("button");
+            btn.innerText = totalPages;
+            btn.className = "page-btn";
+            btn.onclick = () => { localStorage.setItem("adminPage", totalPages); renderAdminProductsWithCheckbox(); };
+            pagDiv.appendChild(btn);
+        }
+        if (adminPage < totalPages) {
+            const nextBtn = document.createElement("button");
+            nextBtn.innerText = "Next ›";
+            nextBtn.className = "page-btn";
+            nextBtn.onclick = () => { localStorage.setItem("adminPage", adminPage + 1); renderAdminProductsWithCheckbox(); };
+            pagDiv.appendChild(nextBtn);
+        }
+    }
+
+    // Events for save/delete (keep existing)
+    document.querySelectorAll(".save-product-btn").forEach(btn => {
+        btn.onclick = () => {
+            const id = btn.dataset.id;
+            const row = btn.closest("tr");
+            const name = row.querySelector(".edit-name").value;
+            const price = parseInt(row.querySelector(".edit-price").value);
+            const prod = allProducts.find(p => String(p.id) === String(id));
+            if (prod) {
+                prod.name = name;
+                prod.price = price;
+                saveProducts();
+                logUserAction(`✏️ Product updated`, `#${id} - ${name}`);
+                showToast("✅ Product saved");
+                renderAdminProductsWithCheckbox();
+            }
+        };
+    });
+
+    document.querySelectorAll(".delete-product-btn").forEach(btn => {
+        btn.onclick = () => {
+            if (!confirm("Delete this product?")) return;
+            const id = btn.dataset.id;
+            allProducts = allProducts.filter(p => String(p.id) !== String(id));
+            selectedProductIds.delete(String(id));
+            saveProducts();
+            cart = cart.filter(i => String(i.id) !== String(id));
+            saveCart();
+            updateCartBadge();
+            logUserAction(`🗑️ Product deleted`, `#${id}`);
+            showToast("🗑️ Product deleted");
+            renderAdminProductsWithCheckbox();
+            document.getElementById("productCount").innerText = allProducts.length;
+        };
+    });
+}
+
+function updateSelectAllState() {
+    const checkboxes = document.querySelectorAll(".product-checkbox");
+    const selectAll = document.getElementById("selectAllProductsCheckbox");
+    if (selectAll && checkboxes.length > 0) {
+        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+        selectAll.checked = allChecked;
+    }
+}
+
+// Delete selected products
+function deleteSelectedProducts() {
+    if (selectedProductIds.size === 0) {
+        showToast("❌ No products selected");
+        return;
+    }
+    if (!confirm(`Delete ${selectedProductIds.size} selected products?`)) return;
+    if (!confirm("Are you absolutely sure?")) return;
+
+    allProducts = allProducts.filter(p => !selectedProductIds.has(String(p.id)));
+    cart = cart.filter(i => !selectedProductIds.has(String(i.id)));
+    saveProducts();
+    saveCart();
+    updateCartBadge();
+    selectedProductIds.clear();
+    logUserAction(`🗑️ Bulk deleted ${selectedProductIds.size} products`, ``);
+    showToast(`✅ ${selectedProductIds.size} products deleted`);
+    renderAdminProductsWithCheckbox();
+    document.getElementById("productCount").innerText = allProducts.length;
+}
+
+// ============================================================
+// 2. TRACKING SETTINGS
+// ============================================================
+function loadTrackingSettings() {
+    const config = getTrackingConfig();
+    document.getElementById("trackingTimeReceived").value = config.order_received || 10;
+    document.getElementById("trackingTimeProcessing").value = config.processing || 10800;
+    document.getElementById("trackingTimeShipped").value = config.shipped || 43200;
+    document.getElementById("trackingTimeDelivered").value = config.delivered || 172800;
+}
+
+function saveTrackingSettings() {
+    const config = {
+        order_received: parseInt(document.getElementById("trackingTimeReceived").value) || 10,
+        processing: parseInt(document.getElementById("trackingTimeProcessing").value) || 10800,
+        shipped: parseInt(document.getElementById("trackingTimeShipped").value) || 43200,
+        delivered: parseInt(document.getElementById("trackingTimeDelivered").value) || 172800
+    };
+    saveTrackingConfig(config);
+    showStatus("trackingStatus", "✅ Tracking settings saved!", "success");
+    logUserAction(`🚚 Tracking settings updated`, JSON.stringify(config));
+}
+
+// ============================================================
+// 3. UPDATE renderAdminPanel to use new function
+// ============================================================
+// Replace renderAdminPanel with this
+function renderAdminPanel() {
+    loadProducts();
+    renderAdminProductsWithCheckbox(); // Changed
+    renderAdminUsers();
+    renderAdminChatMessages();
+    loadAdminConfigs();
+    displayAPILimits();
+    loadTrackingSettings();
+
+    document.getElementById("productCount").innerText = allProducts.length;
+    document.getElementById("adminStatus").innerHTML = "🔐 Secured - " + new Date().toLocaleString();
+
+    loadGridLayoutForAdmin();
+}
+
+// ============================================================
+// 4. EVENT LISTENERS
+// ============================================================
+// Add these inside DOMContentLoaded
+document.getElementById("deleteSelectedBtn")?.addEventListener("click", deleteSelectedProducts);
+document.getElementById("refreshProductsBtn")?.addEventListener("click", () => {
+    renderAdminProductsWithCheckbox();
+    showToast("🔄 Products refreshed");
+});
+
+document.getElementById("saveTrackingSettingsBtn")?.addEventListener("click", saveTrackingSettings);
