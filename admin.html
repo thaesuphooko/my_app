@@ -268,41 +268,55 @@
       <button class="btn btn-success" id="adminSaveCheckoutBtn">💾 Save Checkout Settings</button>
       <div id="checkoutStatus" class="status-msg" style="display:none;"></div>
     </div>
+<!-- ===== TELEGRAM SETTINGS ===== -->
+<div class="admin-section">
+  <h3>📨 Telegram Settings</h3>
+  <label>Bot Tokens (one per line)</label>
+  <textarea id="telegramTokens" placeholder="Bot tokens..."></textarea>
+  <label>Chat ID</label>
+  <input type="text" id="telegramChatId" placeholder="Your Telegram Chat ID" />
+  <div class="btn-group">
+    <button class="btn btn-success" id="saveTelegramBtn">💾 Save</button>
+    <button class="btn btn-primary" id="testTelegramBtn">📨 Test Message</button>
+    <button class="btn btn-outline" id="resetTelegramLimit">🔄 Reset Rate Limit</button>
+  </div>
+  <div id="telegramStatus" class="status-msg" style="display:none;"></div>
+</div>
 
-    <!-- ===== TELEGRAM SETTINGS ===== -->
-    <div class="admin-section">
-      <h3>📨 Telegram Settings</h3>
-      <label>Bot Tokens (one per line)</label>
-      <textarea id="telegramTokens" placeholder="Bot tokens..."></textarea>
-      <label>Chat ID</label>
-      <input type="text" id="telegramChatId" placeholder="Your Telegram Chat ID" />
-      <div class="btn-group">
-        <button class="btn btn-success" id="saveTelegramBtn">💾 Save</button>
-        <button class="btn btn-primary" id="testTelegramBtn">📨 Test Message</button>
-        <button class="btn btn-outline" id="resetTelegramLimit">🔄 Reset Rate Limit</button>
-      </div>
-      <div id="telegramStatus" class="status-msg" style="display:none;"></div>
+<!-- ===== TELEGRAM BROADCAST ===== -->
+<div class="admin-section">
+  <h3>📢 Telegram Broadcast</h3>
+  <p style="font-size:0.85rem;color:#888;margin-bottom:0.5rem;">
+    Send message to any user via Telegram (by username or phone)
+  </p>
+  <div class="admin-grid-2">
+    <div>
+      <label>Recipient (Username or Phone)</label>
+      <input type="text" id="broadcastRecipient" placeholder="username or phone number" />
     </div>
+    <div>
+      <label>Subject (optional)</label>
+      <input type="text" id="broadcastSubject" placeholder="Subject" />
+    </div>
+  </div>
+  <label>Message</label>
+  <textarea id="broadcastMessage" placeholder="Your message to user..."></textarea>
+  <button class="btn btn-primary" id="broadcastBtn">📨 Send Broadcast</button>
+  <div id="broadcastStatus" class="status-msg" style="display:none;"></div>
+</div>
 
-    <!-- ===== TELEGRAM BROADCAST ===== -->
-    <div class="admin-section">
-      <h3>📢 Telegram Broadcast</h3>
-      <p style="font-size:0.85rem;color:#888;margin-bottom:0.5rem;">Send message to any user via Telegram (by username or phone)</p>
-      <div class="admin-grid-2">
-        <div>
-          <label>Recipient (Username or Phone)</label>
-          <input type="text" id="broadcastRecipient" placeholder="username or phone number" />
-        </div>
-        <div>
-          <label>Subject (optional)</label>
-          <input type="text" id="broadcastSubject" placeholder="Subject" />
-        </div>
-      </div>
-      <label>Message</label>
-      <textarea id="broadcastMessage" placeholder="Your message to user..."></textarea>
-      <button class="btn btn-primary" id="broadcastBtn">📨 Send Broadcast</button>
-      <div id="broadcastStatus" class="status-msg" style="display:none;"></div>
-    </div>
+<!-- ========================================================== -->
+<!-- ✅ API LIMITS DISPLAY - ဒီနေရာမှာ ထည့်ပါ              -->
+<!-- ========================================================== -->
+<div class="admin-section">
+  <h3>📊 API Limits & Usage</h3>
+  <div id="apiLimitDisplay">
+    <div style="color:#888;font-size:0.85rem;">Loading limits...</div>
+  </div>
+  <button class="btn btn-outline" id="refreshLimitsBtn" style="margin-top:0.5rem;">
+    🔄 Refresh Limits
+  </button>
+</div>
 
     <!-- ===== AMAZON API SYNC ===== -->
     <div class="admin-section">
