@@ -824,5 +824,549 @@
     <!-- ============================================================ -->
     <!-- ဤနေရာတွင် Part 1 ပြီးဆုံးပါသည်။ လိုင်း ၃၀၀ အတိအကျ -->
     <!-- ============================================================ -->
+        // Admin မှ multiplier ကို ပြောင်းလဲနိုင်ရန် (ဒီနေရာတွင် သတ်မှတ်မည်)
+        let slowModeMultiplier = 6; // ပုံမှန် 6 ဆ နှေး (Admin မှ ပြောင်းနိုင်)
+        let isSlowModeActive = false;
+        let clockIntervalId = null;
 
-  
+        // နာရီပြသရန် အချိန်တွက်နည်း
+        function updateClockDisplay() {
+            if (!smartClockEl) return;
+
+            // Virtual time calculation
+            const now = Date.now();
+            const realElapsed = (now - clockState.startTime) / 1000; // real seconds
+
+            let displaySeconds;
+            if (clockState.isSlowMode) {
+                // Slow Mode: actual real time passed * (1 / multiplier)
+                const slowStart = clockState.slowModeActivatedAt || now;
+                const slowRealElapsed = (now - slowStart) / 1000;
+                const normalElapsed = (slowStart - clockState.startTime) / 1000;
+                displaySeconds = normalElapsed + (slowRealElapsed / slowModeMultiplier);
+            } else {
+                displaySeconds = realElapsed;
+            }
+
+            // စက္ကန့် ၆၀ (၁ မိနစ်) ပြည့်ပြီဆိုရင် Slow Mode စတင်ရန် စစ်ဆေးခြင်း
+            if (!clockState.isSlowMode && realElapsed >= 60) {
+                clockState.isSlowMode = true;
+                clockState.slowModeActivatedAt = now;
+                saveClockState(clockState);
+                isSlowModeActive = true;
+                console.log('🐢 Slow Mode activated!');
+            }
+
+            // နာရီ၊ မိနစ်၊ စက္ကန့် ပြောင်းလဲတွက်ချက်ခြင်း
+            const totalSec = Math.floor(displaySeconds);
+            const hours = Math.floor(totalSec / 3600) % 24;
+            const minutes = Math.floor((totalSec % 3600) / 60);
+            const seconds = totalSec % 60;
+
+            // ပုံစံကျအောင်ပြသခြင်း (HH:MM:SS)
+            const pad = (n) => String(n).padStart(2, '0');
+            smartClockEl.textContent = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+
+            // Slow Mode ဖြစ်နေလျှင် နာရီအရောင် ပြောင်းရန် (optional)
+            if (clockState.isSlowMode) {
+                smartClockEl.style.color = 'var(--secondary)';
+            } else {
+                smartClockEl.style.color = '';
+            }
+        }
+
+        // နာရီကို စတင်ဖွင့်ခြင်း (Interval 1 sec)
+        function startClock() {
+            if (clockIntervalId) clearInterval(clockIntervalId);
+            updateClockDisplay(); // ချက်ချင်းပြသရန်
+            clockIntervalId = setInterval(updateClockDisplay, 1000);
+        }
+
+        // Page ပြန်လည် load ချိန်တွင် နာရီကို ဆက်တိုင်းရန်
+        startClock();
+
+        // =============================================================
+        // ၅။ PRODUCT RENDERING (Mock Data + Firebase Real-time Sync)
+        // =============================================================
+        // လက်ရှိတွင် Mock Data ဖြင့် စမ်းသပ်ပြီး၊ နောက်ပိုင်း Firebase နှင့် ချိတ်ဆက်မည်
+        let allProducts = [];
+        let filteredProducts = [];
+        let currentPageNum = 1;
+        const PAGE_SIZE = 20;
+
+        // Mock Product Data (ပုံများအတွက် placeholder images)
+        function generateMockProducts(count = 50) {
+            const categories = ['electronics', 'fashion', 'food', 'books', 'home'];
+            const names = ['Smartphone X', 'Laptop Pro', 'T-Shirt Cotton', 'Coffee Beans', 'Novel Book', 'Desk Lamp', 'Headphones', 'Sneakers', 'Watch', 'Backpack'];
+            const products = [];
+            for (let i = 1; i <= count; i++) {
+                const cat = categories[i % categories.length];
+                const name = names[i % names.length] + ' ' + i;
+                const price = Math.floor(Math.random() * 100) + 10;
+                const discount = Math.floor(Math.random() * 30) + 5;
+                const finalPrice = Math.floor(price * (1 - discount / 100));
+                products.push({
+                    id: 'prod_' + i,
+                    name: name,
+                    category: cat,
+                    originalPrice: price * 1000, // Ks
+                    price: finalPrice * 1000,
+                    discount: discount,
+                    rating: (3 + Math.random() * 2).toFixed(1),
+                    reviews: Math.floor(Math.random() * 200) + 5,
+                    stock: Math.floor(Math.random() * 50) + 1,
+                    sold: Math.floor(Math.random() * 100) + 1,
+                    image: `https://picsum.photos/seed/${i}/300/300`,
+                    location: 'Myanmar [Burma]'
+                });
+            }
+            return products;
+        }
+
+        allProducts = generateMockProducts(100);
+        filteredProducts = [...allProducts];
+
+        // Category Filter
+        function filterProducts(category) {
+            if (category === 'all') {
+                filteredProducts = [...allProducts];
+            } else {
+                filteredProducts = allProducts.filter(p => p.category === category);
+            }
+            currentPageNum = 1;
+            renderProductGrid();
+        }
+
+        // Category bar event listeners
+        categoryBar.querySelectorAll('.category-chip').forEach(chip => {
+            chip.addEventListener('click', function() {
+                categoryBar.querySelectorAll('.category-chip').forEach(c => c.classList.remove('active'));
+                this.classList.add('active');
+                const cat = this.dataset.cat;
+                filterProducts(cat);
+            });
+        });
+
+        // Render Product Grid
+        function renderProductGrid() {
+            const start = 0;
+            const end = currentPageNum * PAGE_SIZE;
+            const pageItems = filteredProducts.slice(start, end);
+
+            if (pageItems.length === 0 && currentPageNum === 1) {
+                productGrid.innerHTML = `<div class="glass-card" style="padding:30px; text-align:center; grid-column:1/-1;">
+                    <i class="fas fa-box-open" style="font-size:32px; color:var(--text-light);"></i>
+                    <p class="text-muted mt-8">ပစ္စည်းများ မရှိသေးပါ</p>
+                </div>`;
+                loadMoreBtn.style.display = 'none';
+                return;
+            }
+
+            let html = '';
+            pageItems.forEach(p => {
+                html += `
+                    <div class="glass-card" style="padding:12px; position:relative; cursor:pointer;" onclick="window.navigateToProduct('${p.id}')">
+                        <div style="position:relative; width:100%; aspect-ratio:1/1; border-radius:12px; overflow:hidden; background:#f0f0f0;">
+                            <img src="${p.image}" alt="${p.name}" style="width:100%; height:100%; object-fit:cover;" loading="lazy" />
+                            <span class="discount-badge">-${p.discount}%</span>
+                        </div>
+                        <div style="margin-top:8px;">
+                            <div style="font-weight:600; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.name}</div>
+                            <div style="display:flex; gap:8px; align-items:center; margin-top:4px; flex-wrap:wrap;">
+                                <span style="font-size:12px; color:var(--text-light); text-decoration:line-through;">Ks ${p.originalPrice.toLocaleString()}</span>
+                                <span style="font-size:16px; font-weight:700; color:var(--primary);">Ks ${p.price.toLocaleString()}</span>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:4px; margin-top:4px; font-size:12px; color:var(--text-secondary);">
+                                <span>${'★'.repeat(Math.floor(p.rating))}${p.rating % 1 >= 0.5 ? '☆' : ''}</span>
+                                <span>(${p.reviews})</span>
+                                <span style="margin-left:auto; font-size:11px; color:var(--text-light);">🔥 ${p.sold} sold</span>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; margin-top:6px; font-size:11px; color:var(--text-light);">
+                                <span><i class="fas fa-map-pin"></i> ${p.location}</span>
+                                <span style="color:${p.stock > 0 ? '#22c55e' : 'var(--primary)'};">${p.stock > 0 ? '✅ In Stock' : 'Out of Stock'}</span>
+                            </div>
+                            <button class="add-to-cart-btn" data-id="${p.id}" style="margin-top:8px; width:100%; padding:6px; background:var(--secondary); color:#fff; border:none; border-radius:30px; font-weight:600; font-size:13px; cursor:pointer;">Add to Cart</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            productGrid.innerHTML = html;
+            loadMoreBtn.style.display = (end < filteredProducts.length) ? 'block' : 'none';
+
+            // Add to Cart buttons
+            productGrid.querySelectorAll('.add-to-cart-btn').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const id = this.dataset.id;
+                    const product = allProducts.find(p => p.id === id);
+                    if (product) addToCart(product);
+                });
+            });
+        }
+
+        // Load more
+        loadMoreBtn.addEventListener('click', function() {
+            currentPageNum++;
+            renderProductGrid();
+        });
+
+        // Navigate to product detail (hash routing)
+        window.navigateToProduct = function(id) {
+            navigateTo(`#product/${id}`);
+        };
+
+        // Product Detail Render
+        function renderProductDetail(id) {
+            const container = document.getElementById('productDetailContainer');
+            const product = allProducts.find(p => p.id === id);
+            if (!product) {
+                container.innerHTML = `<div class="text-muted" style="text-align:center; padding:30px;"><i class="fas fa-exclamation-triangle"></i> ပစ္စည်းမတွေ့ပါ</div>`;
+                return;
+            }
+            container.innerHTML = `
+                <div style="display:flex; flex-direction:column; gap:16px;">
+                    <img src="${product.image}" alt="${product.name}" style="width:100%; border-radius:16px; aspect-ratio:1/1; object-fit:cover; transition:transform 0.3s;" onmouseenter="this.style.transform='scale(1.05)'" onmouseleave="this.style.transform='scale(1)'" />
+                    <h2>${product.name}</h2>
+                    <div><span style="text-decoration:line-through; color:var(--text-light);">Ks ${product.originalPrice.toLocaleString()}</span> <span style="font-size:24px; font-weight:700; color:var(--primary);">Ks ${product.price.toLocaleString()}</span></div>
+                    <div>⭐ ${product.rating} (${product.reviews} reviews)</div>
+                    <div>📍 ${product.location}</div>
+                    <div>📦 Stock: ${product.stock}</div>
+                    <button onclick="addToCart(window.currentProduct)" style="padding:14px; background:var(--primary); color:#fff; border:none; border-radius:40px; font-weight:700; font-size:16px; cursor:pointer;">Cart ထဲထည့်မည်</button>
+                    <div style="margin-top:16px; border-top:1px solid var(--card-border); padding-top:16px;">
+                        <h4>💬 Review ရေးရန်</h4>
+                        <div style="display:flex; gap:4px; margin:8px 0;">
+                            ${[1,2,3,4,5].map(s => `<button class="star-rating" data-val="${s}" style="font-size:28px; background:none; border:none; cursor:pointer; color:var(--text-light);">★</button>`).join('')}
+                        </div>
+                        <textarea placeholder="သင့်အမြင်..." rows="3" style="width:100%; padding:12px; border-radius:12px; border:1px solid var(--card-border); background:var(--card-bg); color:var(--text-primary); resize:vertical;"></textarea>
+                        <button style="margin-top:8px; padding:10px 24px; background:var(--secondary); color:#fff; border:none; border-radius:40px; font-weight:600; cursor:pointer;">Submit Review</button>
+                    </div>
+                </div>
+            `;
+            window.currentProduct = product;
+        }
+
+        // =============================================================
+        // ၆။ CART LOGIC (LocalStorage + UI)
+        // =============================================================
+        let cart = JSON.parse(localStorage.getItem('premiumCart')) || [];
+
+        function saveCart() {
+            localStorage.setItem('premiumCart', JSON.stringify(cart));
+            updateCartUI();
+        }
+
+        function addToCart(product) {
+            const existing = cart.find(item => item.id === product.id);
+            if (existing) {
+                existing.quantity += 1;
+            } else {
+                cart.push({ ...product, quantity: 1 });
+            }
+            saveCart();
+            // သေးငယ်တဲ့ Feedback
+            alert(`${product.name} ကို စျေးဝယ်တောင်းထဲ ထည့်လိုက်ပါပြီ။`);
+        }
+
+        function removeFromCart(id) {
+            cart = cart.filter(item => item.id !== id);
+            saveCart();
+        }
+
+        function updateQuantity(id, delta) {
+            const item = cart.find(p => p.id === id);
+            if (item) {
+                item.quantity += delta;
+                if (item.quantity <= 0) {
+                    removeFromCart(id);
+                    return;
+                }
+                saveCart();
+            }
+        }
+
+        function updateCartUI() {
+            const container = document.getElementById('cartItems');
+            const summary = document.getElementById('cartSummary');
+            const totalEl = document.getElementById('cartTotal');
+            const badge = document.getElementById('cartBadge');
+
+            const totalItems = cart.reduce((sum, i) => sum + i.quantity, 0);
+            badge.textContent = totalItems;
+            badge.classList.toggle('hidden', totalItems === 0);
+
+            if (cart.length === 0) {
+                container.innerHTML = `<div class="text-muted" style="text-align:center; padding:30px 0;"><i class="fas fa-cart-plus" style="font-size:36px; opacity:0.3;"></i><p>စျေးဝယ်တောင်း ဗလာဖြစ်နေသည်</p></div>`;
+                summary.style.display = 'none';
+                return;
+            }
+
+            let html = '';
+            let total = 0;
+            cart.forEach(item => {
+                const subtotal = item.price * item.quantity;
+                total += subtotal;
+                html += `
+                    <div style="display:flex; gap:12px; padding:10px 0; border-bottom:1px solid var(--card-border); align-items:center;">
+                        <img src="${item.image}" style="width:60px; height:60px; object-fit:cover; border-radius:10px;" />
+                        <div style="flex:1;">
+                            <div style="font-weight:600; font-size:14px;">${item.name}</div>
+                            <div style="font-size:13px; color:var(--primary);">Ks ${item.price.toLocaleString()}</div>
+                            <div style="display:flex; align-items:center; gap:8px; margin-top:4px;">
+                                <button onclick="updateQuantity('${item.id}', -1)" style="width:28px; height:28px; border-radius:50%; border:1px solid var(--card-border); background:transparent; cursor:pointer;">-</button>
+                                <span>${item.quantity}</span>
+                                <button onclick="updateQuantity('${item.id}', 1)" style="width:28px; height:28px; border-radius:50%; border:1px solid var(--card-border); background:transparent; cursor:pointer;">+</button>
+                            </div>
+                        </div>
+                        <div style="font-weight:700;">Ks ${subtotal.toLocaleString()}</div>
+                        <button onclick="removeFromCart('${item.id}')" style="background:none; border:none; color:var(--primary); font-size:18px; cursor:pointer;"><i class="fas fa-trash"></i></button>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+            summary.style.display = 'block';
+            totalEl.textContent = `Ks ${total.toLocaleString()}`;
+        }
+
+        // Make functions globally accessible for inline onclick
+        window.addToCart = addToCart;
+        window.removeFromCart = removeFromCart;
+        window.updateQuantity = updateQuantity;
+
+        // =============================================================
+        // ၇။ CHECKOUT FLOW (Step by Step)
+        // =============================================================
+        // Step 1: Address form
+        checkoutForm1.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const name = document.getElementById('chkName').value.trim();
+            const phone = document.getElementById('chkPhone').value.trim();
+            const address = document.getElementById('chkAddress').value.trim();
+            if (name && phone && address) {
+                // Save to session or localStorage for later
+                sessionStorage.setItem('checkoutName', name);
+                sessionStorage.setItem('checkoutPhone', phone);
+                sessionStorage.setItem('checkoutAddress', address);
+                navigateTo('#checkout-payment');
+            } else {
+                alert('ကျေးဇူးပြုပြီး အချက်အလက်အားလုံးကို ဖြည့်သွင်းပါ။');
+            }
+        });
+
+        // Step 2: Payment (Wave Pay)
+        let countdownInterval = null;
+        let countdownSeconds = 3600; // 60 minutes
+
+        function startCountdown() {
+            if (countdownInterval) clearInterval(countdownInterval);
+            countdownSeconds = 3600;
+            updateCountdownDisplay();
+            countdownInterval = setInterval(() => {
+                countdownSeconds--;
+                updateCountdownDisplay();
+                if (countdownSeconds <= 0) {
+                    clearInterval(countdownInterval);
+                    alert('⏰ အချိန်ကုန်သွားပါပြီ။ အော်ဒါကို Auto-cancel လုပ်ပါမည်။');
+                    navigateTo('#home');
+                }
+            }, 1000);
+        }
+
+        function updateCountdownDisplay() {
+            const mins = Math.floor(countdownSeconds / 60);
+            const secs = countdownSeconds % 60;
+            if (countdownTimer) {
+                countdownTimer.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+            }
+        }
+
+                    // Copy Wave Pay
+            copyWaveBtn.addEventListener('click', function() {
+                const text = 'Thae Su Phuo Ko - 09 781 145 573';
+                navigator.clipboard.writeText(text).then(() => {
+                    alert('✅ အကောင့်နံပါတ်ကို ကူးယူပြီးပါပြီ။');
+                }).catch(() => {
+                    prompt('အောက်ပါအတိုင်း ကူးယူပါ:', text);
+                });
+            });
+
+            // Paid button -> go to screenshot step
+            paidBtn.addEventListener('click', function() {
+                if (countdownInterval) clearInterval(countdownInterval);
+                navigateTo('#checkout-screenshot');
+            });
+
+            // Start countdown when entering payment page
+            // We check in the navigation logic, but let's add a manual trigger
+            // We'll hook it in the route change.
+
+            // Step 3: Screenshot Upload
+            dropZone.addEventListener('click', () => screenshotInput.click());
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.style.borderColor = 'var(--primary)';
+            });
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.style.borderColor = 'var(--card-border)';
+            });
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.style.borderColor = 'var(--card-border)';
+                if (e.dataTransfer.files.length) {
+                    screenshotInput.files = e.dataTransfer.files;
+                    alert('📸 ဓာတ်ပုံ တင်ပြီးပါပြီ။');
+                }
+            });
+            screenshotInput.addEventListener('change', function() {
+                if (this.files.length) {
+                    alert('📸 ဓာတ်ပုံ တင်ပြီးပါပြီ။');
+                }
+            });
+
+            // Confirm Order
+            confirmOrderBtn.addEventListener('click', function() {
+                if (screenshotInput.files.length === 0) {
+                    alert('ကျေးဇူးပြုပြီး ငွေလွှဲပြီးကြောင်း Screenshot တင်ပေးပါ။');
+                    return;
+                }
+                // Firebase သို့ သိမ်းရန် (နောက်ပိုင်း)
+                alert('✅ အော်ဒါအောင်မြင်ပါသည်! ကျေးဇူးတင်ပါတယ်။');
+                // Confetti effect (basic)
+                for (let i = 0; i < 50; i++) {
+                    const el = document.createElement('div');
+                    el.className = 'confetti-piece';
+                    el.style.left = Math.random() * 100 + 'vw';
+                    el.style.top = '-10px';
+                    el.style.background = ['#e11b1b', '#ff6b00', '#facc15', '#22c55e', '#3b82f6'][Math.floor(Math.random() * 5)];
+                    el.style.animationDuration = (2 + Math.random() * 2) + 's';
+                    document.body.appendChild(el);
+                    setTimeout(() => el.remove(), 4000);
+                }
+                navigateTo('#success');
+                // Clear cart
+                cart = [];
+                saveCart();
+            });
+
+            // =============================================================
+            // ၈။ MESSAGING (UI + Firebase ready)
+            // =============================================================
+            // Local messages array (Firebase နှင့် နောက်ပိုင်းချိတ်ဆက်မည်)
+            let messages = [];
+
+            function renderMessages() {
+                if (!messageList) return;
+                if (messages.length === 0) {
+                    messageList.innerHTML = `<div class="text-muted" style="text-align:center; padding:30px 0;"><i class="fas fa-inbox" style="font-size:36px; opacity:0.3;"></i><p>စာများ မရှိသေးပါ</p></div>`;
+                    msgBadge.classList.add('hidden');
+                    return;
+                }
+                let html = '';
+                messages.forEach(msg => {
+                    html += `<div style="padding:10px 14px; background:var(--card-bg); border-radius:12px; margin-bottom:8px; border-left:4px solid ${msg.isUser ? 'var(--primary)' : 'var(--secondary)'};">${msg.text}<div style="font-size:10px; color:var(--text-light); margin-top:4px;">${msg.time}</div></div>`;
+                });
+                messageList.innerHTML = html;
+                msgBadge.textContent = messages.filter(m => !m.isUser).length;
+                msgBadge.classList.toggle('hidden', messages.filter(m => !m.isUser).length === 0);
+                // scroll to bottom
+                messageList.parentElement.scrollTop = messageList.parentElement.scrollHeight;
+            }
+
+            msgSendBtn.addEventListener('click', function() {
+                const text = msgInput.value.trim();
+                if (!text) return;
+                const now = new Date();
+                const timeStr = now.toLocaleTimeString();
+                messages.push({ text, time: timeStr, isUser: true });
+                msgInput.value = '';
+                renderMessages();
+
+                // Auto-reply (AI အတု)
+                setTimeout(() => {
+                    const replies = ['ကျေးဇူးပါ။ ကျွန်တော်တို့ ပြန်လည်ဆက်သွယ်ပါမယ်။', 'အော်ဒါအခြေအနေ စစ်ဆေးပေးပါ့မယ်။', 'ကျေးဇူးပြုပြီး စောင့်ဆိုင်းပေးပါ။', 'မင်္ဂလာပါ! ဘာကူညီရမလဲ?'];
+                    const reply = replies[Math.floor(Math.random() * replies.length)];
+                    messages.push({ text: reply, time: new Date().toLocaleTimeString(), isUser: false });
+                    renderMessages();
+                }, 1500);
+            });
+
+            // Enter key for messaging
+            msgInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') msgSendBtn.click();
+            });
+
+            // =============================================================
+            // ၉။ ROUTE CHANGE HOOKS (အထူးပြုလုပ်ရန်)
+            // =============================================================
+            // မူရင်း navigateTo ကိုထည့်သွင်းပြီးသားဖြစ်သော်လည်း
+            // Checkout page ဝင်တိုင်း countdown restart လုပ်ရန်
+            const originalNavigate = navigateTo;
+            navigateTo = function(hash) {
+                originalNavigate(hash);
+                const pageId = hash.replace('#', '').split('/')[0];
+                if (pageId === 'checkout-payment') {
+                    startCountdown();
+                }
+                if (pageId === 'cart') {
+                    updateCartUI();
+                }
+                if (pageId === 'messages') {
+                    renderMessages();
+                }
+                if (pageId === 'product') {
+                    // handled inside originalNavigate
+                }
+            };
+            // Override the global function
+            window.navigateTo = navigateTo;
+
+            // =============================================================
+            // ၁၀။ INITIALIZATION (စတင်ဖွင့်ခြင်း)
+            // =============================================================
+            // Cart UI ကို ပြန်လည်ပြသခြင်း
+            updateCartUI();
+
+            // နောက်ဆုံး hash ကိုဖတ်ပြီး သက်ဆိုင်ရာ Page ပြသခြင်း
+            window.addEventListener('DOMContentLoaded', function() {
+                const hash = window.location.hash || '#home';
+                navigateTo(hash);
+                renderMessages();
+                renderProductGrid(); // mock data ဖြင့် စတင်ပြသခြင်း
+
+                // Firebase Auth State (နောင်တွင်ထည့်ရန်)
+                console.log('🚀 Premium E-Commerce SPA loaded successfully!');
+            });
+
+            // =============================================================
+            // ၁၁။ FLOATING CHAT WIDGET TOGGLE
+            // =============================================================
+            chatFab.addEventListener('click', function() {
+                navigateTo('#messages');
+            });
+
+            // Logout
+            logoutBtn.addEventListener('click', function() {
+                if (confirm('အကောင့်မှ ထွက်မည် သေချာပါသလား?')) {
+                    localStorage.removeItem('premiumCart');
+                    cart = [];
+                    saveCart();
+                    alert('အကောင့်မှ ထွက်လိုက်ပါပြီ။');
+                    navigateTo('#home');
+                }
+            });
+
+            // =============================================================
+            // ၁၂။ SERVICE WORKER / OFFLINE (နောင်တွင်ထည့်ရန်)
+            // =============================================================
+            console.log('✅ index.html Part 2 ပြီးဆုံးပါပြီ။ (Lines 301-600)');
+
+        })(); // IIFE end
+    </script>
+
+    <!-- ============================================================ -->
+    <!-- ဤနေရာတွင် Part 2 ပြီးဆုံးပါသည်။ လိုင်း ၆၀၀ အတိအကျ        -->
+    <!-- Part 3 တွင် Firebase Realtime Sync, Admin Panel ချိတ်ဆက်မှု  -->
+    <!-- နှင့် ကျန်ရှိသော UI အပိုင်းများ ဆက်လက်ရေးသားပါမည်။        -->
+    <!-- ============================================================ -->
+                    
