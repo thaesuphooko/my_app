@@ -1,6 +1,6 @@
 // ============================================================
-// main.js - Shared Functions (အပိုင်း ၁/၄)
-// Config & Telegram
+// main.js - Shared Functions (အပိုင်း ၁/၅)
+// Store Config & Telegram
 // ============================================================
 
 // ========================================================================
@@ -85,9 +85,8 @@ async function logUserAction(action, details = "") {
     const msg = `👤 *${username}* (📱${deviceId}...)\n🔄 ${action}\n📝 ${details}\n⏰ ${time}`;
     await sendTelegramMessage(msg);
 }
-
 // ============================================================
-// main.js - Shared Functions (အပိုင်း ၂/၄)
+// main.js - Shared Functions (အပိုင်း ၂/၅)
 // Device FP & User System
 // ============================================================
 
@@ -175,9 +174,8 @@ function getConversation(user1, user2) {
     const msgs = getChatMessages();
     return msgs.filter(m => (m.from === user1 && m.to === user2) || (m.from === user2 && m.to === user1)).sort((a, b) => a.time - b.time);
 }
-
 // ============================================================
-// main.js - Shared Functions (အပိုင်း ၃/၄)
+// main.js - Shared Functions (အပိုင်း ၃/၅)
 // E-Commerce Core
 // ============================================================
 
@@ -375,10 +373,9 @@ async function syncGoogleSheet(csvUrl) {
         return 0;
     } catch (e) { console.error("Google Sheet sync error:", e); return 0; }
 }
-
 // ============================================================
-// main.js - Shared Functions (အပိုင်း ၄/၄)
-// Utilities, Grid, Tracking
+// main.js - Shared Functions (အပိုင်း ၄/၅)
+// Utilities & Product Card
 // ============================================================
 
 // ========================================================================
@@ -419,6 +416,10 @@ function getProductCardHTML(p) {
         </div>
     `;
 }
+// ============================================================
+// main.js - Shared Functions (အပိုင်း ၅/၅)
+// Grid & Tracking
+// ============================================================
 
 // ========================================================================
 // 12. GLOBAL GRID LAYOUT (Firebase)
