@@ -5,10 +5,10 @@
 // ============================================================
 // 1. GLOBAL STATE & CONFIG
 // ============================================================
-let syncMode = "merge"; // Default: merge
+let syncMode = "merge";
 
 // ============================================================
-// 2. CHECK ADMIN AUTH (Dynamic Route)
+// 2. CHECK ADMIN AUTH
 // ============================================================
 function checkAdminAuth() {
     const session = sessionStorage.getItem("admin_authenticated");
@@ -73,7 +73,6 @@ function renderAdminProducts() {
         tbody.appendChild(tr);
     }
 
-    // Pagination
     const pagDiv = document.getElementById("adminPagination");
     if (pagDiv) {
         pagDiv.innerHTML = "";
@@ -89,7 +88,6 @@ function renderAdminProducts() {
         }
     }
 
-    // Events
     document.querySelectorAll(".save-product-btn").forEach(btn => {
         btn.onclick = () => {
             const id = btn.dataset.id;
@@ -201,18 +199,15 @@ function loadAdminConfigs() {
     const amazonConfig = getAmazonApiConfig();
     const telegramConfig = getTelegramConfig();
 
-    // Admin Route
     document.getElementById("adminRouteInput").value = adminConfig.adminRoute || "#step";
     document.getElementById("adminPageInput").value = adminConfig.adminPage || "admin.html";
 
-    // Store
     document.getElementById("adminStoreName").value = storeConfig.storeName;
     document.getElementById("adminCurrency").value = storeConfig.currency || "MMK";
     document.getElementById("adminHeaderTitle").value = storeConfig.headerTitle;
     document.getElementById("adminChatTitle").value = storeConfig.chatTitle;
     document.getElementById("adminFooterText").value = storeConfig.footerText;
 
-    // Checkout
     document.getElementById("adminLabelName").value = adminConfig.checkoutLabels?.name || "အမည်";
     document.getElementById("adminLabelPhone").value = adminConfig.checkoutLabels?.phone || "ဖုန်းနံပါတ်";
     document.getElementById("adminLabelAddress").value = adminConfig.checkoutLabels?.address || "လိပ်စာ";
@@ -220,11 +215,9 @@ function loadAdminConfigs() {
     document.getElementById("adminBankName").value = adminConfig.checkoutInfo?.bank || "Wave Pay";
     document.getElementById("adminPaymentNumber").value = adminConfig.checkoutInfo?.paymentNumber || "09 781 145 573";
 
-    // Amazon
     document.getElementById("adminApiKey").value = amazonConfig.apiKey;
     document.getElementById("adminApiHost").value = amazonConfig.host;
 
-    // Telegram
     document.getElementById("telegramTokens").value = telegramConfig.botTokens.join("\n");
     document.getElementById("telegramChatId").value = telegramConfig.chatId;
 }
@@ -244,7 +237,7 @@ function showStatus(elementId, message, type = "info") {
 }
 
 // ============================================================
-// 9. API LIMITS DISPLAY (FIXED)
+// 9. API LIMITS DISPLAY
 // ============================================================
 function displayAPILimits() {
     const container = document.getElementById("apiLimitDisplay");
@@ -252,7 +245,6 @@ function displayAPILimits() {
 
     let html = `<div style="background:#f8f9fa;padding:0.8rem;border-radius:8px;margin-top:0.5rem;">`;
 
-    // RapidAPI (Show estimated)
     const rapidLimit = getRapidAPILimitFromStorage();
     if (rapidLimit) {
         const percent = Math.round((rapidLimit.remaining / rapidLimit.limit) * 100);
@@ -267,7 +259,6 @@ function displayAPILimits() {
         html += `<div><strong>🔄 RapidAPI:</strong> <span style="color:#888;">Sync first to see limits</span></div>`;
     }
 
-    // Firebase (Estimated)
     const productCount = allProducts.length;
     const firebaseReads = 50000;
     const firebaseWrites = 20000;
@@ -314,7 +305,7 @@ function saveRapidAPILimit(limit) {
 }
 
 // ============================================================
-// 10. AMAZON SYNC (Merge/Replace Option)
+// 10. AMAZON SYNC (FIXED)
 // ============================================================
 async function syncAmazonProducts(searchTerm, maxPages = 10) {
     if (!searchTerm || searchTerm.trim() === "") {
@@ -329,16 +320,6 @@ async function syncAmazonProducts(searchTerm, maxPages = 10) {
     for (let p = 1; p <= totalPages; p++) {
         try {
             const result = await fetchAmazonProducts(searchTerm, "US", p);
-            
-            // Try to get rate limit from headers (if available via fetch)
-            if (result && result.headers) {
-                const remaining = result.headers.get('x-ratelimit-requests-remaining');
-                const limit = result.headers.get('x-ratelimit-requests-limit');
-                if (remaining && limit) {
-                    rapidLimit = { remaining: parseInt(remaining), limit: parseInt(limit) };
-                    saveRapidAPILimit(rapidLimit);
-                }
-            }
             
             if (result && result.data && result.data.products && result.data.products.length > 0) {
                 const products = result.data.products;
@@ -368,13 +349,10 @@ async function syncAmazonProducts(searchTerm, maxPages = 10) {
     }
 
     if (allFetched.length > 0) {
-        // ✅ MERGE MODE (Keep old + Add new)
         if (syncMode === "merge") {
             allProducts = allProducts.concat(allFetched);
             showToast(`✅ ${allFetched.length} products merged! (Total: ${allProducts.length})`);
-        } 
-        // 🔄 REPLACE MODE (Delete old + Add new)
-        else {
+        } else {
             allProducts = allProducts.filter(p => p.source !== "Amazon");
             allProducts = allProducts.concat(allFetched);
             showToast(`✅ ${allFetched.length} products replaced! (Total: ${allProducts.length})`);
@@ -384,7 +362,6 @@ async function syncAmazonProducts(searchTerm, maxPages = 10) {
         logUserAction(`📦 Synced ${allFetched.length} Amazon products (${syncMode} mode)`, `Search: "${searchTerm}"`);
         renderAdminPanel();
         
-        // Update API limits display
         if (rapidLimit) {
             saveRapidAPILimit(rapidLimit);
         }
@@ -396,7 +373,44 @@ async function syncAmazonProducts(searchTerm, maxPages = 10) {
 }
 
 // ============================================================
-// 11. FIREBASE SYNC (with Auth & Merge)
+// 11. FETCH AMAZON PRODUCTS (FIXED)
+// ============================================================
+async function fetchAmazonProducts(query, country = "US", page = 1) {
+    const config = getAmazonApiConfig();
+    const url = `https://${config.host}/search?query=${encodeURIComponent(query)}&country=${country}&page=${page}`;
+    
+    console.log("🔍 Fetching:", url);
+    console.log("🔑 Using API Key:", config.apiKey.substring(0, 10) + "...");
+    
+    try {
+        const res = await fetch(url, {
+            headers: {
+                "x-rapidapi-key": config.apiKey,
+                "x-rapidapi-host": config.host,
+                "Content-Type": "application/json"
+            }
+        });
+        
+        console.log("📡 Response status:", res.status);
+        
+        if (!res.ok) {
+            const errorText = await res.text();
+            console.error("❌ API Error:", errorText);
+            throw new Error(`API returned ${res.status}: ${errorText.substring(0, 100)}`);
+        }
+        
+        const data = await res.json();
+        console.log("✅ Data received:", data.data?.products?.length || 0, "products");
+        return data;
+    } catch (e) {
+        console.error("❌ Amazon fetch error:", e);
+        alert(`❌ API Error: ${e.message}\n\nCheck:\n1. API Key is correct\n2. Internet connection\n3. RapidAPI subscription is active`);
+        return null;
+    }
+}
+
+// ============================================================
+// 12. FIREBASE SYNC
 // ============================================================
 async function syncProductsToFirestore() {
     if (!db) {
@@ -404,7 +418,6 @@ async function syncProductsToFirestore() {
         return;
     }
 
-    // Check Firebase Auth
     const user = firebase.auth().currentUser;
     if (!user) {
         const email = prompt("🔐 Admin Email (admin@shop.com):");
@@ -430,7 +443,6 @@ async function syncProductsToFirestore() {
         const batch = db.batch();
         const productsRef = db.collection('products');
 
-        // 🔥 Merge Mode: Keep existing, update if exists
         allProducts.forEach((product) => {
             const docId = String(product.id);
             const docRef = productsRef.doc(docId);
@@ -443,9 +455,9 @@ async function syncProductsToFirestore() {
         });
 
         await batch.commit();
-        alert(`✅ ${allProducts.length} products synced to Firebase! (Merge mode)`);
+        alert(`✅ ${allProducts.length} products synced to Firebase!`);
         console.log("✅ Firebase sync complete!");
-        logUserAction(`☁️ Products synced to Firebase (Merge)`, `${allProducts.length} products`);
+        logUserAction(`☁️ Products synced to Firebase`, `${allProducts.length} products`);
         displayAPILimits();
     } catch (error) {
         console.error("❌ Firebase sync error:", error);
@@ -454,7 +466,7 @@ async function syncProductsToFirestore() {
 }
 
 // ============================================================
-// 12. FIREBASE SYNC BUTTON
+// 13. FIREBASE SYNC BUTTON
 // ============================================================
 let firebaseButtonAdded = false;
 
@@ -478,22 +490,18 @@ function addFirebaseSyncButton() {
 }
 
 // ============================================================
-// 13. ADMIN EVENT LISTENERS
+// 14. ADMIN EVENT LISTENERS
 // ============================================================
 document.addEventListener("DOMContentLoaded", function() {
-    // Check authentication
     if (!checkAdminAuth()) {
         window.location.href = "/";
         return;
     }
 
-    // Render panel
     renderAdminPanel();
     setTimeout(addFirebaseSyncButton, 1000);
 
-    // ============================================================
-        // Admin Route Settings
-    // ============================================================
+    // Admin Route
     document.getElementById("saveAdminRouteBtn")?.addEventListener("click", function() {
         const newRoute = document.getElementById("adminRouteInput").value.trim();
         const newPage = document.getElementById("adminPageInput").value.trim();
@@ -517,14 +525,10 @@ document.addEventListener("DOMContentLoaded", function() {
         logUserAction(`🔗 Admin route changed`, `Route: ${route}, Page: ${newPage}`);
     });
 
-    // ============================================================
     // Admin Logout
-    // ============================================================
     document.getElementById("adminLogoutBtn")?.addEventListener("click", adminLogout);
 
-    // ============================================================
     // Store Config
-    // ============================================================
     document.getElementById("saveStoreConfigBtn")?.addEventListener("click", () => {
         const config = {
             storeName: document.getElementById("adminStoreName").value.trim() || "Shop",
@@ -538,9 +542,7 @@ document.addEventListener("DOMContentLoaded", function() {
         logUserAction(`🏪 Store branding updated`, ``);
     });
 
-    // ============================================================
     // Checkout Config
-    // ============================================================
     document.getElementById("adminSaveCheckoutBtn")?.addEventListener("click", () => {
         const config = getAdminConfig();
         config.checkoutLabels = {
@@ -558,9 +560,7 @@ document.addEventListener("DOMContentLoaded", function() {
         logUserAction(`📦 Checkout settings updated`, ``);
     });
 
-    // ============================================================
     // Admin Password
-    // ============================================================
     document.getElementById("adminChangePwdBtn")?.addEventListener("click", () => {
         const current = document.getElementById("adminCurrentPwd").value.trim();
         const newPwd = document.getElementById("adminNewPwd").value.trim();
@@ -583,9 +583,7 @@ document.addEventListener("DOMContentLoaded", function() {
         document.getElementById("adminNewPwd").value = "";
     });
 
-    // ============================================================
     // Telegram Config
-    // ============================================================
     document.getElementById("saveTelegramBtn")?.addEventListener("click", () => {
         const tokensText = document.getElementById("telegramTokens").value;
         const chatId = document.getElementById("telegramChatId").value.trim();
@@ -610,9 +608,7 @@ document.addEventListener("DOMContentLoaded", function() {
         showStatus("telegramStatus", "🔄 Rate limit reset.", "info");
     });
 
-    // ============================================================
     // Broadcast
-    // ============================================================
     document.getElementById("broadcastBtn")?.addEventListener("click", async () => {
         const recipient = document.getElementById("broadcastRecipient").value.trim();
         const subject = document.getElementById("broadcastSubject").value.trim();
@@ -640,9 +636,7 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 
-    // ============================================================
     // Admin Chat Reply
-    // ============================================================
     document.getElementById("adminChatReplyBtn")?.addEventListener("click", () => {
         const to = document.getElementById("adminChatReplyTo").value.trim();
         const msg = document.getElementById("adminChatReplyMsg").value.trim();
@@ -666,9 +660,7 @@ document.addEventListener("DOMContentLoaded", function() {
         logUserAction(`💬 Admin replied to ${to}`, msg.substring(0, 50));
     });
 
-    // ============================================================
     // Amazon API - Save Config
-    // ============================================================
     document.getElementById("saveApiConfigBtn")?.addEventListener("click", () => {
         const key = document.getElementById("adminApiKey").value.trim();
         const host = document.getElementById("adminApiHost").value.trim();
@@ -677,10 +669,7 @@ document.addEventListener("DOMContentLoaded", function() {
         logUserAction(`🔑 Amazon API config updated`, ``);
     });
 
-    // ============================================================
     // Amazon API - Sync
-    // ============================================================
-    // Load saved sync mode
     const savedMode = localStorage.getItem("shop_sync_mode") || "merge";
     syncMode = savedMode;
     document.querySelectorAll('input[name="syncMode"]').forEach(el => {
@@ -693,28 +682,31 @@ document.addEventListener("DOMContentLoaded", function() {
 
     document.getElementById("syncAmazonBtn")?.addEventListener("click", async () => {
         const term = document.getElementById("adminSearchTerm").value.trim();
-        const maxPages = parseInt(document.getElementById("adminMaxPages").value) || 10;
+        const maxPages = parseInt(document.getElementById("adminMaxPages").value) || 20;
 
         if (!term) {
             showStatus("syncStatus", "❌ Please enter a search term", "error");
             return;
         }
 
-        showStatus("syncStatus", `⏳ Fetching ${term} from Amazon (${maxPages} pages)...`, "info");
+        showStatus("syncStatus", `⏳ Fetching "${term}" from Amazon (${maxPages} pages)...`, "info");
 
-        const count = await syncAmazonProducts(term, maxPages);
+        try {
+            const count = await syncAmazonProducts(term, maxPages);
 
-        if (count > 0) {
-            showStatus("syncStatus", `✅ Synced ${count} products from Amazon!`, "success");
-            renderAdminPanel();
-        } else {
-            showStatus("syncStatus", "❌ No products found. Check search term or API key.", "error");
+            if (count > 0) {
+                showStatus("syncStatus", `✅ Synced ${count} products from Amazon!`, "success");
+                renderAdminPanel();
+            } else {
+                showStatus("syncStatus", "❌ No products found. Check:\n1. Search term\n2. API Key\n3. Internet connection", "error");
+            }
+        } catch (error) {
+            console.error("Sync error:", error);
+            showStatus("syncStatus", `❌ Error: ${error.message}`, "error");
         }
     });
 
-    // ============================================================
     // Google Sheets Sync
-    // ============================================================
     document.getElementById("syncSheetBtn")?.addEventListener("click", async () => {
         const url = document.getElementById("adminSheetUrl").value.trim();
 
@@ -735,9 +727,7 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 
-    // ============================================================
     // Bulk Discount
-    // ============================================================
     document.getElementById("applyBulkDiscountBtn")?.addEventListener("click", () => {
         const amount = parseInt(document.getElementById("bulkDiscountAmount").value);
 
@@ -757,9 +747,7 @@ document.addEventListener("DOMContentLoaded", function() {
         renderAdminPanel();
     });
 
-    // ============================================================
     // User Search
-    // ============================================================
     document.getElementById("adminUserSearchBtn")?.addEventListener("click", () => {
         const search = document.getElementById("adminUserSearch").value;
         renderAdminUsers(search);
@@ -772,9 +760,7 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 
-    // ============================================================
     // CSV
-    // ============================================================
     let csvFile = null;
     document.getElementById("csvFile")?.addEventListener("change", (e) => {
         csvFile = e.target.files[0];
@@ -880,24 +866,18 @@ document.addEventListener("DOMContentLoaded", function() {
         renderAdminPanel();
     });
 
-    // ============================================================
-    // Refresh Limits Button
-    // ============================================================
+    // Refresh Limits
     document.getElementById("refreshLimitsBtn")?.addEventListener("click", function() {
         displayAPILimits();
         showToast("🔄 Limits refreshed!");
     });
 
-    // ============================================================
-    // Exit / Back to Store
-    // ============================================================
+    // Exit
     document.getElementById("exitAdminBtn")?.addEventListener("click", () => {
         window.location.href = "/";
     });
 
-    // ============================================================
     // Firebase Auth State
-    // ============================================================
     firebase.auth().onAuthStateChanged((user) => {
         if (user) {
             console.log("✅ Firebase Auth: Logged in as", user.email);
