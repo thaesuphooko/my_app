@@ -5,15 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title id="pageTitle">Shop.com.mm</title>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- ===== PAPA PARSE (CSV) ===== -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js">
+    </script>
 
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <!-- ===== LEAFET.JS (Map) ===== -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+    </script>
+
+    <!-- ===== FIREBASE SDK ===== -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js">
+    </script>
 
     <script>
+        // ============================================================
+        // FIREBASE CONFIG
+        // ============================================================
         const firebaseConfig = {
             apiKey: "AIzaSyDSu2XksfUZ6mAfktUpBqFtNxrgj96h1l4",
             authDomain: "app-my-caee3.firebaseapp.com",
@@ -23,6 +35,7 @@
             appId: "1:169669907659:web:8fba75e7aed449e3ffb74e",
             measurementId: "G-RTM9J8L6R1"
         };
+
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         console.log("✅ Firebase connected!");
@@ -35,12 +48,8 @@
         .reviews-section textarea { width: 100%; padding: 0.3rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.85rem; }
         .chat-msg .sender { font-weight: 700; color: #e11b1b; }
         .chat-msg .time { font-size: 0.6rem; color: #888; }
-        .profile-btn-group { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.8rem; }
-        .profile-btn-group .btn { width: 100%; justify-content: center; }
-        /* Hide the user badge in header since we have bottom nav */
-        .user-badge { display: none; }
-        /* Cart icon in header - keep but also bottom nav */
-        .cart-icon { display: none; }
+        .page-container { display: none; padding-bottom: 80px; }
+        .page-container.active { display: block; }
     </style>
 </head>
 <body>
@@ -49,71 +58,105 @@
     <header class="header" id="mainHeader">
         <div class="logo" id="logoHome">🛒 <span id="storeNameDisplay">Shop</span>.com.mm</div>
         <div class="header-actions">
-            <div class="search-bar">
+            <div class="search-bar" id="searchBarContainer">
                 <input type="text" id="searchInput" placeholder="ရှာမည်..." />
                 <button id="searchBtn">🔍</button>
             </div>
+            <span class="cart-icon" id="cartIcon">🛍️ (<span id="cartCount">0</span>)</span>
             <span class="user-badge" id="userBadge">👤 Login</span>
         </div>
     </header>
 
-    <!-- ===== CATEGORIES ===== -->
+    <!-- ===== CATEGORIES BAR ===== -->
     <div class="categories-bar" id="categoriesBar">
-        <a data-cat="all">အားလုံး</a>
-        <a data-cat="Amazon">🛒 Amazon</a>
-        <a data-cat="GoogleSheet">📊 Google Sheet</a>
-        <a data-cat="TikTok">🎵 TikTok</a>
-        <a data-cat="YouTube">▶️ YouTube</a>
+        <!-- Categories ကို user.js က render လုပ်မယ် -->
     </div>
 
     <!-- ========================================================== -->
-    <!-- ===== PAGE CONTAINERS ===== -->
+    <!-- PAGE CONTAINERS                                           -->
     <!-- ========================================================== -->
-    <div id="app">
-        <!-- ===== HOME PAGE (Default) ===== -->
-        <div id="page-home" class="page-container active">
-            <div id="homeContent">
-                <!-- Products will be rendered here by user.js -->
-            </div>
-        </div>
 
-        <!-- ===== PROFILE PAGE ===== -->
-        <div id="page-profile" class="page-container">
-            <div class="page-header">
-                <button class="back-btn" onclick="navigateTo('home')">←</button>
-                <h2>👤 My Profile</h2>
-            </div>
-            <div id="profileContent">
-                <!-- Profile content rendered by user.js -->
-            </div>
-        </div>
+    <!-- ===== HOME PAGE ===== -->
+    <div id="page-home" class="page-container active">
+        <div id="app"></div>
+    </div>
 
-        <!-- ===== ORDERS PAGE ===== -->
-        <div id="page-orders" class="page-container">
-            <div class="page-header">
-                <button class="back-btn" onclick="navigateTo('profile')">←</button>
-                <h2>📦 My Orders</h2>
-            </div>
-            <input type="text" class="order-search" id="orderSearch" placeholder="🔍 Search orders..." />
-            <div id="ordersContent">
-                <!-- Orders rendered by user.js -->
-            </div>
-        </div>
-
-        <!-- ===== TRACKING PAGE ===== -->
-        <div id="page-tracking" class="page-container">
-            <div class="page-header">
-                <button class="back-btn" onclick="navigateTo('orders')">←</button>
-                <h2>🚚 Order Tracking</h2>
-            </div>
-            <div id="trackingContent">
-                <!-- Tracking content rendered by user.js -->
+    <!-- ===== MESSAGES PAGE ===== -->
+    <div id="page-messages" class="page-container">
+        <div class="container" style="padding-top:1rem;">
+            <h2>💬 Messages</h2>
+            <div id="messagesContent">
+                <div style="text-align:center;padding:2rem;color:#888;">
+                    <p>No messages yet</p>
+                    <p style="font-size:0.85rem;">Start chatting with sellers or support</p>
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- ===== CART PAGE ===== -->
+    <div id="page-cart" class="page-container">
+        <div class="container" style="padding-top:1rem;">
+            <h2>🛒 My Cart</h2>
+            <div id="cartPageContent"></div>
+        </div>
+    </div>
+
+    <!-- ===== PROFILE PAGE ===== -->
+    <div id="page-profile" class="page-container">
+        <div class="container" style="padding-top:1rem;">
+            <h2 id="profilePageTitle">👤 My Profile</h2>
+            <div id="profilePageContent"></div>
+        </div>
+    </div>
+
+    <!-- ===== ORDERS PAGE ===== -->
+    <div id="page-orders" class="page-container">
+        <div class="container" style="padding-top:1rem;">
+            <h2>📦 My Orders</h2>
+            <div id="ordersPageContent"></div>
+        </div>
+    </div>
+
+    <!-- ===== TRACKING PAGE ===== -->
+    <div id="page-tracking" class="page-container">
+        <div class="container" style="padding-top:1rem;">
+            <h2>🚚 Order Tracking</h2>
+            <div id="trackingPageContent"></div>
+        </div>
+    </div>
+
+    <!-- ===== CHECKOUT PAGE ===== -->
+    <div id="page-checkout" class="page-container">
+        <div class="container" style="padding-top:1rem;">
+            <h2>📦 Checkout</h2>
+            <div id="checkoutPageContent"></div>
+        </div>
+    </div>
+
     <!-- ========================================================== -->
-    <!-- ===== MODALS ===== -->
+    <!-- BOTTOM NAVIGATION                                         -->
+    <!-- ========================================================== -->
+    <nav class="bottom-nav" id="bottomNav">
+        <button class="nav-item active" data-page="home">
+            <span class="nav-icon">🏠</span>
+            <span class="nav-label">Home</span>
+        </button>
+        <button class="nav-item" data-page="messages">
+            <span class="nav-icon">💬</span>
+            <span class="nav-label">Messages</span>
+        </button>
+        <button class="nav-item" data-page="cart">
+            <span class="nav-icon">🛒</span>
+            <span class="nav-label">Cart</span>
+        </button>
+        <button class="nav-item" data-page="profile">
+            <span class="nav-icon">👤</span>
+            <span class="nav-label">Profile</span>
+        </button>
+    </nav>
+    <!-- ========================================================== -->
+    <!-- MODALS                                                    -->
     <!-- ========================================================== -->
 
     <!-- ===== CART MODAL ===== -->
@@ -158,7 +201,39 @@
         </div>
     </div>
 
-    <!-- ===== USER MODAL (Legacy Profile) ===== -->
+    <!-- ===== TRACKING MODAL (Simple) ===== -->
+    <div id="trackingModal" class="modal">
+        <div class="modal-content">
+            <h2>📦 Order Tracking</h2>
+            <div id="trackingInfo">
+                <p><strong>Order ID:</strong> <span id="trackingOrderId"></span></p>
+                <p><strong>Status:</strong> <span id="trackingStatus"></span></p>
+                <p><strong>Estimated Delivery:</strong> <span id="trackingDelivery"></span></p>
+                <div style="margin:0.8rem 0; padding:0.6rem; background:#f8f9fa; border-radius:12px;">
+                    <p>✅ ကျေးဇူးတင်ပါသည်။</p>
+                    <p>🚚 Tracking: <span id="trackingNumber">TH-2026-</span></p>
+                </div>
+                <button class="btn btn-outline" id="closeTrackingBtn">ပိတ်ရန်</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== ORDER TRACKING DETAIL MODAL (with Map) ===== -->
+    <div id="orderTrackingModal" class="modal">
+        <div class="modal-content" style="max-width: 700px;">
+            <h2>📦 သင့်အော်ဒါ အခြေအနေ</h2>
+            <div id="orderTrackingContent">
+                <div style="text-align:center;padding:1rem;color:#888;">Loading tracking...</div>
+            </div>
+            <div id="orderTrackingMapContainer" class="tracking-map-container"></div>
+            <div style="display:flex;gap:0.5rem;justify-content:flex-end;margin-top:1rem;flex-wrap:wrap;">
+                <button class="btn btn-outline" id="closeTrackingDetailBtn">ပိတ်ရန်</button>
+                <button class="btn btn-success" id="refreshTrackingBtn">🔄 Refresh</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== USER MODAL ===== -->
     <div id="userModal" class="modal">
         <div class="modal-content">
             <h2 id="userModalTitle">👤 Profile</h2>
@@ -226,30 +301,19 @@
         </div>
     </div>
 
-    <!-- ===== BOTTOM NAVIGATION ===== -->
-    <nav class="bottom-nav" id="bottomNav">
-        <button class="nav-item active" data-page="home" onclick="navigateTo('home')">
-            <span class="icon">🏠</span>
-            <span class="label">Home</span>
-        </button>
-        <button class="nav-item" data-page="messages" onclick="openChatWidget()">
-            <span class="icon">💬</span>
-            <span class="label">Messages</span>
-            <span class="badge" id="navChatBadge" style="display:none;">0</span>
-        </button>
-        <button class="nav-item" data-page="cart" onclick="openCartModal()">
-            <span class="icon">🛒</span>
-            <span class="label">Cart</span>
-            <span class="badge" id="navCartBadge">0</span>
-        </button>
-        <button class="nav-item" data-page="profile" onclick="navigateTo('profile')">
-            <span class="icon">👤</span>
-            <span class="label">Profile</span>
-        </button>
-    </nav>
+    <!-- ========================================================== -->
+    <!-- SCRIPTS                                                    -->
+    <!-- ========================================================== -->
+    <script>
+        const adminConfig = JSON.parse(localStorage.getItem("shop_admin_config") || '{"adminRoute":"#step","adminPage":"admin.html"}');
+        const adminRoute = adminConfig.adminRoute || "#step";
+        const adminPage = adminConfig.adminPage || "admin.html";
+        if (window.location.hash === adminRoute || window.location.pathname.endsWith("/" + adminPage)) {
+            window.location.href = adminPage;
+        }
+    </script>
 
     <script src="main.js"></script>
     <script src="user.js"></script>
-
 </body>
 </html>
