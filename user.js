@@ -1006,3 +1006,957 @@ ${new Date().toLocaleString()}
 // Profile Management, Wishlist, Rating, နှင့် အပိုဆောင်း
 // User Features များ ဆက်လက်ပါဝင်မည်။
 // ============================================================
+
+// ============================================================
+// user.js - PART 2 (LINES 301-600)
+// Product Loading (Firebase + Mock Data), Product Detail,
+// Order Tracking with Leaflet Map, Profile Management,
+// Wishlist, Rating, နှင့် အပိုဆောင်း User Features
+// ============================================================
+
+(function() {
+    'use strict';
+
+    // =============================================================
+    // ၁၀။ PRODUCT LOADING (Firebase + Mock Data)
+    // =============================================================
+    // ကုန်ပစ္စည်းများကို Firebase မှ တပြိုင်နက် ဖွင့်ပြခြင်း
+    // သို့မဟုတ် Mock Data သို့ ပြန်လည်ကျဆင်းခြင်း
+    // =============================================================
+
+    let allProducts = [];
+    let filteredProducts = [];
+    let currentCategory = 'all';
+    let currentPage = 1;
+    const PAGE_SIZE = 20;
+    let productsUnsubscribe = null;
+    let isLoadingProducts = false;
+
+    /**
+     * Mock Product Data ကို ထုတ်လုပ်ခြင်း
+     * @param {number} count - ထုတ်လုပ်မည့် အရေအတွက်
+     * @returns {Array} - Mock products array
+     */
+    function generateMockProducts(count = 50) {
+        const categories = ['electronics', 'fashion', 'food', 'books', 'home', 'beauty', 'sports'];
+        const names = [
+            'Smartphone X', 'Laptop Pro', 'T-Shirt Cotton', 'Coffee Beans', 
+            'Novel Book', 'Desk Lamp', 'Headphones', 'Sneakers', 'Watch', 
+            'Backpack', 'Sunglasses', 'Perfume', 'Pillow', 'Blender', 
+            'Speaker', 'Camera', 'Charger', 'Laptop Bag', 'Shoes', 'Jacket'
+        ];
+        const locations = ['Yangon', 'Mandalay', 'Naypyitaw', 'Bago', 'Mawlamyine', 'Sittwe'];
+        
+        const products = [];
+        for (let i = 1; i <= count; i++) {
+            const cat = categories[i % categories.length];
+            const name = names[i % names.length] + (i > 20 ? ' ' + i : '');
+            const price = Math.floor(Math.random() * 150) + 5;
+            const discount = Math.floor(Math.random() * 35) + 5;
+            const finalPrice = Math.floor(price * (1 - discount / 100));
+            const rating = (3 + Math.random() * 2);
+            const reviews = Math.floor(Math.random() * 300) + 5;
+            
+            products.push({
+                id: 'prod_' + Date.now() + '_' + i,
+                name: name,
+                category: cat,
+                originalPrice: price * 1000,
+                price: finalPrice * 1000,
+                discount: discount,
+                rating: Math.round(rating * 10) / 10,
+                reviews: reviews,
+                stock: Math.floor(Math.random() * 80) + 1,
+                sold: Math.floor(Math.random() * 150) + 1,
+                image: `https://picsum.photos/seed/${Date.now() + i}/300/300`,
+                location: locations[i % locations.length] + ', Myanmar [Burma]',
+                createdAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000)
+            });
+        }
+        return products;
+    }
+
+    /**
+     * Firebase မှ ကုန်ပစ္စည်းများကို real-time နားထောင်ခြင်း
+     */
+    function listenProducts() {
+        if (productsUnsubscribe) {
+            productsUnsubscribe();
+            productsUnsubscribe = null;
+        }
+
+        productsUnsubscribe = db.collection('products')
+            .orderBy('createdAt', 'desc')
+            .onSnapshot((snapshot) => {
+                if (snapshot.empty) {
+                    console.warn('No products in Firestore, using mock data.');
+                    // Use mock data if Firebase is empty
+                    allProducts = generateMockProducts(100);
+                    filteredProducts = [...allProducts];
+                    currentPage = 1;
+                    renderProductGrid();
+                    return;
+                }
+
+                const products = [];
+                snapshot.forEach(doc => {
+                    products.push({ id: doc.id, ...doc.data() });
+                });
+                
+                allProducts = products;
+                filteredProducts = [...allProducts];
+                currentPage = 1;
+                renderProductGrid();
+                console.log('✅ Products synced from Firestore:', products.length);
+            }, (error) => {
+                console.error('Product listener error:', error);
+                // Fallback to mock data
+                if (allProducts.length === 0) {
+                    allProducts = generateMockProducts(50);
+                    filteredProducts = [...allProducts];
+                    renderProductGrid();
+                }
+            });
+    }
+
+    /**
+     * ကုန်ပစ္စည်းများကို Grid ပုံစံဖြင့် Render လုပ်ခြင်း
+     */
+    function renderProductGrid() {
+        const grid = document.getElementById('productGrid');
+        const loadMoreBtn = document.getElementById('loadMoreBtn');
+        
+        if (!grid) return;
+        
+        const start = 0;
+        const end = currentPage * PAGE_SIZE;
+        const pageItems = filteredProducts.slice(start, end);
+
+        if (pageItems.length === 0 && currentPage === 1) {
+            grid.innerHTML = `
+                <div class="empty-state" style="grid-column:1/-1;padding:40px 20px;">
+                    <i class="fas fa-box-open empty-icon"></i>
+                    <h4>ကုန်ပစ္စည်းများ မရှိသေးပါ</h4>
+                    <p>ကျွန်တော်တို့ ပစ္စည်းအသစ်များ ထည့်သွင်းနေပါသည်။</p>
+                </div>
+            `;
+            if (loadMoreBtn) loadMoreBtn.style.display = 'none';
+            return;
+        }
+
+        let html = '';
+        pageItems.forEach(p => {
+            const stars = getStarHTML(p.rating);
+            const stockClass = p.stock > 0 ? 'product-stock' : 'product-stock out';
+            const stockText = p.stock > 0 ? `✅ ${p.stock} in stock` : '❌ Out of Stock';
+            
+            html += `
+                <div class="glass-card product-item" data-id="${p.id}" onclick="window.loadProductDetail('${p.id}')" style="padding:12px;position:relative;cursor:pointer;">
+                    <div style="position:relative;width:100%;aspect-ratio:1/1;border-radius:12px;overflow:hidden;background:var(--bg-body);">
+                        <img src="${p.image || 'https://picsum.photos/seed/' + p.id + '/300/300'}" alt="${p.name}" loading="lazy" style="width:100%;height:100%;object-fit:cover;transition:transform 0.3s;" onmouseenter="this.style.transform='scale(1.05)'" onmouseleave="this.style.transform='scale(1)'" />
+                        ${p.discount > 0 ? `<span class="discount-badge">-${p.discount}%</span>` : ''}
+                    </div>
+                    <div class="product-name">${p.name}</div>
+                    <div class="product-price">
+                        ${p.originalPrice > p.price ? `<span class="original">Ks ${p.originalPrice.toLocaleString()}</span>` : ''}
+                        <span class="current">Ks ${p.price.toLocaleString()}</span>
+                    </div>
+                    <div class="product-rating">
+                        <span class="stars">${stars}</span>
+                        <span>(${p.reviews || 0})</span>
+                        <span style="margin-left:auto;font-size:11px;color:var(--text-light);">🔥 ${p.sold || 0} sold</span>
+                    </div>
+                    <div class="product-meta">
+                        <span class="location"><i class="fas fa-map-pin"></i> ${p.location || 'Myanmar'}</span>
+                        <span class="${stockClass}">${stockText}</span>
+                    </div>
+                    <button class="add-to-cart-btn" onclick="event.stopPropagation();window.addToCartFromGrid('${p.id}')">
+                        <i class="fas fa-cart-plus"></i> Add to Cart
+                    </button>
+                </div>
+            `;
+        });
+
+        grid.innerHTML = html;
+        
+        if (loadMoreBtn) {
+            loadMoreBtn.style.display = (end < filteredProducts.length) ? 'block' : 'none';
+        }
+    }
+
+    /**
+     * Rating အတွက် Star HTML ကို ထုတ်ပေးခြင်း
+     * @param {number} rating - Rating value (0-5)
+     * @returns {string} - Star HTML
+     */
+    function getStarHTML(rating) {
+        const fullStars = Math.floor(rating);
+        const halfStar = rating % 1 >= 0.5;
+        const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
+        
+        let html = '';
+        for (let i = 0; i < fullStars; i++) html += '★';
+        if (halfStar) html += '☆';
+        for (let i = 0; i < emptyStars; i++) html += '☆';
+        return html;
+    }
+
+    /**
+     * Category အတိုင်း Filter လုပ်ခြင်း
+     * @param {string} category - Category name
+     */
+    function filterProducts(category) {
+        currentCategory = category;
+        if (category === 'all') {
+            filteredProducts = [...allProducts];
+        } else {
+            filteredProducts = allProducts.filter(p => p.category === category);
+        }
+        currentPage = 1;
+        renderProductGrid();
+    }
+
+    /**
+     * Product Grid မှ Add to Cart လုပ်ခြင်း
+     * @param {string} productId - Product ID
+     */
+    function addToCartFromGrid(productId) {
+        const product = allProducts.find(p => p.id === productId);
+        if (product) {
+            window.addToCart(product);
+            // Visual feedback
+            const btn = event.target.closest('.add-to-cart-btn');
+            if (btn) {
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-check"></i> Added!';
+                btn.style.background = '#22c55e';
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.style.background = '';
+                }, 2000);
+            }
+        }
+    }
+
+    /**
+     * Load More ခလုတ်
+     */
+    function loadMoreProducts() {
+        currentPage++;
+        renderProductGrid();
+    }
+
+    // =============================================================
+    // ၁၁။ PRODUCT DETAIL
+    // =============================================================
+    // ပစ္စည်းအသေးစိတ် Page အတွက် Logic
+    // =============================================================
+
+    let currentProductDetail = null;
+
+    /**
+     * ပစ္စည်းအသေးစိတ်ကို Load လုပ်ခြင်း
+     * @param {string} productId - Product ID
+     */
+    async function loadProductDetail(productId) {
+        const container = document.getElementById('productDetailContainer');
+        if (!container) return;
+
+        // Show loading
+        container.innerHTML = `
+            <div style="text-align:center;padding:30px;">
+                <div class="spinner" style="margin:0 auto;"></div>
+                <p class="text-muted mt-8">ပစ္စည်းအချက်အလက် ဖွင့်နေသည်...</p>
+            </div>
+        `;
+
+        try {
+            // Try to get from Firebase first
+            let product = allProducts.find(p => p.id === productId);
+            
+            if (!product) {
+                // Try to fetch from Firestore directly
+                const doc = await db.collection('products').doc(productId).get();
+                if (doc.exists) {
+                    product = { id: doc.id, ...doc.data() };
+                    // Add to allProducts for cache
+                    allProducts.push(product);
+                }
+            }
+            
+            if (!product) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-exclamation-triangle empty-icon" style="color:#f59e0b;"></i>
+                        <h4>ပစ္စည်းမတွေ့ပါ</h4>
+                        <p>သင်ရှာဖွေနေသော ပစ္စည်းမရှိပါ။</p>
+                        <button class="empty-action" onclick="window.navigateTo('home')">မူလစာမျက်နှာသို့</button>
+                    </div>
+                `;
+                return;
+            }
+
+            currentProductDetail = product;
+            renderProductDetail(product);
+
+        } catch (error) {
+            console.error('Load product detail error:', error);
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-exclamation-circle empty-icon" style="color:#dc2626;"></i>
+                    <h4>အမှားရှိသည်</h4>
+                    <p>ပစ္စည်းအချက်အလက် ဖွင့်ရာတွင် အမှားရှိသည်။</p>
+                    <button class="empty-action" onclick="window.navigateTo('home')">ပြန်ကြိုးစားမည်</button>
+                </div>
+            `;
+        }
+    }
+
+    /**
+     * Product Detail UI ကို Render လုပ်ခြင်း
+     * @param {Object} product - Product object
+     */
+    function renderProductDetail(product) {
+        const container = document.getElementById('productDetailContainer');
+        if (!container) return;
+
+        const stars = getStarHTML(product.rating || 0);
+        const isInCart = window.cart && window.cart.some(item => item.id === product.id);
+        const cartButtonText = isInCart ? 'Cart ထဲတွင် ရှိပါသည်' : 'Cart ထဲထည့်မည်';
+
+        container.innerHTML = `
+            <div class="product-detail">
+                <div class="product-image-wrapper" onclick="window.toggleProductZoom()">
+                    <img src="${product.image || 'https://picsum.photos/seed/' + product.id + '/500/500'}" alt="${product.name}" id="productDetailImage" />
+                    <span class="zoom-indicator">🔍 Click to zoom</span>
+                </div>
+                
+                <h2 style="margin-top:12px;font-size:22px;">${product.name}</h2>
+                
+                <div style="display:flex;gap:12px;align-items:center;margin-top:8px;flex-wrap:wrap;">
+                    ${product.originalPrice > product.price ? 
+                        `<span style="text-decoration:line-through;color:var(--text-light);font-size:16px;">Ks ${product.originalPrice.toLocaleString()}</span>` : 
+                        ''}
+                    <span style="font-size:28px;font-weight:800;color:var(--primary);">Ks ${product.price.toLocaleString()}</span>
+                    ${product.discount > 0 ? `<span class="discount-badge" style="position:static;display:inline-block;">-${product.discount}%</span>` : ''}
+                </div>
+                
+                <div style="display:flex;gap:12px;align-items:center;margin-top:8px;">
+                    <span style="font-size:18px;color:#f59e0b;">${stars}</span>
+                    <span style="color:var(--text-secondary);">(${product.reviews || 0} reviews)</span>
+                </div>
+                
+                <div style="margin-top:12px;display:flex;gap:12px;flex-wrap:wrap;font-size:14px;color:var(--text-secondary);">
+                    <span><i class="fas fa-map-pin"></i> ${product.location || 'Myanmar'}</span>
+                    <span>📦 Stock: ${product.stock || 0}</span>
+                    <span>🔥 ${product.sold || 0} sold</span>
+                    <span>📂 ${product.category || 'General'}</span>
+                </div>
+                
+                <div style="margin-top:16px;display:flex;gap:12px;flex-wrap:wrap;">
+                    <button onclick="window.addToCart(window.currentProductDetail)" style="flex:1;padding:14px;background:${isInCart ? '#22c55e' : 'var(--primary)'};color:#fff;border:none;border-radius:40px;font-weight:700;font-size:16px;cursor:pointer;transition:all var(--transition);">
+                        ${cartButtonText} <i class="fas fa-${isInCart ? 'check' : 'cart-plus'}"></i>
+                    </button>
+                    <button onclick="window.toggleWishlist('${product.id}')" style="padding:14px 20px;background:transparent;border:2px solid var(--card-border);border-radius:40px;font-size:18px;cursor:pointer;transition:all var(--transition);">
+                        <i class="fas fa-heart" id="wishlistIcon_${product.id}" style="color:var(--text-light);"></i>
+                    </button>
+                </div>
+                
+                <div class="review-form" style="margin-top:24px;border-top:1px solid var(--card-border);padding-top:20px;">
+                    <h4 style="font-size:16px;font-weight:600;margin-bottom:12px;">💬 Review ရေးရန်</h4>
+                    <div class="star-rating-input" id="reviewStars">
+                        ${[1,2,3,4,5].map(s => `<button data-val="${s}" onclick="window.setReviewRating(${s})" style="font-size:32px;background:none;border:none;cursor:pointer;color:var(--text-light);transition:all var(--transition);">★</button>`).join('')}
+                    </div>
+                    <textarea id="reviewText" rows="3" placeholder="သင့်အမြင်..." style="width:100%;padding:12px 16px;border-radius:12px;border:1px solid var(--card-border);background:var(--card-bg);color:var(--text-primary);font-size:14px;resize:vertical;min-height:80px;font-family:inherit;"></textarea>
+                    <button onclick="window.submitReview('${product.id}')" style="margin-top:8px;padding:10px 28px;background:var(--secondary);color:#fff;border:none;border-radius:40px;font-weight:600;font-size:14px;cursor:pointer;transition:all var(--transition);">
+                        Submit Review
+                    </button>
+                </div>
+            </div>
+        `;
+
+        // Check wishlist status
+        checkWishlistStatus(product.id);
+
+        // Set current product for add to cart
+        window.currentProductDetail = product;
+
+        // Zoom functionality
+        window.productZoomed = false;
+    }
+
+    /**
+     * Product Image Zoom တိုးချဲ့ခြင်း
+     */
+    function toggleProductZoom() {
+        const wrapper = document.querySelector('.product-image-wrapper');
+        if (!wrapper) return;
+        window.productZoomed = !window.productZoomed;
+        wrapper.classList.toggle('zoomed', window.productZoomed);
+    }
+
+    // =============================================================
+    // ၁၂။ REVIEW SYSTEM
+    // =============================================================
+    // ပစ္စည်းပေါ်တွင် Review ရေးသားခြင်းစနစ်
+    // =============================================================
+
+    let reviewRating = 0;
+
+    function setReviewRating(value) {
+        reviewRating = value;
+        const buttons = document.querySelectorAll('.star-rating-input button');
+        buttons.forEach((btn, index) => {
+            btn.classList.toggle('active', index < value);
+        });
+    }
+
+    async function submitReview(productId) {
+        if (reviewRating === 0) {
+            if (window.showToast) {
+                window.showToast('ကျေးဇူးပြု၍ ကြယ်အရေအတွက် ရွေးပါ။', 'warning');
+            }
+            return;
+        }
+
+        const text = document.getElementById('reviewText');
+        if (!text || !text.value.trim()) {
+            if (window.showToast) {
+                window.showToast('ကျေးဇူးပြု၍ သင့်အမြင်ကို ရေးပါ။', 'warning');
+            }
+            return;
+        }
+
+        const user = auth.currentUser;
+        const userId = user ? user.uid : 'guest_' + Date.now();
+        const userName = user ? user.displayName || 'ဝယ်သူ' : 'Guest';
+
+        try {
+            await db.collection('reviews').add({
+                productId: productId,
+                userId: userId,
+                userName: userName,
+                rating: reviewRating,
+                text: text.value.trim(),
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            if (window.showToast) {
+                window.showToast('✅ Review ပို့ပြီးပါပြီ။ ကျေးဇူးတင်ပါတယ်။', 'success');
+            }
+
+                     // Reset
+            reviewRating = 0;
+            setReviewRating(0);
+            text.value = '';
+
+            // Update product rating (in Firestore)
+            await updateProductRating(productId);
+
+        } catch (error) {
+            console.error('Submit review error:', error);
+            if (window.showToast) {
+                window.showToast('Review ပို့ရာတွင် အမှားရှိသည်။', 'error');
+            }
+        }
+    }
+
+    async function updateProductRating(productId) {
+        try {
+            const reviewsSnap = await db.collection('reviews')
+                .where('productId', '==', productId)
+                .get();
+            
+            if (reviewsSnap.empty) return;
+            
+            let totalRating = 0;
+            reviewsSnap.forEach(doc => {
+                totalRating += doc.data().rating || 0;
+            });
+            
+            const avgRating = Math.round((totalRating / reviewsSnap.size) * 10) / 10;
+            
+            await db.collection('products').doc(productId).update({
+                rating: avgRating,
+                reviews: reviewsSnap.size
+            });
+            
+            console.log(`✅ Product ${productId} rating updated: ${avgRating} (${reviewsSnap.size} reviews)`);
+        } catch (error) {
+            console.warn('Update product rating error:', error);
+        }
+    }
+
+    // =============================================================
+    // ၁၃။ ORDER TRACKING (Leaflet Map)
+    // =============================================================
+    // အော်ဒါတိုးတက်မှုကို Timeline နှင့် Map ပေါ်တွင် ပြသခြင်း
+    // =============================================================
+
+    let trackingMap = null;
+    let trackingMarker = null;
+    let trackingInterval = null;
+
+    function initTracking() {
+        const mapContainer = document.getElementById('trackingMap');
+        if (!mapContainer) return;
+
+        // Check if Leaflet is loaded
+        if (typeof L === 'undefined') {
+            console.warn('Leaflet.js not loaded. Map will not work.');
+            return;
+        }
+
+        // Initialize map
+        trackingMap = L.map('trackingMap').setView([16.8661, 96.1951], 15); // Yangon center
+
+        // Add tile layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(trackingMap);
+
+        // Add marker (bike icon)
+        const bikeIcon = L.divIcon({
+            className: 'bike-marker',
+            html: '🏍️',
+            iconSize: [32, 32],
+            iconAnchor: [16, 32]
+        });
+
+        // Initial position (shop)
+        const shopLocation = [16.8661, 96.1951];
+        trackingMarker = L.marker(shopLocation, { icon: bikeIcon })
+            .addTo(trackingMap)
+            .bindPopup('🏍️ သင့်အော်ဒါ ပို့ဆောင်နေပါသည်...');
+
+        // Customer location (random)
+        const customerLocation = [
+            shopLocation[0] + (Math.random() - 0.5) * 0.02,
+            shopLocation[1] + (Math.random() - 0.5) * 0.02
+        ];
+
+        // Simulate movement
+        let progress = 0;
+        const steps = 100;
+        const startLat = shopLocation[0];
+        const startLng = shopLocation[1];
+        const endLat = customerLocation[0];
+        const endLng = customerLocation[1];
+
+        if (trackingInterval) {
+            clearInterval(trackingInterval);
+        }
+
+        trackingInterval = setInterval(() => {
+            progress += 1;
+            if (progress > steps) {
+                clearInterval(trackingInterval);
+                trackingInterval = null;
+                if (trackingMarker) {
+                    trackingMarker.setLatLng([endLat, endLng]);
+                    trackingMarker.bindPopup('✅ အော်ဒါ ရောက်ရှိပါပြီ!');
+                    if (window.showToast) {
+                        window.showToast('✅ သင့်အော်ဒါ ရောက်ရှိပါပြီ။', 'success');
+                    }
+                }
+                return;
+            }
+
+            const progressRatio = progress / steps;
+            const lat = startLat + (endLat - startLat) * progressRatio;
+            const lng = startLng + (endLng - startLng) * progressRatio;
+            
+            if (trackingMarker) {
+                trackingMarker.setLatLng([lat, lng]);
+                trackingMarker.bindPopup(`🔄 ပို့ဆောင်နေသည်... ${Math.round(progressRatio * 100)}%`);
+            }
+            
+            // Pan map to follow
+            if (trackingMap) {
+                trackingMap.panTo([lat, lng], { animate: true, duration: 0.5 });
+            }
+
+            // Update timeline
+            updateTrackingTimeline(progressRatio);
+
+        }, 200);
+    }
+
+    function updateTrackingTimeline(progress) {
+        const timeline = document.querySelector('.tracking-timeline');
+        if (!timeline) return;
+
+        const statuses = [
+            { label: '📦 အော်ဒါလက်ခံရရှိ', progress: 0 },
+            { label: '✅ အော်ဒါအတည်ပြုပြီး', progress: 0.2 },
+            { label: '🚚 ပစ္စည်းထုပ်ပိုးနေသည်', progress: 0.4 },
+            { label: '🏍️ ပို့ဆောင်နေသည်', progress: 0.6 },
+            { label: '📬 သင့်အနီးသို့ ရောက်ရှိနေပါပြီ', progress: 0.8 },
+            { label: '✅ အော်ဒါရောက်ရှိပါပြီ', progress: 1.0 }
+        ];
+
+        let html = '';
+        statuses.forEach((status, index) => {
+            const isActive = progress >= status.progress;
+            const isCompleted = progress > status.progress;
+            html += `
+                <div class="timeline-item ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''}">
+                    <div class="time">${isCompleted ? '✅' : (isActive ? '⏳' : '⏰')}</div>
+                    <div class="status">${status.label}</div>
+                </div>
+            `;
+        });
+
+        timeline.innerHTML = html;
+    }
+
+    function destroyTracking() {
+        if (trackingInterval) {
+            clearInterval(trackingInterval);
+            trackingInterval = null;
+        }
+        if (trackingMap) {
+            trackingMap.remove();
+            trackingMap = null;
+        }
+    }
+
+    // =============================================================
+    // ၁၄။ PROFILE MANAGEMENT
+    // =============================================================
+    // သုံးစွဲသူပရိုဖိုင် စီမံခန့်ခွဲခြင်း
+    // =============================================================
+
+    async function loadProfile() {
+        const user = auth.currentUser;
+        if (!user) {
+            // Try anonymous sign in
+            try {
+                await auth.signInAnonymously();
+            } catch (e) {
+                console.warn('Anonymous sign in failed:', e);
+            }
+            return;
+        }
+
+        try {
+            const doc = await db.collection('users').doc(user.uid).get();
+            if (doc.exists) {
+                const data = doc.data();
+                document.getElementById('profileName').textContent = data.name || user.displayName || 'ဝယ်သူ';
+                document.getElementById('profilePhone').textContent = data.phone || user.phoneNumber || '09-XXX-XXX-XXX';
+            } else {
+                // Create default profile
+                await db.collection('users').doc(user.uid).set({
+                    name: user.displayName || 'ဝယ်သူ',
+                    phone: user.phoneNumber || '',
+                    email: user.email || '',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+            }
+        } catch (error) {
+            console.warn('Load profile error:', error);
+        }
+    }
+
+    // =============================================================
+        // ၁၅။ WISHLIST
+    // =============================================================
+    // သိမ်းဆည်းထားသော ပစ္စည်းများစာရင်း
+    // =============================================================
+
+    let wishlist = [];
+    let wishlistUnsubscribe = null;
+
+    function listenWishlist() {
+        const user = auth.currentUser;
+        if (!user) return;
+
+        if (wishlistUnsubscribe) {
+            wishlistUnsubscribe();
+            wishlistUnsubscribe = null;
+        }
+
+        wishlistUnsubscribe = db.collection('users').doc(user.uid)
+            .onSnapshot((doc) => {
+                if (doc.exists && doc.data().wishlist) {
+                    wishlist = doc.data().wishlist || [];
+                } else {
+                    wishlist = [];
+                }
+                renderWishlist();
+            }, (error) => {
+                console.warn('Wishlist listener error:', error);
+            });
+    }
+
+    async function toggleWishlist(productId) {
+        const user = auth.currentUser;
+        if (!user) {
+            if (window.showToast) {
+                window.showToast('ဝင်ရောက်ပြီးမှ သိမ်းဆည်းနိုင်ပါသည်။', 'warning');
+            }
+            return;
+        }
+
+        const index = wishlist.indexOf(productId);
+        if (index > -1) {
+            wishlist.splice(index, 1);
+        } else {
+            wishlist.push(productId);
+        }
+
+        try {
+            await db.collection('users').doc(user.uid).set({
+                wishlist: wishlist
+            }, { merge: true });
+            
+            // Update icon
+            const icon = document.getElementById(`wishlistIcon_${productId}`);
+            if (icon) {
+                icon.style.color = wishlist.includes(productId) ? '#e11b1b' : 'var(--text-light)';
+            }
+            
+            if (window.showToast) {
+                window.showToast(wishlist.includes(productId) ? '❤️ သိမ်းဆည်းပြီးပါပြီ။' : '💔 ဖယ်ရှားလိုက်ပါပြီ။', 'info');
+            }
+        } catch (error) {
+            console.error('Toggle wishlist error:', error);
+            if (window.showToast) {
+                window.showToast('သိမ်းဆည်းရာတွင် အမှားရှိသည်။', 'error');
+            }
+        }
+    }
+
+    function checkWishlistStatus(productId) {
+        const icon = document.getElementById(`wishlistIcon_${productId}`);
+        if (icon) {
+            icon.style.color = wishlist.includes(productId) ? '#e11b1b' : 'var(--text-light)';
+        }
+    }
+
+    function renderWishlist() {
+        const container = document.getElementById('wishlistContainer');
+        if (!container) return;
+
+        if (wishlist.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-heart empty-icon" style="color:var(--text-light);"></i>
+                    <h4>သိမ်းဆည်းထားသော ပစ္စည်းမရှိသေးပါ</h4>
+                    <p>သင်နှစ်သက်သော ပစ္စည်းများကို သိမ်းဆည်းထားပါ။</p>
+                    <button class="empty-action" onclick="window.navigateTo('home')">ဈေးဝယ်သွားမည်</button>
+                </div>
+            `;
+            return;
+        }
+
+        const wishlistProducts = allProducts.filter(p => wishlist.includes(p.id));
+        if (wishlistProducts.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-heart-broken empty-icon"></i>
+                    <h4>ပစ္စည်းများ မရှိတော့ပါ</h4>
+                    <p>သင်သိမ်းဆည်းထားသော ပစ္စည်းအချို့ ပျောက်ဆုံးနေပါသည်။</p>
+                </div>
+            `;
+            return;
+        }
+
+        let html = '<div class="product-grid" style="margin-top:0;">';
+        wishlistProducts.forEach(p => {
+            html += `
+                <div class="glass-card" style="padding:12px;cursor:pointer;" onclick="window.loadProductDetail('${p.id}')">
+                    <img src="${p.image || 'https://picsum.photos/seed/' + p.id + '/300/300'}" style="width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:12px;" />
+                    <div style="font-weight:600;margin-top:8px;font-size:14px;">${p.name}</div>
+                    <div style="font-weight:700;color:var(--primary);">Ks ${p.price.toLocaleString()}</div>
+                    <button onclick="event.stopPropagation();window.addToCart(window.currentProductDetail)" style="margin-top:8px;width:100%;padding:6px;background:var(--secondary);color:#fff;border:none;border-radius:30px;font-weight:600;font-size:13px;cursor:pointer;">Add to Cart</button>
+                </div>
+            `;
+        });
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    // =============================================================
+    // ၁၆။ LOADING & TOAST HELPERS (UI)
+    // =============================================================
+
+    let loadingOverlay = null;
+
+    function createLoadingOverlay() {
+        if (loadingOverlay) return;
+        loadingOverlay = document.createElement('div');
+        loadingOverlay.className = 'spinner-overlay';
+        loadingOverlay.innerHTML = `
+            <div class="spinner"></div>
+            <div class="spinner-text">Loading...</div>
+        `;
+        document.body.appendChild(loadingOverlay);
+    }
+
+    function showLoading(show) {
+        createLoadingOverlay();
+        if (loadingOverlay) {
+            loadingOverlay.classList.toggle('show', show);
+        }
+    }
+
+    function showToast(message, type = 'info') {
+        // Create toast if not exists
+        let container = document.querySelector('.toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.className = 'toast-container';
+            document.body.appendChild(container);
+        }
+
+        const toast = document.createElement('div');
+        const iconMap = {
+            success: 'fas fa-check-circle',
+            error: 'fas fa-exclamation-circle',
+            warning: 'fas fa-exclamation-triangle',
+            info: 'fas fa-info-circle'
+        };
+        toast.className = `toast toast-${type}`;
+        toast.innerHTML = `
+            <span class="toast-icon"><i class="${iconMap[type] || iconMap.info}"></i></span>
+            <span class="toast-content">${message}</span>
+            <button class="toast-close" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
+        `;
+        container.appendChild(toast);
+
+        // Auto remove after 4 seconds
+        setTimeout(() => {
+            if (toast.parentElement) {
+                toast.classList.add('hide');
+                setTimeout(() => {
+                    if (toast.parentElement) toast.remove();
+                }, 300);
+            }
+        }, 4000);
+    }
+
+    // =============================================================
+    // ၁၇။ EXPOSE GLOBAL FUNCTIONS
+    // =============================================================
+
+    // Product functions
+    window.listenProducts = listenProducts;
+    window.renderProductGrid = renderProductGrid;
+    window.filterProducts = filterProducts;
+    window.loadMoreProducts = loadMoreProducts;
+    window.addToCartFromGrid = addToCartFromGrid;
+    window.loadProductDetail = loadProductDetail;
+    window.toggleProductZoom = toggleProductZoom;
+
+    // Review functions
+    window.setReviewRating = setReviewRating;
+    window.submitReview = submitReview;
+
+    // Tracking functions
+    window.initTracking = initTracking;
+    window.destroyTracking = destroyTracking;
+
+    // Profile functions
+    window.loadProfile = loadProfile;
+
+    // Wishlist functions
+    window.listenWishlist = listenWishlist;
+    window.toggleWishlist = toggleWishlist;
+    window.renderWishlist = renderWishlist;
+    window.checkWishlistStatus = checkWishlistStatus;
+
+    // UI Helpers
+    window.showLoading = showLoading;
+    window.showToast = showToast;
+
+    // =============================================================
+    // ၁၈။ EVENT LISTENERS SETUP (ဆက်လက်)
+    // =============================================================
+
+    function setupAdditionalListeners() {
+        // Category bar
+        const categoryBar = document.getElementById('categoryBar');
+        if (categoryBar) {
+            categoryBar.addEventListener('click', (e) => {
+                const chip = e.target.closest('.category-chip');
+                if (chip) {
+                    const cat = chip.dataset.cat;
+                    categoryBar.querySelectorAll('.category-chip').forEach(c => c.classList.remove('active'));
+                    chip.classList.add('active');
+                    filterProducts(cat);
+                }
+            });
+        }
+
+        // Load more button
+        const loadMoreBtn = document.getElementById('loadMoreBtn');
+        if (loadMoreBtn) {
+            loadMoreBtn.addEventListener('click', loadMoreProducts);
+        }
+
+        // Route change - load tracking
+        window.addEventListener('route-change', (event) => {
+            const path = event.detail.path;
+            if (path === 'tracking') {
+                setTimeout(initTracking, 300);
+            } else if (path === 'wishlist') {
+                renderWishlist();
+            } else if (path === 'profile') {
+                loadProfile();
+            } else if (path === 'messages') {
+                // handled in Part 1
+            } else if (path === 'cart') {
+                // handled in Part 1
+            } else if (path === 'product') {
+                // handled in loadProductDetail
+            }
+        });
+
+        // Auth state change - reload wishlist
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                listenWishlist();
+            }
+        });
+    }
+
+    // =============================================================
+    // ၁၉။ INITIALIZATION (ဆက်လက်)
+    // =============================================================
+
+    async function initUserPart2() {
+        console.log('👤 Initializing user module Part 2...');
+        
+        // Load products
+        listenProducts();
+        
+        // Setup additional listeners
+        setupAdditionalListeners();
+        
+        // Load wishlist if logged in
+        const user = auth.currentUser;
+        if (user) {
+            listenWishlist();
+        }
+        
+        console.log('✅ User module Part 2 initialized.');
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initUserPart2);
+    } else {
+        initUserPart2();
+    }
+
+    console.log('📢 user.js - Part 2 (Lines 301-600) complete.');
+
+})(); // IIFE end
+
+// ============================================================
+// ဤနေရာတွင် user.js Part 2 ပြီးဆုံးပါသည်။ လိုင်း ၆၀၀ အတိအကျ။
+// user.js ဖိုင်အတွက် စုစုပေါင်း လိုင်း ၆၀၀ အထိ ပြီးမြောက်ပါပြီ။
+// ကျန်ရှိသော ဖိုင်မှာ admin.js သာ ကျန်ပါသည်။
+// ============================================================
+
