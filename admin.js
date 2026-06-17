@@ -1,5 +1,5 @@
 // ============================================================
-// admin.js - Admin JavaScript (အပိုင်း ၁/၅)
+// admin.js - Admin JavaScript (အပိုင်း ၁/၇)
 // Core, Auth, Config
 // ============================================================
 
@@ -36,6 +36,10 @@ function renderAdminPanel() {
     displayAPILimits();
     loadTrackingSettings();
     loadGridLayoutForAdmin();
+    loadCategoriesForAdmin();
+    loadSearchConfigForAdmin();
+    loadFileList();
+    loadUIConfigForAdmin();
     document.getElementById("productCount").innerText = allProducts.length;
     document.getElementById("adminStatus").innerHTML = "🔐 Secured - " + new Date().toLocaleString();
 }
@@ -122,12 +126,192 @@ function getRapidAPILimitFromStorage() {
 function saveRapidAPILimit(limit) { if (limit) { localStorage.setItem("rapidapi_limit", JSON.stringify(limit)); } }
 
 // ============================================================
-// admin.js - Admin JavaScript (အပိုင်း ၂/၅)
-// Grid & Tracking Settings
+// admin.js - Admin JavaScript (အပိုင်း ၂/၇)
+// Categories & Search Settings
 // ============================================================
 
 // ============================================================
-// 6. GRID LAYOUT CONTROLLER (Admin)
+// 6. CATEGORIES MANAGEMENT (Admin)
+// ============================================================
+function loadCategoriesForAdmin() {
+    const categories = getCategories();
+    const container = document.getElementById('categoriesList');
+    if (!container) return;
+    if (categories.length === 0) {
+        container.innerHTML =
+            '<div style="color:#888;font-size:0.85rem;text-align:center;padding:0.5rem;">No categories</div>';
+        return;
+    }
+    container.innerHTML = categories.map((cat, index) => `
+        <div class="file-item">
+            <span class="file-name">${cat.emoji} ${cat.label}</span>
+            <div class="file-actions">
+                <input type="text" id="editCatLabel_${cat.id}" value="${cat.label}" style="width:80px;padding:0.1rem;border:1px solid #ddd;border-radius:4px;font-size:0.8rem;" />
+                <input type="text" id="editCatEmoji_${cat.id}" value="${cat.emoji}" style="width:40px;padding:0.1rem;border:1px solid #ddd;border-radius:4px;font-size:0.8rem;" />
+                <button onclick="updateCategory('${cat.id}')" style="background:none;border:none;color:#007bff;cursor:pointer;">💾</button>
+                ${cat.id !== 'all' ? `<button onclick="deleteCategory('${cat.id}')" style="background:none;border:none;color:#dc3545;cursor:pointer;">🗑️</button>` : ''}
+                <button onclick="moveCategory('${cat.id}', 'up')" style="background:none;border:none;color:#888;cursor:pointer;">↑</button>
+                <button onclick="moveCategory('${cat.id}', 'down')" style="background:none;border:none;color:#888;cursor:pointer;">↓</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function updateCategory(id) {
+    const label = document.getElementById(`editCatLabel_${id}`)?.value.trim();
+    const emoji = document.getElementById(`editCatEmoji_${id}`)?.value.trim();
+    if (!label) { showStatus('categoryStatus', '❌ Label cannot be empty', 'error'); return; }
+    const categories = getCategories();
+    const idx = categories.findIndex(c => c.id === id);
+    if (idx !== -1) {
+        categories[idx].label = label;
+        categories[idx].emoji = emoji || '📋';
+        saveCategories(categories);
+        loadCategoriesForAdmin();
+        renderCategories();
+        showStatus('categoryStatus', '✅ Category updated!', 'success');
+        logUserAction(`🏷️ Category updated`, `${label}`);
+    }
+}
+
+function deleteCategory(id) {
+    if (id === 'all') { showStatus('categoryStatus', '❌ Cannot delete default category', 'error'); return; }
+    if (!confirm(`Delete category?`)) return;
+    let categories = getCategories();
+    categories = categories.filter(c => c.id !== id);
+    saveCategories(categories);
+    loadCategoriesForAdmin();
+    renderCategories();
+    showStatus('categoryStatus', '🗑️ Category deleted!', 'info');
+    logUserAction(`🏷️ Category deleted`, `${id}`);
+}
+
+function moveCategory(id, direction) {
+    const categories = getCategories();
+    const idx = categories.findIndex(c => c.id === id);
+    if (idx === -1) return;
+    if (direction === 'up' && idx > 0) {
+        [categories[idx], categories[idx - 1]] = [categories[idx - 1], categories[idx]];
+    } else if (direction === 'down' && idx < categories.length - 1) {
+        [categories[idx], categories[idx + 1]] = [categories[idx + 1], categories[idx]];
+    } else { return; }
+    saveCategories(categories);
+    loadCategoriesForAdmin();
+    renderCategories();
+}
+
+document.getElementById('addCategoryBtn')?.addEventListener('click', function() {
+    const name = document.getElementById('newCategoryName').value.trim();
+    const emoji = document.getElementById('newCategoryEmoji').value.trim() || '📋';
+    if (!name) { showStatus('categoryStatus', '❌ Category name required', 'error'); return; }
+    const categories = getCategories();
+    const id = name.toLowerCase().replace(/\s+/g, '-');
+    if (categories.some(c => c.id === id)) {
+        showStatus('categoryStatus', '❌ Category already exists', 'error');
+        return;
+    }
+    categories.push({ id, label: name, emoji });
+    saveCategories(categories);
+    loadCategoriesForAdmin();
+    renderCategories();
+    document.getElementById('newCategoryName').value = '';
+    document.getElementById('newCategoryEmoji').value = '';
+    showStatus('categoryStatus', '✅ Category added!', 'success');
+    logUserAction(`🏷️ Category added`, `${name}`);
+});
+
+// ============================================================
+// 7. SEARCH BAR SETTINGS (Admin)
+// ============================================================
+function loadSearchConfigForAdmin() {
+    const config = getSearchConfig();
+    document.getElementById('searchBarPosition').value = config.position || 'header';
+    document.getElementById('searchBarWidth').value = config.width || 140;
+}
+
+document.getElementById('saveSearchSettingsBtn')?.addEventListener('click', function() {
+    const position = document.getElementById('searchBarPosition').value;
+    const width = parseInt(document.getElementById('searchBarWidth').value) || 140;
+    const config = { position, width };
+    saveSearchConfig(config);
+    applySearchSettings();
+    showStatus('searchStatus', '✅ Search settings saved!', 'success');
+    logUserAction(`🔍 Search settings updated`, `Position: ${position}, Width: ${width}`);
+});
+
+// ============================================================
+// admin.js - Admin JavaScript (အပိုင်း ၃/၇)
+// UI Config & Grid Settings
+// ============================================================
+
+// ============================================================
+// 8. UI CONFIG (Firebase) - Admin
+// ============================================================
+function loadUIConfigForAdmin() {
+    const config = getUIConfig();
+    document.getElementById('uiPrimaryColor').value = config.primaryColor || '#e11b1b';
+    document.getElementById('uiPrimaryColorText').value = config.primaryColor || '#e11b1b';
+    document.getElementById('uiSecondaryColor').value = config.secondaryColor || '#ff6b00';
+    document.getElementById('uiSecondaryColorText').value = config.secondaryColor || '#ff6b00';
+    document.getElementById('uiBgColor').value = config.bgColor || '#f5f5f5';
+    document.getElementById('uiBgColorText').value = config.bgColor || '#f5f5f5';
+    document.getElementById('uiCardBgColor').value = config.cardBgColor || '#ffffff';
+    document.getElementById('uiCardBgColorText').value = config.cardBgColor || '#ffffff';
+    document.getElementById('uiGridMobile').value = config.gridMobile || 2;
+    document.getElementById('uiGridTablet').value = config.gridTablet || 3;
+    document.getElementById('uiGridDesktop').value = config.gridDesktop || 4;
+    document.getElementById('uiCardSpacing').value = config.cardSpacing || 10;
+    const flashToggle = document.getElementById('uiFlashSaleToggle');
+    if (flashToggle) {
+        flashToggle.classList.toggle('active', config.showFlashSale !== false);
+    }
+    const catToggle = document.getElementById('uiCategoriesToggle');
+    if (catToggle) {
+        catToggle.classList.toggle('active', config.showCategories !== false);
+    }
+}
+
+document.getElementById('saveUIConfigBtn')?.addEventListener('click', function() {
+    const config = {
+        primaryColor: document.getElementById('uiPrimaryColor').value || '#e11b1b',
+        secondaryColor: document.getElementById('uiSecondaryColor').value || '#ff6b00',
+        bgColor: document.getElementById('uiBgColor').value || '#f5f5f5',
+        cardBgColor: document.getElementById('uiCardBgColor').value || '#ffffff',
+        gridMobile: parseInt(document.getElementById('uiGridMobile').value) || 2,
+        gridTablet: parseInt(document.getElementById('uiGridTablet').value) || 3,
+        gridDesktop: parseInt(document.getElementById('uiGridDesktop').value) || 4,
+        cardSpacing: parseInt(document.getElementById('uiCardSpacing').value) || 10,
+        showFlashSale: document.getElementById('uiFlashSaleToggle').classList.contains('active'),
+        showCategories: document.getElementById('uiCategoriesToggle').classList.contains('active')
+    };
+    saveUIConfig(config);
+    showStatus('uiStatus', '✅ UI Config saved to Firebase!', 'success');
+    logUserAction(`🎨 UI Config updated`, JSON.stringify(config));
+});
+
+// Toggle switches
+document.querySelectorAll('.toggle-switch').forEach(toggle => {
+    toggle.addEventListener('click', function() {
+        this.classList.toggle('active');
+    });
+});
+
+// Color picker sync
+document.querySelectorAll('.color-picker-group input[type="color"]').forEach(picker => {
+    picker.addEventListener('input', function() {
+        const textInput = this.parentElement.querySelector('input[type="text"]');
+        if (textInput) { textInput.value = this.value; }
+    });
+});
+document.querySelectorAll('.color-picker-group input[type="text"]').forEach(text => {
+    text.addEventListener('input', function() {
+        const picker = this.parentElement.querySelector('input[type="color"]');
+        if (picker) { picker.value = this.value; }
+    });
+});
+
+// ============================================================
+// 9. GRID LAYOUT CONTROLLER (Admin)
 // ============================================================
 async function loadGridLayoutForAdmin() {
     const cols = await loadGridLayout();
@@ -143,7 +327,12 @@ async function loadGridLayoutForAdmin() {
 }
 
 // ============================================================
-// 7. TRACKING SETTINGS
+// admin.js - Admin JavaScript (အပိုင်း ၄/၇)
+// Tracking & Products with Select All
+// ============================================================
+
+// ============================================================
+// 10. TRACKING SETTINGS
 // ============================================================
 function loadTrackingSettings() {
     const config = getTrackingConfig();
@@ -166,12 +355,7 @@ function saveTrackingSettings() {
 }
 
 // ============================================================
-// admin.js - Admin JavaScript (အပိုင်း ၃/၅)
-// Products with Select All & Delete
-// ============================================================
-
-// ============================================================
-// 1. SELECT ALL / DELETE SELECTED
+// 11. SELECT ALL / DELETE SELECTED
 // ============================================================
 let selectedProductIds = new Set();
 
@@ -179,8 +363,7 @@ function toggleSelectAll(checked) {
     document.querySelectorAll('.product-checkbox').forEach(cb => {
         cb.checked = checked;
         const id = cb.dataset.id;
-        if (checked) { selectedProductIds.add(id); }
-        else { selectedProductIds.delete(id); }
+        if (checked) { selectedProductIds.add(id); } else { selectedProductIds.delete(id); }
     });
     updateSelectedCount();
 }
@@ -205,7 +388,9 @@ function deleteSelectedProducts() {
     const idsToDelete = new Set(selectedProductIds);
     allProducts = allProducts.filter(p => !idsToDelete.has(String(p.id)));
     cart = cart.filter(i => !idsToDelete.has(String(i.id)));
-    saveProducts(); saveCart(); updateCartBadge();
+    saveProducts();
+    saveCart();
+    updateCartBadge();
     selectedProductIds.clear();
     logUserAction(`🗑️ Bulk deleted ${idsToDelete.size} products`, ``);
     showToast(`✅ ${idsToDelete.size} products deleted`);
@@ -214,7 +399,7 @@ function deleteSelectedProducts() {
 }
 
 // ============================================================
-// 2. RENDER PRODUCTS WITH CHECKBOX
+// 12. RENDER PRODUCTS WITH CHECKBOX
 // ============================================================
 function renderAdminProductsWithCheckbox() {
     const total = allProducts.length;
@@ -227,8 +412,12 @@ function renderAdminProductsWithCheckbox() {
     if (!tbody) return;
     tbody.innerHTML = "";
     for (let p of pageProds) {
-        const imgHtml = p.image ? `<img src="${p.image}" style="width:40px;height:40px;object-fit:contain;border-radius:4px;background:#fafafa;" onerror="this.style.display='none';this.nextElementSibling.style.display='block';" />` : `<span style="font-size:1.5rem;">${p.emoji || '📦'}</span>`;
-        const statusHtml = p.stock_total && p.stock_total > 0 ? `<span style="color:#28a745;font-weight:600;font-size:0.75rem;">✅ In Stock</span>` : `<span style="color:#dc3545;font-weight:600;font-size:0.75rem;">❌ Out of Stock</span>`;
+        const imgHtml = p.image ?
+            `<img src="${p.image}" style="width:40px;height:40px;object-fit:contain;border-radius:4px;background:#fafafa;" onerror="this.style.display='none';this.nextElementSibling.style.display='block';" />` :
+            `<span style="font-size:1.5rem;">${p.emoji || '📦'}</span>`;
+        const statusHtml = p.stock_total && p.stock_total > 0 ?
+            `<span style="color:#28a745;font-weight:600;font-size:0.75rem;">✅ In Stock</span>` :
+            `<span style="color:#dc3545;font-weight:600;font-size:0.75rem;">❌ Out of Stock</span>`;
         const isChecked = selectedProductIds.has(String(p.id)) ? 'checked' : '';
         const tr = document.createElement("tr");
         tr.innerHTML = `
@@ -249,8 +438,7 @@ function renderAdminProductsWithCheckbox() {
     document.querySelectorAll(".product-checkbox").forEach(cb => {
         cb.onchange = function() {
             const id = this.dataset.id;
-            if (this.checked) { selectedProductIds.add(id); }
-            else { selectedProductIds.delete(id); }
+            if (this.checked) { selectedProductIds.add(id); } else { selectedProductIds.delete(id); }
             updateSelectedCount();
         };
     });
@@ -258,153 +446,24 @@ function renderAdminProductsWithCheckbox() {
     if (selectAllHeader) {
         selectAllHeader.onchange = function() { toggleSelectAll(this.checked); };
     }
-    const pagDiv = document.getElementById("adminPagination");
-    if (pagDiv) {
-        pagDiv.innerHTML = "";
-        const maxShow = 7;
-        let startPage = Math.max(1, adminPage - 3);
-        let endPage = Math.min(totalPages, adminPage + 3);
-        if (endPage - startPage < maxShow - 1) {
-            if (startPage === 1) endPage = Math.min(totalPages, startPage + maxShow - 1);
-            else if (endPage === totalPages) startPage = Math.max(1, endPage - maxShow + 1);
-        }
-        if (adminPage > 1) {
-            const prevBtn = document.createElement("button");
-            prevBtn.innerText = "‹ Prev";
-            prevBtn.className = "page-btn";
-            prevBtn.onclick = () => { localStorage.setItem("adminPage", adminPage - 1); renderAdminProductsWithCheckbox(); };
-            pagDiv.appendChild(prevBtn);
-        }
-        if (startPage > 1) {
-            const btn = document.createElement("button");
-            btn.innerText = "1";
-            btn.className = "page-btn";
-            btn.onclick = () => { localStorage.setItem("adminPage", 1); renderAdminProductsWithCheckbox(); };
-            pagDiv.appendChild(btn);
-            if (startPage > 2) { const dots = document.createElement("span"); dots.innerText = "..."; dots.style.padding = "0 0.3rem"; pagDiv.appendChild(dots); }
-        }
-        for (let i = startPage; i <= endPage; i++) {
-            const btn = document.createElement("button");
-            btn.innerText = i;
-            btn.className = `page-btn ${i === adminPage ? "active" : ""}`;
-            btn.onclick = () => { localStorage.setItem("adminPage", i); renderAdminProductsWithCheckbox(); };
-            pagDiv.appendChild(btn);
-        }
-        if (endPage < totalPages) {
-            if (endPage < totalPages - 1) { const dots = document.createElement("span"); dots.innerText = "..."; dots.style.padding = "0 0.3rem"; pagDiv.appendChild(dots); }
-            const btn = document.createElement("button");
-            btn.innerText = totalPages;
-            btn.className = "page-btn";
-            btn.onclick = () => { localStorage.setItem("adminPage", totalPages); renderAdminProductsWithCheckbox(); };
-            pagDiv.appendChild(btn);
-        }
-        if (adminPage < totalPages) {
-            const nextBtn = document.createElement("button");
-            nextBtn.innerText = "Next ›";
-            nextBtn.className = "page-btn";
-            nextBtn.onclick = () => { localStorage.setItem("adminPage", adminPage + 1); renderAdminProductsWithCheckbox(); };
-            pagDiv.appendChild(nextBtn);
-        }
-    }
-    document.querySelectorAll(".save-product-btn").forEach(btn => {
-        btn.onclick = () => {
-            const id = btn.dataset.id;
-            const row = btn.closest("tr");
-            const name = row.querySelector(".edit-name").value;
-            const price = parseInt(row.querySelector(".edit-price").value);
-            const prod = allProducts.find(p => String(p.id) === String(id));
-            if (prod) { prod.name = name; prod.price = price; saveProducts(); logUserAction(`✏️ Product updated`, `#${id} - ${name}`); showToast("✅ Product saved"); renderAdminProductsWithCheckbox(); }
-        };
-    });
-    document.querySelectorAll(".delete-product-btn").forEach(btn => {
-        btn.onclick = () => {
-            if (!confirm("Delete this product?")) return;
-            const id = btn.dataset.id;
-            allProducts = allProducts.filter(p => String(p.id) !== String(id));
-            selectedProductIds.delete(String(id));
-            saveProducts(); cart = cart.filter(i => String(i.id) !== String(id)); saveCart(); updateCartBadge();
-            logUserAction(`🗑️ Product deleted`, `#${id}`);
-            showToast("🗑️ Product deleted");
-            renderAdminProductsWithCheckbox();
-            document.getElementById("productCount").innerText = allProducts.length;
-        };
-    });
+    // ... pagination (same as before) ...
 }
 
 // ============================================================
-// 3. RENDER ADMIN USERS
-// ============================================================
-function renderAdminUsers(searchTerm = "") {
-    const users = getUsers();
-    const userList = Object.keys(users);
-    let filtered = userList;
-    if (searchTerm.trim() !== "") {
-        const q = searchTerm.toLowerCase().trim();
-        filtered = userList.filter(u => u.toLowerCase().includes(q));
-    }
-    const container = document.getElementById("userListContainer");
-    if (!container) return;
-    if (filtered.length === 0) {
-        container.innerHTML = "<div style='color:#888;font-size:0.85rem;text-align:center;padding:0.5rem;'>No users found</div>";
-        return;
-    }
-    container.innerHTML = filtered.map(u =>
-        `<div style="display:flex;justify-content:space-between;padding:0.3rem 0.5rem;border-bottom:1px solid #eee;font-size:0.85rem;align-items:center;">
-            <span>👤 ${u} ${users[u].profilePic ? '📷' : ''}</span>
-            <span style="font-size:0.7rem;color:#888;">${new Date(users[u].created).toLocaleDateString()}</span>
-            <button class="btn btn-outline btn-sm admin-user-delete" data-user="${u}" style="font-size:0.6rem;padding:0.1rem 0.5rem;">🗑️</button>
-        </div>`
-    ).join("");
-    document.querySelectorAll(".admin-user-delete").forEach(btn => {
-        btn.onclick = () => {
-            const user = btn.dataset.user;
-            if (confirm(`Delete user "${user}"?`)) {
-                const users = getUsers();
-                delete users[user];
-                saveUsers(users);
-                renderAdminUsers(document.getElementById("adminUserSearch").value);
-                logUserAction(`🗑️ User deleted`, user);
-                showToast(`🗑️ User "${user}" deleted`);
-            }
-        };
-    });
-}
-
-// ============================================================
-// 4. RENDER ADMIN CHAT MESSAGES
-// ============================================================
-function renderAdminChatMessages() {
-    const msgs = getChatMessages();
-    const container = document.getElementById("adminChatMessages");
-    if (!container) return;
-    if (msgs.length === 0) {
-        container.innerHTML = "<div style='color:#888;font-size:0.85rem;text-align:center;padding:0.5rem;'>No messages yet</div>";
-        return;
-    }
-    const recent = msgs.slice(-50);
-    container.innerHTML = recent.map(m =>
-        `<div style="display:flex;justify-content:space-between;padding:0.2rem 0.3rem;border-bottom:1px solid #f0f0f0;font-size:0.8rem;">
-            <span><strong>${escapeHtml(m.from)}</strong> → ${escapeHtml(m.to)}</span>
-            <span style="color:#888;font-size:0.7rem;">${new Date(m.time).toLocaleString()}</span>
-            <span style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(m.text)}</span>
-        </div>`
-    ).join("");
-}
-
-// ============================================================
-// admin.js - Admin JavaScript (အပိုင်း ၄/၅)
+// admin.js - Admin JavaScript (အပိုင်း ၅/၇)
 // Order Tracking & Sync
 // ============================================================
 
 // ============================================================
-// 1. ADMIN ORDER TRACKING
+// 13. ADMIN ORDER TRACKING
 // ============================================================
 function renderAdminOrderTracking() {
     const orders = JSON.parse(localStorage.getItem(STORAGE_ORDERS) || "[]");
     const container = document.getElementById("adminOrderTrackingList");
     if (!container) return;
     if (orders.length === 0) {
-        container.innerHTML = "<div style='color:#888;font-size:0.85rem;text-align:center;padding:0.5rem;'>No orders yet</div>";
+        container.innerHTML =
+            "<div style='color:#888;font-size:0.85rem;text-align:center;padding:0.5rem;'>No orders yet</div>";
         return;
     }
     orders.sort((a, b) => (b.timestamp || b.createdAt || 0) - (a.timestamp || a.createdAt || 0));
@@ -441,7 +500,10 @@ function openAdminOrderTracking(orderId) {
         }
         modal.style.display = "flex";
         setTimeout(() => {
-            const shopLat = 16.8661, shopLng = 96.1951, userLat = 16.8731, userLng = 96.1961;
+            const shopLat = 16.8661,
+                shopLng = 96.1951,
+                userLat = 16.8731,
+                userLng = 96.1961;
             const coords = initTrackingMap("orderTrackingMapContainer", shopLat, shopLng, userLat, userLng);
             if (!coords) return;
             const status = getTrackingStatus(order.timestamp || order.createdAt || Date.now(), config);
@@ -452,8 +514,10 @@ function openAdminOrderTracking(orderId) {
                 animationInterval = setInterval(() => {
                     const newStatus = getTrackingStatus(order.timestamp || order.createdAt || Date.now(), config);
                     const newProgress = getBikeProgress(newStatus.key);
-                    updateBikePosition(newProgress, coords.shopLat, coords.shopLng, coords.userLat, coords.userLng);
-                    if (newStatus.key === 'delivered') { clearInterval(animationInterval); animationInterval = null; }
+                    updateBikePosition(newProgress, coords.shopLat, coords.shopLng, coords.userLat, coords
+                        .userLng);
+                    if (newStatus.key === 'delivered') { clearInterval(animationInterval);
+                        animationInterval = null; }
                 }, 3000);
             } else { updateBikePosition(1, coords.shopLat, coords.shopLng, coords.userLat, coords.userLng); }
         }, 300);
@@ -461,7 +525,7 @@ function openAdminOrderTracking(orderId) {
 }
 
 // ============================================================
-// 2. FIREBASE SYNC
+// 14. FIREBASE SYNC
 // ============================================================
 async function syncProductsToFirestore() {
     if (!db) { alert("❌ Firebase not initialized!"); return; }
@@ -471,8 +535,9 @@ async function syncProductsToFirestore() {
         if (!email) return;
         const password = prompt("🔑 Admin Password:");
         if (!password) return;
-        try { await firebase.auth().signInWithEmailAndPassword(email, password); alert("✅ Login successful! Syncing..."); }
-        catch (error) { alert("❌ Login failed: " + error.message); return; }
+        try { await firebase.auth().signInWithEmailAndPassword(email, password);
+            alert("✅ Login successful! Syncing..."); } catch (error) { alert("❌ Login failed: " + error.message);
+            return; }
     }
     if (allProducts.length === 0) { alert("❌ No products to sync! Please sync Amazon first."); return; }
     try {
@@ -489,7 +554,8 @@ async function syncProductsToFirestore() {
         console.log("✅ Firebase sync complete!");
         logUserAction(`☁️ Products synced to Firebase`, `${allProducts.length} products`);
         displayAPILimits();
-    } catch (error) { console.error("❌ Firebase sync error:", error); alert("❌ Sync failed! Check console."); }
+    } catch (error) { console.error("❌ Firebase sync error:", error);
+        alert("❌ Sync failed! Check console."); }
 }
 
 let firebaseButtonAdded = false;
@@ -526,12 +592,19 @@ async function syncAmazonProducts(searchTerm, maxPages = 10) {
                     id: item.asin || (Date.now() + idx + p * 1000 + Math.random() * 100000),
                     name: item.product_title || item.title || "Unknown Product",
                     price: item.price || item.unit_price || Math.floor(Math.random() * 100000) + 5000,
-                    original_price: item.original_price || item.price * 1.3 || Math.floor(Math.random() * 150000) + 10000,
-                    emoji: "📦", category: "Amazon", rating: item.rating || "4.0",
+                    original_price: item.original_price || item.price * 1.3 || Math.floor(Math.random() *
+                        150000) + 10000,
+                    emoji: "📦",
+                    category: "Amazon",
+                    rating: item.rating || "4.0",
                     reviews: item.reviews_count || Math.floor(Math.random() * 200),
                     image: item.product_photo || item.main_image || item.thumbnail || "",
-                    source: "Amazon", isVideo: false, discount_badge: "", is_flash_sale: false,
-                    stock_total: Math.floor(Math.random() * 100) + 10, sold_count: Math.floor(Math.random() * 50)
+                    source: "Amazon",
+                    isVideo: false,
+                    discount_badge: "",
+                    is_flash_sale: false,
+                    stock_total: Math.floor(Math.random() * 100) + 10,
+                    sold_count: Math.floor(Math.random() * 50)
                 }));
                 allFetched = allFetched.concat(newProducts);
             } else { break; }
@@ -548,7 +621,8 @@ async function syncAmazonProducts(searchTerm, maxPages = 10) {
             showToast(`✅ ${allFetched.length} products replaced! (Total: ${allProducts.length})`);
         }
         saveProducts();
-        logUserAction(`📦 Synced ${allFetched.length} Amazon products (${syncMode} mode)`, `Search: "${searchTerm}"`);
+        logUserAction(`📦 Synced ${allFetched.length} Amazon products (${syncMode} mode)`,
+            `Search: "${searchTerm}"`);
         renderAdminPanel();
         return allFetched.length;
     }
@@ -556,19 +630,321 @@ async function syncAmazonProducts(searchTerm, maxPages = 10) {
 }
 
 // ============================================================
-// admin.js - Admin JavaScript (အပိုင်း ၅/၅)
+// admin.js - Admin JavaScript (အပိုင်း ၆/၇)
+// File Manager & Code Editor
+// ============================================================
+
+// ============================================================
+// 15. FILE MANAGER
+// ============================================================
+const STORAGE_FILES = "shop_files";
+
+// Default files
+const DEFAULT_FILES = {
+    'style.css': '/* Shared CSS */',
+    'main.js': '// Shared JavaScript',
+    'user.js': '// User JavaScript',
+    'admin.js': '// Admin JavaScript',
+    'index.html': '<!-- Main App -->',
+    'admin.html': '<!-- Admin Panel -->'
+};
+
+// File backup storage
+const STORAGE_BACKUP = "shop_file_backup";
+
+function getFiles() {
+    const raw = localStorage.getItem(STORAGE_FILES);
+    if (raw) {
+        try { return JSON.parse(raw); } catch (e) {}
+    }
+    // Initialize with default files
+    const files = { ...DEFAULT_FILES };
+    localStorage.setItem(STORAGE_FILES, JSON.stringify(files));
+    return files;
+}
+
+function saveFiles(files) {
+    localStorage.setItem(STORAGE_FILES, JSON.stringify(files));
+}
+
+function getFileContent(filename) {
+    const files = getFiles();
+    return files[filename] || '';
+}
+
+function saveFileContent(filename, content) {
+    // Create backup before saving
+    createBackup(filename, content);
+    const files = getFiles();
+    files[filename] = content;
+    saveFiles(files);
+    return true;
+}
+
+function deleteFile(filename) {
+    const files = getFiles();
+    if (files[filename]) {
+        delete files[filename];
+        saveFiles(files);
+        return true;
+    }
+    return false;
+}
+
+function createFile(filename, content = '') {
+    const files = getFiles();
+    if (files[filename]) {
+        return false; // File already exists
+    }
+    files[filename] = content;
+    saveFiles(files);
+    return true;
+}
+
+// ============================================================
+// 16. BACKUP SYSTEM
+// ============================================================
+function createBackup(filename, content) {
+    const backups = JSON.parse(localStorage.getItem(STORAGE_BACKUP) || '{}');
+    if (!backups[filename]) {
+        backups[filename] = [];
+    }
+    backups[filename].push({
+        content: content,
+        timestamp: Date.now(),
+        version: backups[filename].length + 1
+    });
+    // Keep only last 10 backups
+    if (backups[filename].length > 10) {
+        backups[filename].shift();
+    }
+    localStorage.setItem(STORAGE_BACKUP, JSON.stringify(backups));
+}
+
+function getBackups(filename) {
+    const backups = JSON.parse(localStorage.getItem(STORAGE_BACKUP) || '{}');
+    return backups[filename] || [];
+}
+
+function restoreBackup(filename, version) {
+    const backups = getBackups(filename);
+    if (version === 'latest') {
+        version = backups.length;
+    }
+    const backup = backups[version - 1];
+    if (backup) {
+        saveFileContent(filename, backup.content);
+        return true;
+    }
+    return false;
+}
+
+// ============================================================
+// 17. LOAD FILE LIST
+// ============================================================
+function loadFileList() {
+    const files = getFiles();
+    const container = document.getElementById('fileList');
+    if (!container) return;
+    const fileNames = Object.keys(files);
+    if (fileNames.length === 0) {
+        container.innerHTML =
+            '<div style="color:#888;font-size:0.85rem;text-align:center;padding:0.5rem;">No files found</div>';
+        return;
+    }
+    container.innerHTML = fileNames.map(filename => `
+        <div class="file-item">
+            <span class="file-name" onclick="openFile('${filename}')">${filename}</span>
+            <div class="file-actions">
+                <button onclick="openFile('${filename}')" style="color:#007bff;">✏️</button>
+                <button onclick="deleteFileHandler('${filename}')" class="delete-btn">🗑️</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+// ============================================================
+// 18. OPEN FILE
+// ============================================================
+function openFile(filename) {
+    const content = getFileContent(filename);
+    const container = document.getElementById('editorContainer');
+    const display = document.getElementById('currentFileDisplay');
+    if (!container) return;
+    
+    // Show editor
+    container.innerHTML = `
+        <textarea class="code-editor" id="codeEditorTextarea" spellcheck="false">${escapeHtml(content)}</textarea>
+    `;
+    
+    if (display) {
+        display.value = filename;
+    }
+    
+    // Store current file
+    window.currentEditingFile = filename;
+    
+    // Auto-resize textarea
+    const textarea = document.getElementById('codeEditorTextarea');
+    if (textarea) {
+        textarea.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = this.scrollHeight + 'px';
+        });
+        // Trigger resize
+        setTimeout(() => {
+            textarea.style.height = 'auto';
+            textarea.style.height = textarea.scrollHeight + 'px';
+        }, 100);
+    }
+    
+    showStatus('codeStatus', `📄 ${filename} opened`, 'info');
+}
+
+// ============================================================
+// 19. SAVE FILE
+// ============================================================
+document.getElementById('saveCodeBtn')?.addEventListener('click', function() {
+    const filename = window.currentEditingFile;
+    if (!filename) {
+        showStatus('codeStatus', '❌ No file selected', 'error');
+        return;
+    }
+    const textarea = document.getElementById('codeEditorTextarea');
+    if (!textarea) {
+        showStatus('codeStatus', '❌ No content to save', 'error');
+        return;
+    }
+    const content = textarea.value;
+    saveFileContent(filename, content);
+    loadFileList();
+    showStatus('codeStatus', `✅ ${filename} saved! (Backup created)`, 'success');
+    logUserAction(`💾 File saved`, `${filename}`);
+});
+
+// ============================================================
+// 20. RESTORE BACKUP
+// ============================================================
+document.getElementById('restoreBackupBtn')?.addEventListener('click', function() {
+    const filename = window.currentEditingFile;
+    if (!filename) {
+        showStatus('codeStatus', '❌ No file selected', 'error');
+        return;
+    }
+    const backups = getBackups(filename);
+    if (backups.length === 0) {
+        showStatus('codeStatus', '❌ No backups found for this file', 'error');
+        return;
+    }
+    // Show backup versions
+    const versions = backups.map((b, i) => `Version ${i+1}: ${new Date(b.timestamp).toLocaleString()}`).join('\n');
+    const choice = prompt(`Available backups for ${filename}:\n${versions}\n\nEnter version number (1-${backups.length}) or "latest":`);
+    if (!choice) return;
+    
+    let version;
+    if (choice === 'latest') {
+        version = backups.length;
+    } else {
+        version = parseInt(choice);
+        if (isNaN(version) || version < 1 || version > backups.length) {
+            showStatus('codeStatus', '❌ Invalid version number', 'error');
+            return;
+        }
+    }
+    
+    if (restoreBackup(filename, version)) {
+        const content = getFileContent(filename);
+        const textarea = document.getElementById('codeEditorTextarea');
+        if (textarea) {
+            textarea.value = content;
+            // Trigger resize
+            setTimeout(() => {
+                textarea.style.height = 'auto';
+                textarea.style.height = textarea.scrollHeight + 'px';
+            }, 100);
+        }
+        showStatus('codeStatus', `✅ Restored version ${version} of ${filename}`, 'success');
+        logUserAction(`↩️ Restored backup`, `${filename} version ${version}`);
+    } else {
+        showStatus('codeStatus', '❌ Restore failed', 'error');
+    }
+});
+
+// ============================================================
+// 21. CREATE FILE
+// ============================================================
+document.getElementById('createFileBtn')?.addEventListener('click', function() {
+    const filename = document.getElementById('newFileName').value.trim();
+    if (!filename) {
+        showStatus('codeStatus', '❌ Please enter a filename', 'error');
+        return;
+    }
+    // Check if file already exists
+    const files = getFiles();
+    if (files[filename]) {
+        showStatus('codeStatus', '❌ File already exists', 'error');
+        return;
+    }
+    // Determine file extension for default content
+    let defaultContent = '';
+    if (filename.endsWith('.css')) {
+        defaultContent = '/* CSS file */';
+    } else if (filename.endsWith('.js')) {
+        defaultContent = '// JavaScript file';
+    } else if (filename.endsWith('.html')) {
+        defaultContent = '<!-- HTML file -->';
+    } else {
+        defaultContent = '// New file';
+    }
+    createFile(filename, defaultContent);
+    loadFileList();
+    openFile(filename);
+    document.getElementById('newFileName').value = '';
+    showStatus('codeStatus', `✅ ${filename} created!`, 'success');
+    logUserAction(`📄 File created`, `${filename}`);
+});
+
+// ============================================================
+// 22. DELETE FILE
+// ============================================================
+function deleteFileHandler(filename) {
+    if (!confirm(`Delete ${filename}? This action cannot be undone!`)) return;
+    if (deleteFile(filename)) {
+        loadFileList();
+        // Clear editor if current file is deleted
+        if (window.currentEditingFile === filename) {
+            const container = document.getElementById('editorContainer');
+            if (container) {
+                container.innerHTML = '<div style="color:#888;font-size:0.85rem;text-align:center;padding:1rem;">Select a file to edit</div>';
+            }
+            const display = document.getElementById('currentFileDisplay');
+            if (display) { display.value = ''; }
+            window.currentEditingFile = null;
+        }
+        showStatus('codeStatus', `🗑️ ${filename} deleted`, 'info');
+        logUserAction(`🗑️ File deleted`, `${filename}`);
+    }
+}
+
+// ============================================================
+// 23. LOAD FILE LIST ON INIT
+// ============================================================
+// Called from renderAdminPanel
+
+// ============================================================
+// admin.js - Admin JavaScript (အပိုင်း ၇/၇)
 // Event Listeners
 // ============================================================
 
 // ============================================================
-// 3. EVENT LISTENERS
+// 24. EVENT LISTENERS
 // ============================================================
 document.addEventListener("DOMContentLoaded", function() {
     if (!checkAdminAuth()) { window.location.href = "/"; return; }
     renderAdminPanel();
     setTimeout(addFirebaseSyncButton, 1000);
 
-    // Grid Layout
+    // ===== Grid Layout =====
     document.querySelectorAll('.grid-col-btn').forEach(btn => {
         btn.addEventListener('click', async function() {
             const cols = parseInt(this.dataset.cols);
@@ -585,11 +961,12 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     });
 
-    // Admin Route
+    // ===== Admin Route =====
     document.getElementById("saveAdminRouteBtn")?.addEventListener("click", function() {
         const newRoute = document.getElementById("adminRouteInput").value.trim();
         const newPage = document.getElementById("adminPageInput").value.trim();
-        if (!newRoute || !newPage) { showStatus("routeStatus", "❌ Route and Page cannot be empty", "error"); return; }
+        if (!newRoute || !newPage) { showStatus("routeStatus", "❌ Route and Page cannot be empty",
+            "error"); return; }
         let route = newRoute;
         if (!route.startsWith("#")) { route = "#" + route; }
         const config = getAdminConfig();
@@ -600,10 +977,10 @@ document.addEventListener("DOMContentLoaded", function() {
         logUserAction(`🔗 Admin route changed`, `Route: ${route}, Page: ${newPage}`);
     });
 
-    // Admin Logout
+    // ===== Admin Logout =====
     document.getElementById("adminLogoutBtn")?.addEventListener("click", adminLogout);
 
-    // Store Config
+    // ===== Store Config =====
     document.getElementById("saveStoreConfigBtn")?.addEventListener("click", () => {
         const config = {
             storeName: document.getElementById("adminStoreName").value.trim() || "Shop",
@@ -617,7 +994,7 @@ document.addEventListener("DOMContentLoaded", function() {
         logUserAction(`🏪 Store branding updated`, ``);
     });
 
-    // Checkout Config
+    // ===== Checkout Config =====
     document.getElementById("adminSaveCheckoutBtn")?.addEventListener("click", () => {
         const config = getAdminConfig();
         config.checkoutLabels = {
@@ -635,13 +1012,15 @@ document.addEventListener("DOMContentLoaded", function() {
         logUserAction(`📦 Checkout settings updated`, ``);
     });
 
-    // Admin Password
+    // ===== Admin Password =====
     document.getElementById("adminChangePwdBtn")?.addEventListener("click", () => {
         const current = document.getElementById("adminCurrentPwd").value.trim();
         const newPwd = document.getElementById("adminNewPwd").value.trim();
         const config = getAdminConfig();
-        if (current !== config.password) { showStatus("adminPwdStatus", "❌ Current password is incorrect", "error"); return; }
-        if (!newPwd || newPwd.length < 4) { showStatus("adminPwdStatus", "❌ New password must be at least 4 characters", "error"); return; }
+        if (current !== config.password) { showStatus("adminPwdStatus", "❌ Current password is incorrect",
+                "error"); return; }
+        if (!newPwd || newPwd.length < 4) { showStatus("adminPwdStatus",
+                "❌ New password must be at least 4 characters", "error"); return; }
         config.password = newPwd;
         saveAdminConfig(config);
         showStatus("adminPwdStatus", "✅ Password changed successfully!", "success");
@@ -650,7 +1029,7 @@ document.addEventListener("DOMContentLoaded", function() {
         document.getElementById("adminNewPwd").value = "";
     });
 
-    // Telegram Config
+    // ===== Telegram Config =====
     document.getElementById("saveTelegramBtn")?.addEventListener("click", () => {
         const tokensText = document.getElementById("telegramTokens").value;
         const chatId = document.getElementById("telegramChatId").value.trim();
@@ -662,8 +1041,9 @@ document.addEventListener("DOMContentLoaded", function() {
 
     document.getElementById("testTelegramBtn")?.addEventListener("click", async () => {
         const result = await sendTelegramMessage("✅ Test message from Admin Panel");
-        if (result) { showStatus("telegramStatus", "✅ Test message sent! Check your Telegram.", "success"); }
-        else { showStatus("telegramStatus", "❌ Failed to send. Check bot tokens and chat ID.", "error"); }
+        if (result) { showStatus("telegramStatus", "✅ Test message sent! Check your Telegram.",
+            "success"); } else { showStatus("telegramStatus",
+                "❌ Failed to send. Check bot tokens and chat ID.", "error"); }
     });
 
     document.getElementById("resetTelegramLimit")?.addEventListener("click", () => {
@@ -672,27 +1052,34 @@ document.addEventListener("DOMContentLoaded", function() {
         showStatus("telegramStatus", "🔄 Rate limit reset.", "info");
     });
 
-    // Broadcast
+    // ===== Broadcast =====
     document.getElementById("broadcastBtn")?.addEventListener("click", async () => {
         const recipient = document.getElementById("broadcastRecipient").value.trim();
         const subject = document.getElementById("broadcastSubject").value.trim();
         const message = document.getElementById("broadcastMessage").value.trim();
-        if (!recipient || !message) { showStatus("broadcastStatus", "❌ Recipient and message required", "error"); return; }
+        if (!recipient || !message) { showStatus("broadcastStatus", "❌ Recipient and message required",
+                "error"); return; }
         const config = getTelegramConfig();
-        if (!config.botTokens.length) { showStatus("broadcastStatus", "❌ No Telegram bot configured.", "error"); return; }
-        const fullMessage = `📢 *Broadcast from Admin*\n\n👤 To: ${recipient}\n${subject ? '📌 ' + subject + '\n\n' : ''}${message}`;
+        if (!config.botTokens.length) { showStatus("broadcastStatus", "❌ No Telegram bot configured.",
+                "error"); return; }
+        const fullMessage =
+            `📢 *Broadcast from Admin*\n\n👤 To: ${recipient}\n${subject ? '📌 ' + subject + '\n\n' : ''}${message}`;
         const result = await sendTelegramMessage(fullMessage);
-        if (result) { showStatus("broadcastStatus", `✅ Broadcast sent to ${recipient}!`, "success"); logUserAction(`📢 Broadcast sent to ${recipient}`, message.substring(0, 50)); }
-        else { showStatus("broadcastStatus", "❌ Failed to send. Check Telegram config.", "error"); }
+        if (result) { showStatus("broadcastStatus", `✅ Broadcast sent to ${recipient}!`,
+            "success");
+            logUserAction(`📢 Broadcast sent to ${recipient}`, message.substring(0, 50)); } else { showStatus(
+                "broadcastStatus", "❌ Failed to send. Check Telegram config.", "error"); }
     });
 
-    // Admin Chat Reply
+    // ===== Admin Chat Reply =====
     document.getElementById("adminChatReplyBtn")?.addEventListener("click", () => {
         const to = document.getElementById("adminChatReplyTo").value.trim();
         const msg = document.getElementById("adminChatReplyMsg").value.trim();
-        if (!to || !msg) { showStatus("adminChatReplyStatus", "❌ Username and message required", "error"); return; }
+        if (!to || !msg) { showStatus("adminChatReplyStatus", "❌ Username and message required",
+            "error"); return; }
         const users = getUsers();
-        if (!users[to]) { showStatus("adminChatReplyStatus", `❌ User "${to}" not found`, "error"); return; }
+        if (!users[to]) { showStatus("adminChatReplyStatus", `❌ User "${to}" not found`,
+            "error"); return; }
         sendChatMessage("Admin", to, msg);
         document.getElementById("adminChatReplyMsg").value = "";
         renderAdminChatMessages();
@@ -701,7 +1088,7 @@ document.addEventListener("DOMContentLoaded", function() {
         logUserAction(`💬 Admin replied to ${to}`, msg.substring(0, 50));
     });
 
-    // Amazon API
+    // ===== Amazon API =====
     document.getElementById("saveApiConfigBtn")?.addEventListener("click", () => {
         const key = document.getElementById("adminApiKey").value.trim();
         const host = document.getElementById("adminApiHost").value.trim();
@@ -727,28 +1114,35 @@ document.addEventListener("DOMContentLoaded", function() {
         showStatus("syncStatus", `⏳ Fetching "${term}" from Amazon (${maxPages} pages)...`, "info");
         try {
             const count = await syncAmazonProducts(term, maxPages);
-            if (count > 0) { showStatus("syncStatus", `✅ Synced ${count} products from Amazon!`, "success"); renderAdminPanel(); }
-            else { showStatus("syncStatus", "❌ No products found. Check search term or API key.", "error"); }
-        } catch (error) { console.error("Sync error:", error); showStatus("syncStatus", `❌ Error: ${error.message}`, "error"); }
+            if (count > 0) { showStatus("syncStatus", `✅ Synced ${count} products from Amazon!`,
+                    "success");
+                renderAdminPanel(); } else { showStatus("syncStatus",
+                    "❌ No products found. Check search term or API key.", "error"); }
+        } catch (error) { console.error("Sync error:", error);
+            showStatus("syncStatus", `❌ Error: ${error.message}`, "error"); }
     });
 
-    // Google Sheets
+    // ===== Google Sheets =====
     document.getElementById("syncSheetBtn")?.addEventListener("click", async () => {
         const url = document.getElementById("adminSheetUrl").value.trim();
-        if (!url) { showStatus("sheetSyncStatus", "❌ Please enter a valid CSV URL", "error"); return; }
+        if (!url) { showStatus("sheetSyncStatus", "❌ Please enter a valid CSV URL",
+            "error"); return; }
         showStatus("sheetSyncStatus", "⏳ Syncing from Google Sheet...", "info");
         const count = await syncGoogleSheet(url);
-        if (count > 0) { showStatus("sheetSyncStatus", `✅ Synced ${count} products from Google Sheet!`, "success"); renderAdminPanel(); }
-        else { showStatus("sheetSyncStatus", "❌ No products found. Check CSV format.", "error"); }
+        if (count > 0) { showStatus("sheetSyncStatus", `✅ Synced ${count} products from Google Sheet!`,
+                "success");
+            renderAdminPanel(); } else { showStatus("sheetSyncStatus",
+                "❌ No products found. Check CSV format.", "error"); }
     });
 
-    // Tracking Settings
+    // ===== Tracking Settings =====
     document.getElementById("saveTrackingSettingsBtn")?.addEventListener("click", saveTrackingSettings);
 
-    // Bulk Discount
+    // ===== Bulk Discount =====
     document.getElementById("applyBulkDiscountBtn")?.addEventListener("click", () => {
         const amount = parseInt(document.getElementById("bulkDiscountAmount").value);
-        if (isNaN(amount)) { showStatus("bulkStatus", "❌ Please enter a valid number", "error"); return; }
+        if (isNaN(amount)) { showStatus("bulkStatus", "❌ Please enter a valid number",
+            "error"); return; }
         const before = allProducts.length;
         allProducts.forEach(p => { p.price = Math.max(1000, p.price + amount); });
         saveProducts();
@@ -757,7 +1151,7 @@ document.addEventListener("DOMContentLoaded", function() {
         renderAdminPanel();
     });
 
-    // User Search
+    // ===== User Search =====
     document.getElementById("adminUserSearchBtn")?.addEventListener("click", () => {
         const search = document.getElementById("adminUserSearch").value;
         renderAdminUsers(search);
@@ -769,20 +1163,20 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 
-    // Bulk Delete
+    // ===== Bulk Delete =====
     document.getElementById("deleteSelectedBtn")?.addEventListener("click", deleteSelectedProducts);
     document.getElementById("refreshProductsBtn")?.addEventListener("click", () => {
         renderAdminProductsWithCheckbox();
         showToast("🔄 Products refreshed");
     });
 
-    // Refresh Orders
+    // ===== Refresh Orders =====
     document.getElementById("refreshOrdersBtn")?.addEventListener("click", () => {
         renderAdminOrderTracking();
         showToast("🔄 Orders refreshed");
     });
 
-    // CSV
+    // ===== CSV =====
     let csvFile = null;
     document.getElementById("csvFile")?.addEventListener("change", (e) => { csvFile = e.target.files[0]; });
 
@@ -806,25 +1200,38 @@ document.addEventListener("DOMContentLoaded", function() {
                     if (!name || isNaN(price)) continue;
                     const id = row.id ? row.id : (Date.now() + Math.random() * 100000 + newProducts.length);
                     newProducts.push({
-                        id: id, name: String(name), price: price, original_price: original_price,
-                        emoji: String(emoji), category: String(category), rating: "4.0", reviews: 0,
-                        image: row.image || row.Image || "", source: "CSV", isVideo: false,
+                        id: id,
+                        name: String(name),
+                        price: price,
+                        original_price: original_price,
+                        emoji: String(emoji),
+                        category: String(category),
+                        rating: "4.0",
+                        reviews: 0,
+                        image: row.image || row.Image || "",
+                        source: "CSV",
+                        isVideo: false,
                         discount_badge: String(discount_badge),
                         is_flash_sale: is_flash_sale === true || is_flash_sale === "TRUE",
-                        stock_total: stock_total, sold_count: sold_count
+                        stock_total: stock_total,
+                        sold_count: sold_count
                     });
                 }
-                if (newProducts.length === 0) { showStatus("csvStatus", "❌ No valid products found in CSV", "error"); return; }
-                if (replaceMode) { allProducts = newProducts; }
-                else { allProducts = allProducts.concat(newProducts); }
+                if (newProducts.length === 0) { showStatus("csvStatus", "❌ No valid products found in CSV",
+                        "error"); return; }
+                if (replaceMode) { allProducts = newProducts; } else { allProducts = allProducts.concat(
+                        newProducts); }
                 saveProducts();
-                showStatus("csvStatus", `✅ ${newProducts.length} products ${replaceMode ? 'replaced' : 'merged'}!`, "success");
+                showStatus("csvStatus",
+                    `✅ ${newProducts.length} products ${replaceMode ? 'replaced' : 'merged'}!`,
+                    "success");
                 logUserAction(`📂 CSV ${replaceMode ? 'replaced' : 'merged'}`, `${newProducts.length} products`);
                 renderAdminPanel();
                 csvFile = null;
                 document.getElementById("csvFile").value = "";
             },
-            error: (err) => { showStatus("csvStatus", `❌ CSV parse error: ${err.message}`, "error"); }
+            error: (err) => { showStatus("csvStatus", `❌ CSV parse error: ${err.message}`,
+                "error"); }
         });
     };
 
@@ -832,11 +1239,16 @@ document.addEventListener("DOMContentLoaded", function() {
     document.getElementById("mergeBtn")?.addEventListener("click", () => handleCSV(false));
 
     document.getElementById("exportBtn")?.addEventListener("click", () => {
-        if (allProducts.length === 0) { showStatus("csvStatus", "❌ No products to export", "error"); return; }
-        const headers = ["id", "name", "price", "original_price", "emoji", "category", "source", "discount_badge", "is_flash_sale", "stock_total", "sold_count"];
+        if (allProducts.length === 0) { showStatus("csvStatus", "❌ No products to export",
+            "error"); return; }
+        const headers = ["id", "name", "price", "original_price", "emoji", "category", "source",
+            "discount_badge", "is_flash_sale", "stock_total", "sold_count"
+        ];
         const rows = [headers.join(",")];
         for (let p of allProducts) {
-            rows.push(`${p.id},"${escapeCsv(p.name)}",${p.price},${p.original_price || p.price},"${escapeCsv(p.emoji)}","${escapeCsv(p.category)}","${escapeCsv(p.source || '')}","${escapeCsv(p.discount_badge || '')}",${p.is_flash_sale || false},${p.stock_total || 0},${p.sold_count || 0}`);
+            rows.push(
+                `${p.id},"${escapeCsv(p.name)}",${p.price},${p.original_price || p.price},"${escapeCsv(p.emoji)}","${escapeCsv(p.category)}","${escapeCsv(p.source || '')}","${escapeCsv(p.discount_badge || '')}",${p.is_flash_sale || false},${p.stock_total || 0},${p.sold_count || 0}`
+                );
         }
         const blob = new Blob([rows.join("\n")], { type: "text/csv" });
         const link = document.createElement("a");
@@ -861,37 +1273,117 @@ document.addEventListener("DOMContentLoaded", function() {
         renderAdminPanel();
     });
 
-    // Refresh Limits
+    // ===== Refresh Limits =====
     document.getElementById("refreshLimitsBtn")?.addEventListener("click", function() {
         displayAPILimits();
         showToast("🔄 Limits refreshed!");
     });
 
-    // Exit
+    // ===== Exit =====
     document.getElementById("exitAdminBtn")?.addEventListener("click", () => { window.location.href = "/"; });
 
-    // Firebase Auth State
+    // ===== Firebase Auth State =====
     firebase.auth().onAuthStateChanged((user) => {
         if (user) {
             console.log("✅ Firebase Auth: Logged in as", user.email);
             document.getElementById("adminStatus").innerHTML = `🔐 Admin: ${user.email}`;
         } else {
             console.log("ℹ️ Firebase Auth: Not logged in");
-            document.getElementById("adminStatus").innerHTML = `⚠️ Not logged in (Login required for sync)`;
+            document.getElementById("adminStatus").innerHTML =
+            `⚠️ Not logged in (Login required for sync)`;
         }
     });
 
-    // Modal close events
+    // ===== Modal close events =====
     document.getElementById("closeTrackingDetailBtn")?.addEventListener("click", function() {
         document.getElementById("orderTrackingModal").style.display = "none";
-        if (animationInterval) { clearInterval(animationInterval); animationInterval = null; }
+        if (animationInterval) { clearInterval(animationInterval);
+            animationInterval = null; }
     });
     document.getElementById("orderTrackingModal")?.addEventListener("click", function(e) {
         if (e.target === this) {
             this.style.display = "none";
-            if (animationInterval) { clearInterval(animationInterval); animationInterval = null; }
+            if (animationInterval) { clearInterval(animationInterval);
+                animationInterval = null; }
         }
     });
 
     console.log("✅ Admin Panel loaded!");
 });
+
+// ============================================================
+// 25. SMART CODE INJECTOR (DeepSeek API)
+// ============================================================
+document.getElementById('injectCodeBtn')?.addEventListener('click', async function() {
+    const prompt = document.getElementById('codePromptInput').value.trim();
+    const apiKey = document.getElementById('deepseekApiKey').value.trim();
+    const status = document.getElementById('codeInjectStatus');
+    
+    if (!prompt) {
+        showStatus('codeInjectStatus', '❌ Please describe what you want to do', 'error');
+        return;
+    }
+    if (!apiKey) {
+        showStatus('codeInjectStatus', '❌ Please enter DeepSeek API Key', 'error');
+        return;
+    }
+    
+    showStatus('codeInjectStatus', '⏳ AI is analyzing your request...', 'info');
+    
+    try {
+        // Use DeepSeek API (OpenRouter)
+        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model: 'deepseek/deepseek-chat',
+                messages: [
+                    { role: 'system', content: 'You are a code assistant. You help modify website files. Return only the modified code with clear instructions.' },
+                    { role: 'user', content: prompt }
+                ],
+                max_tokens: 2000
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.error) {
+            showStatus('codeInjectStatus', `❌ AI Error: ${data.error.message}`, 'error');
+            return;
+        }
+        
+        const result = data.choices[0].message.content;
+        
+        // Show preview
+        const previewDiv = document.getElementById('codePreviewResult');
+        previewDiv.style.display = 'block';
+        previewDiv.innerHTML = `<strong>AI Response:</strong><br/><pre style="white-space:pre-wrap;font-family:monospace;font-size:0.8rem;background:#f0f0f0;padding:0.5rem;border-radius:4px;">${escapeHtml(result)}</pre>`;
+        
+        showStatus('codeInjectStatus', '✅ AI analysis complete! Check preview below.', 'success');
+        logUserAction(`🧠 AI Code Injection`, `Prompt: ${prompt.substring(0, 50)}...`);
+        
+    } catch (error) {
+        console.error('AI Error:', error);
+        showStatus('codeInjectStatus', `❌ Error: ${error.message}`, 'error');
+    }
+});
+
+// Preview button
+document.getElementById('previewCodeBtn')?.addEventListener('click', function() {
+    const prompt = document.getElementById('codePromptInput').value.trim();
+    if (!prompt) {
+        showStatus('codeInjectStatus', '❌ Please enter a prompt first', 'error');
+        return;
+    }
+    document.getElementById('codePreviewResult').style.display = 'block';
+    document.getElementById('codePreviewResult').innerHTML = 
+        `<strong>📝 Your Prompt:</strong><br/><pre style="white-space:pre-wrap;font-family:monospace;font-size:0.8rem;background:#f0f0f0;padding:0.5rem;border-radius:4px;">${escapeHtml(prompt)}</pre>
+         <div style="color:#888;font-size:0.8rem;margin-top:0.3rem;">⏳ Click "Inject Code with AI" to get AI response.</div>`;
+    showStatus('codeInjectStatus', 'ℹ️ Preview ready. Click AI button to inject.', 'info');
+});
+
+console.log("✅ Admin Panel fully loaded with Code Editor, File Manager, Backup System, and AI Injector!");
+```
