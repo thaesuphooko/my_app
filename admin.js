@@ -40,6 +40,7 @@ function renderAdminPanel() {
     loadSearchConfigForAdmin();
     loadFileList();
     loadUIConfigForAdmin();
+    loadMusicLinksForAdmin();
     document.getElementById("productCount").innerText = allProducts.length;
     document.getElementById("adminStatus").innerHTML = "🔐 Secured - " + new Date().toLocaleString();
 }
@@ -247,8 +248,8 @@ function loadUIConfigForAdmin() {
     document.getElementById('uiPrimaryColorText').value = config.primaryColor || '#e11b1b';
     document.getElementById('uiSecondaryColor').value = config.secondaryColor || '#ff6b00';
     document.getElementById('uiSecondaryColorText').value = config.secondaryColor || '#ff6b00';
-    document.getElementById('uiBgColor').value = config.bgColor || '#f5f5f5';
-    document.getElementById('uiBgColorText').value = config.bgColor || '#f5f5f5';
+    document.getElementById('uiBgColor').value = config.bgColor || '#fce4ec';
+    document.getElementById('uiBgColorText').value = config.bgColor || '#fce4ec';
     document.getElementById('uiCardBgColor').value = config.cardBgColor || '#ffffff';
     document.getElementById('uiCardBgColorText').value = config.cardBgColor || '#ffffff';
     document.getElementById('uiGridMobile').value = config.gridMobile || 2;
@@ -269,7 +270,7 @@ document.getElementById('saveUIConfigBtn')?.addEventListener('click', function()
     const config = {
         primaryColor: document.getElementById('uiPrimaryColor').value || '#e11b1b',
         secondaryColor: document.getElementById('uiSecondaryColor').value || '#ff6b00',
-        bgColor: document.getElementById('uiBgColor').value || '#f5f5f5',
+        bgColor: document.getElementById('uiBgColor').value || '#fce4ec',
         cardBgColor: document.getElementById('uiCardBgColor').value || '#ffffff',
         gridMobile: parseInt(document.getElementById('uiGridMobile').value) || 2,
         gridTablet: parseInt(document.getElementById('uiGridTablet').value) || 3,
@@ -279,6 +280,7 @@ document.getElementById('saveUIConfigBtn')?.addEventListener('click', function()
         showCategories: document.getElementById('uiCategoriesToggle').classList.contains('active')
     };
     saveUIConfig(config);
+    applyUIConfig(config);
     showStatus('uiStatus', '✅ UI Config saved to Firebase!', 'success');
     logUserAction(`🎨 UI Config updated`, JSON.stringify(config));
 });
@@ -322,11 +324,86 @@ async function loadGridLayoutForAdmin() {
 
 // ============================================================
 // admin.js - Admin JavaScript (အပိုင်း ၃/၇)
+// Music Links Management
+// ============================================================
+
+// ============================================================
+// 10. MUSIC LINKS MANAGEMENT (Admin)
+// ============================================================
+function loadMusicLinksForAdmin() {
+    const links = getMusicLinks();
+    const container = document.getElementById('musicLinkList');
+    if (!container) return;
+    if (links.length === 0) {
+        container.innerHTML = '<div style="color:#888;font-size:0.85rem;text-align:center;padding:0.5rem;">No music links added</div>';
+        return;
+    }
+    container.innerHTML = links.map((link, index) => `
+        <div class="music-list-item">
+            <span class="music-index">${index + 1}</span>
+            <span class="music-link">${escapeHtml(link)}</span>
+            <div class="music-actions">
+                <button onclick="removeMusicLink(${index})" class="delete-btn">🗑️</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function addMusicLink() {
+    const input = document.getElementById('newMusicLink');
+    const link = input.value.trim();
+    if (!link) {
+        showStatus('musicStatus', '❌ Please enter a YouTube link', 'error');
+        return;
+    }
+    if (!extractYouTubeId(link)) {
+        showStatus('musicStatus', '❌ Invalid YouTube link. Please enter a valid URL.', 'error');
+        return;
+    }
+    const links = getMusicLinks();
+    links.push(link);
+    saveMusicLinks(links);
+    loadMusicLinksForAdmin();
+    input.value = '';
+    showStatus('musicStatus', '✅ Music link added!', 'success');
+    logUserAction(`🎵 Music link added`, `${link}`);
+    // Reload music player
+    initMusicPlayer();
+}
+
+function removeMusicLink(index) {
+    if (!confirm('Remove this music link?')) return;
+    const links = getMusicLinks();
+    links.splice(index, 1);
+    saveMusicLinks(links);
+    loadMusicLinksForAdmin();
+    showStatus('musicStatus', '🗑️ Music link removed', 'info');
+    logUserAction(`🎵 Music link removed`, `Index ${index}`);
+    initMusicPlayer();
+}
+
+function clearAllMusicLinks() {
+    if (!confirm('Remove all music links?')) return;
+    saveMusicLinks([]);
+    loadMusicLinksForAdmin();
+    showStatus('musicStatus', '🗑️ All music links removed', 'info');
+    logUserAction(`🎵 All music links cleared`, ``);
+    initMusicPlayer();
+}
+
+// ============================================================
+// 11. MUSIC STATUS
+// ============================================================
+document.getElementById('addMusicBtn')?.addEventListener('click', addMusicLink);
+document.getElementById('clearMusicBtn')?.addEventListener('click', clearAllMusicLinks);
+
+// ============================================================
+// admin.js - Admin JavaScript (အပိုင်း ၄/၇)
 // Products with Select All & Delete
 // ============================================================
 
 // ============================================================
-// 10. SELECT ALL / DELETE SELECTED
+// 12. SELECT ALL / DELETE SELECTED
 // ============================================================
 let selectedProductIds = new Set();
 
@@ -371,7 +448,7 @@ function deleteSelectedProducts() {
 }
 
 // ============================================================
-// 11. RENDER PRODUCTS WITH CHECKBOX
+// 13. RENDER PRODUCTS WITH CHECKBOX
 // ============================================================
 function renderAdminProductsWithCheckbox() {
     const total = allProducts.length;
@@ -493,12 +570,12 @@ function renderAdminProductsWithCheckbox() {
 }
 
 // ============================================================
-// admin.js - Admin JavaScript (အပိုင်း ၄/၇)
+// admin.js - Admin JavaScript (အပိုင်း ၅/၇)
 // Tracking Settings & Order Tracking
 // ============================================================
 
 // ============================================================
-// 12. TRACKING SETTINGS
+// 14. TRACKING SETTINGS
 // ============================================================
 function loadTrackingSettings() {
     const config = getTrackingConfig();
@@ -521,7 +598,7 @@ function saveTrackingSettings() {
 }
 
 // ============================================================
-// 13. ADMIN ORDER TRACKING
+// 15. ADMIN ORDER TRACKING
 // ============================================================
 function renderAdminOrderTracking() {
     const orders = JSON.parse(localStorage.getItem(STORAGE_ORDERS) || "[]");
@@ -585,12 +662,12 @@ function openAdminOrderTracking(orderId) {
 }
 
 // ============================================================
-// admin.js - Admin JavaScript (အပိုင်း ၅/၇)
+// admin.js - Admin JavaScript (အပိုင်း ၆/၇)
 // Sync & File Manager
 // ============================================================
 
 // ============================================================
-// 14. FIREBASE SYNC
+// 16. FIREBASE SYNC
 // ============================================================
 async function syncProductsToFirestore() {
     if (!db) { alert("❌ Firebase not initialized!"); return; }
@@ -685,10 +762,9 @@ async function syncAmazonProducts(searchTerm, maxPages = 10) {
 }
 
 // ============================================================
-// 15. FILE MANAGER
+// 17. FILE MANAGER
 // ============================================================
 const STORAGE_FILES = "shop_files";
-
 const DEFAULT_FILES = {
     'style.css': '/* Shared CSS */',
     'main.js': '// Shared JavaScript',
@@ -697,7 +773,6 @@ const DEFAULT_FILES = {
     'index.html': '<!-- Main App -->',
     'admin.html': '<!-- Admin Panel -->'
 };
-
 const STORAGE_BACKUP = "shop_file_backup";
 
 function getFiles() {
@@ -741,9 +816,6 @@ function createFile(filename, content = '') {
     return true;
 }
 
-// ============================================================
-// 16. BACKUP SYSTEM
-// ============================================================
 function createBackup(filename, content) {
     const backups = JSON.parse(localStorage.getItem(STORAGE_BACKUP) || '{}');
     if (!backups[filename]) { backups[filename] = []; }
@@ -768,9 +840,6 @@ function restoreBackup(filename, version) {
     return false;
 }
 
-// ============================================================
-// 17. LOAD FILE LIST
-// ============================================================
 function loadFileList() {
     const files = getFiles();
     const container = document.getElementById('fileList');
@@ -814,8 +883,8 @@ function openFile(filename) {
 }
 
 // ============================================================
-// admin.js - Admin JavaScript (အပိုင်း ၆/၇)
-// Code Editor & Smart Injector
+// admin.js - Admin JavaScript (အပိုင်း ၇/၇)
+// Code Editor, Smart Injector, Event Listeners
 // ============================================================
 
 // ============================================================
@@ -934,7 +1003,6 @@ function deleteFileHandler(filename) {
 document.getElementById('injectCodeBtn')?.addEventListener('click', async function() {
     const prompt = document.getElementById('codePromptInput').value.trim();
     const apiKey = document.getElementById('deepseekApiKey').value.trim();
-    const status = document.getElementById('codeInjectStatus');
     if (!prompt) {
         showStatus('codeInjectStatus', '❌ Please describe what you want to do', 'error');
         return;
@@ -947,10 +1015,7 @@ document.getElementById('injectCodeBtn')?.addEventListener('click', async functi
     try {
         const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
             method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${apiKey}`,
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 model: 'deepseek/deepseek-chat',
                 messages: [
@@ -990,11 +1055,6 @@ document.getElementById('previewCodeBtn')?.addEventListener('click', function() 
          <div style="color:#888;font-size:0.8rem;margin-top:0.3rem;">⏳ Click "Inject Code with AI" to get AI response.</div>`;
     showStatus('codeInjectStatus', 'ℹ️ Preview ready. Click AI button to inject.', 'info');
 });
-
-// ============================================================
-// admin.js - Admin JavaScript (အပိုင်း ၇/၇)
-// Event Listeners
-// ============================================================
 
 // ============================================================
 // 23. EVENT LISTENERS
@@ -1205,7 +1265,7 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 
-    // Bulk Delete
+        // Bulk Delete
     document.getElementById("deleteSelectedBtn")?.addEventListener("click", deleteSelectedProducts);
     document.getElementById("refreshProductsBtn")?.addEventListener("click", () => {
         renderAdminProductsWithCheckbox();
