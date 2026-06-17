@@ -1,6 +1,6 @@
 // ============================================================
-// admin.js - Admin JavaScript (အပိုင်း ၁/၃)
-// Core, Config, Auth, Tracking Settings
+// admin.js - Admin JavaScript (အပိုင်း ၁/၄)
+// Core, Auth, Config
 // ============================================================
 
 // ============================================================
@@ -122,6 +122,11 @@ function getRapidAPILimitFromStorage() {
 function saveRapidAPILimit(limit) { if (limit) { localStorage.setItem("rapidapi_limit", JSON.stringify(limit)); } }
 
 // ============================================================
+// admin.js - Admin JavaScript (အပိုင်း ၂/၄)
+// Grid & Tracking Settings
+// ============================================================
+
+// ============================================================
 // 6. GRID LAYOUT CONTROLLER (Admin)
 // ============================================================
 async function loadGridLayoutForAdmin() {
@@ -159,8 +164,9 @@ function saveTrackingSettings() {
     showStatus("trackingStatus", "✅ Tracking settings saved!", "success");
     logUserAction(`🚚 Tracking settings updated`, JSON.stringify(config));
 }
+
 // ============================================================
-// admin.js - Admin JavaScript (အပိုင်း ၂/၃)
+// admin.js - Admin JavaScript (အပိုင်း ၃/၄)
 // Products with Select All & Delete
 // ============================================================
 
@@ -384,8 +390,9 @@ function renderAdminChatMessages() {
         </div>`
     ).join("");
 }
+
 // ============================================================
-// admin.js - Admin JavaScript (အပိုင်း ၃/၃)
+// admin.js - Admin JavaScript (အပိုင်း ၄/၄)
 // Order Tracking, Sync, Event Listeners
 // ============================================================
 
@@ -434,7 +441,7 @@ function openAdminOrderTracking(orderId) {
         }
         modal.style.display = "flex";
         setTimeout(() => {
-            const shopLat = 16.8661, shopLng = 16.1951, userLat = 16.8731, userLng = 16.1961;
+            const shopLat = 16.8661, shopLng = 96.1951, userLat = 16.8731, userLng = 96.1961;
             const coords = initTrackingMap("orderTrackingMapContainer", shopLat, shopLng, userLat, userLng);
             if (!coords) return;
             const status = getTrackingStatus(order.timestamp || order.createdAt || Date.now(), config);
@@ -733,7 +740,7 @@ document.addEventListener("DOMContentLoaded", function() {
     // Tracking Settings
     document.getElementById("saveTrackingSettingsBtn")?.addEventListener("click", saveTrackingSettings);
 
-    // Bulk Discount
+       // Bulk Discount
     document.getElementById("applyBulkDiscountBtn")?.addEventListener("click", () => {
         const amount = parseInt(document.getElementById("bulkDiscountAmount").value);
         if (isNaN(amount)) { showStatus("bulkStatus", "❌ Please enter a valid number", "error"); return; }
