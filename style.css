@@ -1,5 +1,5 @@
 /* ============================================================
-   style.css - Shared CSS for both User & Admin
+   style.css - Shared CSS (အပိုင်း ၁/၇)
    ============================================================ */
 
 /* ===== RESET & BASE ===== */
@@ -39,6 +39,10 @@ a { text-decoration: none; color: inherit; }
 .bottom-nav .nav-item .nav-icon { font-size: 1.4rem; }
 .bottom-nav .nav-item .nav-label { margin-top: 0.1rem; }
 
+/* ============================================================
+   style.css - Shared CSS (အပိုင်း ၂/၇)
+   ============================================================ */
+
 /* ===== LAZADA STYLE PRODUCT CARD ===== */
 .products-grid { display: grid; gap: 10px; margin-top: 0.5rem; }
 .product-card { position: relative; background: #fff; border-radius: 12px; padding: 0.8rem; box-shadow: 0 2px 6px rgba(0,0,0,0.04); transition: 0.3s; text-align: center; border: 1px solid #f0f0f0; overflow: hidden; cursor: pointer; }
@@ -76,6 +80,10 @@ a { text-decoration: none; color: inherit; }
 .order-status .timer { font-size: 1.6rem; font-weight: 700; color: #e11b1b; }
 .order-status .success { color: #0f7b3e; }
 .order-status .cancelled { color: #dc3545; }
+
+/* ============================================================
+   style.css - Shared CSS (အပိုင်း ၃/၇)
+   ============================================================ */
 
 /* ===== BUTTONS ===== */
 .btn { padding: 0.4rem 1.2rem; border: none; border-radius: 30px; font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 0.85rem; }
@@ -130,6 +138,10 @@ a { text-decoration: none; color: inherit; }
 .status-msg.info { background: #d1ecf1; color: #0c5460; }
 @media (max-width: 768px) { .admin-grid-2 { grid-template-columns: 1fr; } }
 
+/* ============================================================
+   style.css - Shared CSS (အပိုင်း ၄/၇)
+   ============================================================ */
+
 /* ===== CODE EDITOR ===== */
 .code-editor { background: #1e1e1e; border-radius: 8px; padding: 1rem; color: #d4d4d4; font-family: 'Courier New', monospace; font-size: 0.85rem; overflow-x: auto; min-height: 300px; white-space: pre-wrap; word-wrap: break-word; border: 1px solid #333; }
 .code-editor:focus { outline: 2px solid #e11b1b; }
@@ -145,10 +157,11 @@ a { text-decoration: none; color: inherit; }
 .color-picker-group { display: flex; align-items: center; gap: 0.5rem; }
 .color-picker-group input[type="color"] { width: 40px; height: 40px; border: none; border-radius: 8px; cursor: pointer; padding: 0; }
 .color-picker-group input[type="text"] { flex: 1; }
-.toggle-switch { position: relative; width: 50px; height: 26px; background: #ccc; border-radius: 30px; cursor: pointer; transition: 0.3s; }
+.toggle-switch { position: relative; width: 50px; height: 26px; background: #ccc; border-radius: 30px; cursor: pointer; transition: 0.3s; display: inline-block; }
 .toggle-switch.active { background: #28a745; }
 .toggle-switch .toggle-knob { position: absolute; top: 2px; left: 2px; width: 22px; height: 22px; background: #fff; border-radius: 50%; transition: 0.3s; }
 .toggle-switch.active .toggle-knob { left: 26px; }
+.toggle-label { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; }
 
 /* ===== BULK ACTIONS ===== */
 .admin-bulk-actions { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; padding: 0.5rem 0.8rem; background: #f8f9fa; border-radius: 8px; }
@@ -176,6 +189,10 @@ a { text-decoration: none; color: inherit; }
 .custom-div-icon { background: transparent; border: none; text-align: center; line-height: 30px; }
 .bike-marker { font-size: 1.8rem; animation: bounce-bike 0.5s infinite alternate; }
 @keyframes bounce-bike { 0% { transform: translateY(0); } 100% { transform: translateY(-5px); } }
+
+/* ============================================================
+   style.css - Shared CSS (အပိုင်း ၅/၇)
+   ============================================================ */
 
 /* ===== PROFILE PAGE ===== */
 .profile-card { background: #fff; border-radius: 16px; padding: 1.5rem; text-align: center; margin-bottom: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
@@ -225,3 +242,413 @@ footer { text-align: center; padding: 1.5rem; background: #fff; font-size: 0.7re
     .bottom-nav .nav-item .nav-label { font-size: 0.55rem; }
     .bottom-nav .nav-item .nav-icon { font-size: 1.2rem; }
 }
+
+/* ============================================================
+   style.css - Shared CSS (အပိုင်း ၆/၇)
+   ============================================================ */
+
+/* ===== ADMIN TABLE & BULK ACTIONS ===== */
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.admin-table th {
+    background: #f8f8f8;
+    padding: 0.6rem 0.8rem;
+    text-align: left;
+    font-weight: 600;
+    color: #444;
+    border-bottom: 2px solid #eee;
+}
+.admin-table td {
+    padding: 0.5rem 0.8rem;
+    border-bottom: 1px solid #eee;
+    vertical-align: middle;
+}
+.admin-table tr:hover td {
+    background: #fafafa;
+}
+.admin-table input[type="text"],
+.admin-table input[type="number"] {
+    width: 100%;
+    padding: 0.3rem 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    background: #fff;
+    transition: 0.2s;
+}
+.admin-table input:focus {
+    border-color: #e11b1b;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(225, 27, 27, 0.1);
+}
+.admin-table .btn-sm {
+    padding: 0.2rem 0.6rem;
+    font-size: 0.7rem;
+    border-radius: 20px;
+    min-width: 32px;
+    text-align: center;
+}
+.admin-table .product-checkbox {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: #e11b1b;
+}
+
+/* ===== ADMIN BULK ACTIONS BAR ===== */
+.admin-bulk-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    padding: 0.5rem 1rem;
+    background: #f8f9fa;
+    border-radius: 10px;
+    border: 1px solid #eee;
+}
+.admin-bulk-actions label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    cursor: pointer;
+    font-weight: 500;
+}
+.admin-bulk-actions label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #e11b1b;
+    cursor: pointer;
+}
+.admin-bulk-actions .selected-count {
+    font-size: 0.8rem;
+    color: #888;
+    font-weight: 500;
+}
+.admin-bulk-actions .btn-danger {
+    background: #dc3545;
+    color: #fff;
+    padding: 0.25rem 1rem;
+    font-size: 0.8rem;
+    border-radius: 30px;
+}
+.admin-bulk-actions .btn-danger:hover {
+    background: #b02a37;
+}
+.admin-bulk-actions .btn-outline {
+    background: transparent;
+    color: #555;
+    border: 1px solid #ddd;
+    padding: 0.25rem 1rem;
+    font-size: 0.8rem;
+    border-radius: 30px;
+}
+.admin-bulk-actions .btn-outline:hover {
+    background: #f0f0f0;
+}
+
+/* ===== PRODUCT STATUS BADGE ===== */
+.status-badge {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+.status-badge.in-stock {
+    background: #d4edda;
+    color: #155724;
+}
+.status-badge.out-of-stock {
+    background: #f8d7da;
+    color: #721c24;
+}
+.status-badge.low-stock {
+    background: #fff3cd;
+    color: #856404;
+}
+
+/* ===== GRID COLUMN BUTTONS ===== */
+.grid-col-btn {
+    min-width: 80px;
+    padding: 0.3rem 0.8rem;
+    border-radius: 30px;
+    font-size: 0.8rem;
+    border: 1px solid #ddd;
+    background: #fff;
+    cursor: pointer;
+    transition: 0.2s;
+}
+.grid-col-btn:hover {
+    border-color: #e11b1b;
+    color: #e11b1b;
+}
+.grid-col-btn.btn-primary {
+    background: #e11b1b;
+    color: #fff;
+    border-color: #e11b1b;
+}
+.grid-col-btn.btn-primary:hover {
+    background: #c00;
+}
+
+/* ============================================================
+   style.css - Shared CSS (အပိုင်း ၇/၇)
+   ============================================================ */
+
+/* ===== ADMIN SECTION SPACING ===== */
+.admin-section {
+    background: #fff;
+    padding: 1.2rem 1.5rem;
+    border-radius: 14px;
+    margin-bottom: 1.2rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    border: 1px solid #eee;
+}
+.admin-section h3 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: #222;
+    border-bottom: 2px solid #e11b1b;
+    padding-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.admin-section .section-desc {
+    font-size: 0.85rem;
+    color: #888;
+    margin-bottom: 0.8rem;
+}
+.admin-section label {
+    display: block;
+    font-weight: 600;
+    font-size: 0.85rem;
+    margin-top: 0.6rem;
+    margin-bottom: 0.2rem;
+    color: #555;
+}
+.admin-section input,
+.admin-section textarea,
+.admin-section select {
+    width: 100%;
+    padding: 0.5rem 0.8rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    margin-bottom: 0.3rem;
+    transition: 0.2s;
+    background: #fff;
+}
+.admin-section input:focus,
+.admin-section textarea:focus,
+.admin-section select:focus {
+    border-color: #e11b1b;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(225, 27, 27, 0.08);
+}
+.admin-section textarea {
+    min-height: 70px;
+    resize: vertical;
+    font-family: 'Courier New', monospace;
+}
+.admin-section .btn-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.6rem;
+}
+.admin-section .btn-group .btn {
+    font-size: 0.8rem;
+    padding: 0.3rem 1.2rem;
+}
+
+/* ===== CODE EDITOR SPECIFIC ===== */
+.code-editor-wrapper {
+    position: relative;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #333;
+}
+.code-editor-wrapper .code-editor {
+    background: #1e1e1e;
+    color: #d4d4d4;
+    font-family: 'Courier New', monospace;
+    font-size: 0.85rem;
+    padding: 1rem;
+    min-height: 300px;
+    width: 100%;
+    border: none;
+    outline: none;
+    resize: vertical;
+    line-height: 1.6;
+    tab-size: 2;
+}
+.code-editor-wrapper .code-editor:focus {
+    outline: 2px solid #e11b1b;
+}
+.code-editor-wrapper .file-name-bar {
+    background: #2d2d2d;
+    padding: 0.3rem 1rem;
+    color: #888;
+    font-size: 0.8rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #444;
+}
+.code-editor-wrapper .file-name-bar .file-name {
+    color: #d4d4d4;
+    font-weight: 500;
+}
+
+/* ===== FILE LIST ===== */
+.file-list {
+    max-height: 250px;
+    overflow-y: auto;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    background: #fafafa;
+}
+.file-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.4rem 0.8rem;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 0.85rem;
+    transition: 0.2s;
+}
+.file-item:hover {
+    background: #f0f0f0;
+}
+.file-item .file-name {
+    cursor: pointer;
+    color: #007bff;
+    font-weight: 500;
+}
+.file-item .file-name:hover {
+    text-decoration: underline;
+}
+.file-item .file-actions {
+    display: flex;
+    gap: 0.3rem;
+}
+.file-item .file-actions button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+    transition: 0.2s;
+}
+.file-item .file-actions button:hover {
+    background: #e9ecef;
+}
+.file-item .file-actions .delete-btn {
+    color: #dc3545;
+}
+.file-item .file-actions .delete-btn:hover {
+    background: #f8d7da;
+}
+.file-item .file-actions .edit-btn {
+    color: #007bff;
+}
+.file-item .file-actions .edit-btn:hover {
+    background: #cce5ff;
+}
+
+/* ===== STATUS MESSAGES ===== */
+.status-msg {
+    padding: 0.5rem 0.8rem;
+    border-radius: 8px;
+    margin-top: 0.5rem;
+    font-weight: 500;
+    font-size: 0.85rem;
+    display: block;
+}
+.status-msg.success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+.status-msg.error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+.status-msg.info {
+    background: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+}
+.status-msg.warning {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
+}
+
+/* ===== SCROLLBAR STYLING ===== */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #aaa;
+}
+
+/* ===== RESPONSIVE ADMIN ===== */
+@media (max-width: 768px) {
+    .admin-grid-2 {
+        grid-template-columns: 1fr !important;
+    }
+    .admin-section {
+        padding: 1rem;
+    }
+    .admin-bulk-actions {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+    }
+    .admin-table {
+        font-size: 0.75rem;
+    }
+    .admin-table th,
+    .admin-table td {
+        padding: 0.3rem 0.4rem;
+    }
+    .admin-table input {
+        font-size: 0.75rem;
+        padding: 0.2rem 0.3rem;
+    }
+    .admin-table .btn-sm {
+        font-size: 0.6rem;
+        padding: 0.1rem 0.4rem;
+        min-width: 24px;
+    }
+    .file-item {
+        font-size: 0.75rem;
+        flex-wrap: wrap;
+        gap: 0.3rem;
+    }
+}
+
