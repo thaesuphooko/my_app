@@ -732,3 +732,251 @@ document.addEventListener("DOMContentLoaded", function() {
 
   console.log("✅ Admin Panel loaded!");
 });
+// ============================================================
+// 1. AMAZON SYNC (Merge/Replace Option)
+// ============================================================
+
+// Admin Panel မှာ ရွေးချယ်စရာ ထည့်ဖို့
+let syncMode = "merge"; // "merge" or "replace"
+
+async function syncAmazonProducts(searchTerm, maxPages = 10) {
+  if (!searchTerm || searchTerm.trim() === "") {
+    alert("Please enter a search term");
+    return 0;
+  }
+
+  let allFetched = [];
+  let totalPages = Math.min(maxPages, 50);
+
+  for (let p = 1; p <= totalPages; p++) {
+    try {
+      const result = await fetchAmazonProducts(searchTerm, "US", p);
+      if (result && result.data && result.data.products && result.data.products.length > 0) {
+        const products = result.data.products;
+        const newProducts = products.map((item, idx) => ({
+          id: item.asin || (Date.now() + idx + p * 1000 + Math.random() * 100000),
+          name: item.product_title || item.title || "Unknown Product",
+          price: item.price || item.unit_price || Math.floor(Math.random() * 100000) + 5000,
+          emoji: "📦",
+          category: "Amazon",
+          rating: item.rating || "4.0",
+          reviews: item.reviews_count || Math.floor(Math.random() * 200),
+          image: item.product_photo || item.main_image || item.thumbnail || "",
+          source: "Amazon",
+          isVideo: false,
+          originalPrice: item.original_price || null,
+          asin: item.asin || null
+        }));
+        allFetched = allFetched.concat(newProducts);
+      } else {
+        break;
+      }
+    } catch (e) {
+      console.error("Page fetch error:", e);
+      break;
+    }
+    await new Promise(r => setTimeout(r, 200));
+  }
+
+  if (allFetched.length > 0) {
+    // ✅ MERGE MODE (အဟောင်းတွေကို မဖျက်ဘူး)
+    if (syncMode === "merge") {
+      allProducts = allProducts.concat(allFetched);
+      showToast(`✅ ${allFetched.length} products merged! (Total: ${allProducts.length})`);
+    } 
+    // 🔄 REPLACE MODE (အဟောင်းတွေကို ဖျက်ပြီး အသစ်တင်မယ်)
+    else {
+      allProducts = allProducts.filter(p => p.source !== "Amazon");
+      allProducts = allProducts.concat(allFetched);
+      showToast(`✅ ${allFetched.length} products replaced! (Total: ${allProducts.length})`);
+    }
+    
+    saveProducts();
+    logUserAction(`📦 Synced ${allFetched.length} Amazon products (${syncMode} mode)`, `Search: "${searchTerm}"`);
+    renderAdminPanel();
+    return allFetched.length;
+  }
+  return 0;
+}
+
+// ============================================================
+// 2. SHOW API LIMITS (RapidAPI + Firebase)
+// ============================================================
+
+// RapidAPI Limit ကို Headers ကနေ ဖတ်မယ်
+function getRapidAPILimit(headers) {
+  const remaining = headers.get('x-ratelimit-requests-remaining');
+  const limit = headers.get('x-ratelimit-requests-limit');
+  if (remaining && limit) {
+    return { remaining: parseInt(remaining), limit: parseInt(limit) };
+  }
+  return null;
+}
+
+// Admin Panel မှာ Limit ပြဖို့
+function displayAPILimits(rapidLimit = null) {
+  const container = document.getElementById("apiLimitDisplay");
+  if (!container) return;
+
+  let html = `<div style="background:#f8f9fa;padding:0.8rem;border-radius:8px;margin-top:0.5rem;">`;
+  
+  // RapidAPI
+  if (rapidLimit) {
+    const percent = Math.round((rapidLimit.remaining / rapidLimit.limit) * 100);
+    const color = percent < 10 ? '#dc3545' : percent < 30 ? '#ffc107' : '#28a745';
+    html += `
+      <div><strong>🔄 RapidAPI:</strong> ${rapidLimit.remaining} / ${rapidLimit.limit} requests remaining</div>
+      <div style="width:100%;background:#e9ecef;border-radius:8px;height:8px;margin:4px 0;">
+        <div style="width:${percent}%;background:${color};border-radius:8px;height:8px;"></div>
+      </div>
+    `;
+  } else {
+    html += `<div><strong>🔄 RapidAPI:</strong> <span style="color:#888;">Sync first to see limits</span></div>`;
+  }
+
+  // Firebase (Estimated)
+  const productCount = allProducts.length;
+  const estimatedReads = productCount > 0 ? Math.ceil(productCount / 20) : 0; // pagination
+  const firebaseReads = 50000; // Free tier daily limit
+  const firebaseWrites = 20000;
+  const readPercent = Math.round((estimatedReads / firebaseReads) * 100);
+  const writePercent = Math.round((productCount / firebaseWrites) * 100);
+  
+  html += `
+    <div style="margin-top:0.5rem;"><strong>🔥 Firebase (Daily Quota):</strong></div>
+    <div style="font-size:0.8rem;color:#555;">
+      Reads: ${estimatedReads} / ${firebaseReads} 
+      <span style="color:${readPercent > 50 ? '#dc3545' : '#28a745'};">(${readPercent}%)</span>
+    </div>
+    <div style="width:100%;background:#e9ecef;border-radius:8px;height:4px;margin:2px 0;">
+      <div style="width:${Math.min(readPercent, 100)}%;background:${readPercent > 50 ? '#dc3545' : '#28a745'};border-radius:8px;height:4px;"></div>
+    </div>
+    <div style="font-size:0.8rem;color:#555;">
+      Writes: ${productCount} / ${firebaseWrites}
+      <span style="color:${writePercent > 50 ? '#dc3545' : '#28a745'};">(${Math.min(writePercent, 100)}%)</span>
+    </div>
+    <div style="width:100%;background:#e9ecef;border-radius:8px;height:4px;margin:2px 0;">
+      <div style="width:${Math.min(writePercent, 100)}%;background:${writePercent > 50 ? '#dc3545' : '#28a745'};border-radius:8px;height:4px;"></div>
+    </div>
+  `;
+
+  html += `</div>`;
+  container.innerHTML = html;
+}
+
+// ============================================================
+// 3. FIREBASE SYNC (with Merge Option)
+// ============================================================
+
+async function syncProductsToFirestore() {
+  if (!db) {
+    alert("❌ Firebase not initialized!");
+    return;
+  }
+
+  const user = firebase.auth().currentUser;
+  if (!user) {
+    const email = prompt("🔐 Admin Email (admin@shop.com):");
+    if (!email) return;
+    const password = prompt("🔑 Admin Password:");
+    if (!password) return;
+
+    try {
+      await firebase.auth().signInWithEmailAndPassword(email, password);
+      alert("✅ Login successful! Syncing...");
+    } catch (error) {
+      alert("❌ Login failed: " + error.message);
+      return;
+    }
+  }
+
+  if (allProducts.length === 0) {
+    alert("❌ No products to sync! Please sync Amazon first.");
+    return;
+  }
+
+  try {
+    const batch = db.batch();
+    const productsRef = db.collection('products');
+
+    // 🔥 Merge Mode: ရှိပြီးသား ပစ္စည်းတွေကို မဖျက်ဘူး
+    // ဒါပေမယ့် ပစ္စည်းတွေ တူနေရင် နောက်ဆုံးတစ်ခုကို သိမ်းမယ်
+    const snapshot = await productsRef.get();
+    const existingIds = new Set();
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      // ID နဲ့ ပြန်စစ်ပြီး Update လုပ်မယ်
+      const id = data.id || doc.id;
+      if (id) existingIds.add(String(id));
+    });
+
+    // Add or Update products
+    allProducts.forEach((product) => {
+      const docId = String(product.id);
+      const docRef = productsRef.doc(docId);
+      
+      // product ကို Firestore format နဲ့ သိမ်းမယ်
+      const data = {
+        ...product,
+        id: docId,
+        updatedAt: new Date().toISOString()
+      };
+      
+      batch.set(docRef, data, { merge: true });
+    });
+
+    await batch.commit();
+    alert(`✅ ${allProducts.length} products synced to Firebase! (Merge mode)`);
+    console.log("✅ Firebase sync complete!");
+    logUserAction(`☁️ Products synced to Firebase (Merge)`, `${allProducts.length} products`);
+    displayAPILimits();
+  } catch (error) {
+    console.error("❌ Firebase sync error:", error);
+    alert("❌ Sync failed! Check console.");
+  }
+}
+
+// ============================================================
+// 4. ADD SYNC MODE SELECTOR TO ADMIN PANEL
+// ============================================================
+
+function addSyncModeSelector() {
+  const target = document.querySelector('.admin-section:has(h3:contains("Amazon"))');
+  if (!target) return;
+  
+  const selector = document.createElement("div");
+  selector.style.cssText = "margin:0.5rem 0;padding:0.5rem;background:#f8f9fa;border-radius:8px;";
+  selector.innerHTML = `
+    <label style="font-weight:600;font-size:0.9rem;">🔄 Sync Mode:</label>
+    <div style="display:flex;gap:1rem;margin-top:0.3rem;">
+      <label>
+        <input type="radio" name="syncMode" value="merge" checked /> 
+        Merge (Keep old + Add new)
+      </label>
+      <label>
+        <input type="radio" name="syncMode" value="replace" /> 
+        Replace (Delete old + Add new)
+      </label>
+    </div>
+  `;
+  
+  // Insert before the search inputs
+  const searchDiv = target.querySelector('.admin-grid-2');
+  if (searchDiv) {
+    target.insertBefore(selector, searchDiv);
+  }
+  
+  // Save selected mode
+  selector.querySelectorAll('input[name="syncMode"]').forEach(el => {
+    el.addEventListener('change', function() {
+      syncMode = this.value;
+      localStorage.setItem("shop_sync_mode", syncMode);
+    });
+  });
+  
+  // Load saved mode
+  const saved = localStorage.getItem("shop_sync_mode") || "merge";
+  const radio = selector.querySelector(`input[value="${saved}"]`);
+  if (radio) radio.checked = true;
+  syncMode = saved;
+}
