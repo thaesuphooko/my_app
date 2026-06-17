@@ -1369,4 +1369,478 @@
     <!-- Part 3 တွင် Firebase Realtime Sync, Admin Panel ချိတ်ဆက်မှု  -->
     <!-- နှင့် ကျန်ရှိသော UI အပိုင်းများ ဆက်လက်ရေးသားပါမည်။        -->
     <!-- ============================================================ -->
+            <!-- ============================================================ -->
+    <!-- PART 3 (LINES 601-900) – FIREBASE REAL-TIME SYNC & FEATURES  -->
+    <!-- ဤအပိုင်းတွင် Firebase Auth, Firestore Listeners, နှင့်    -->
+    <!-- Music Player, Admin ဝင်ရောက်ရန် Hidden Gesture တို့ ပါဝင်  -->
+    <!-- ============================================================ -->
+
+    <script>
+        (function() {
+            'use strict';
+
+            // =============================================================
+            // ၁၃။ FIREBASE AUTH (Anonymous Login)
+            // =============================================================
+            // Guest user အနေဖြင့် ဝင်ရောက်ရန် (နောင်တွင် အကောင့်ဝင်ရန် ထည့်နိုင်)
+            let currentUser = null;
+            let currentUserId = 'guest_' + Date.now();
+
+            function initAuth() {
+                firebase.auth().onAuthStateChanged(function(user) {
+                    if (user) {
+                        currentUser = user;
+                        currentUserId = user.uid;
+                        console.log('✅ Firebase Auth: User logged in', user.uid);
+                        // User profile update
+                        document.getElementById('profileName').textContent = user.displayName || 'ဝယ်သူ';
+                        document.getElementById('profilePhone').textContent = user.phoneNumber || '09-XXX-XXX-XXX';
+                        // Load user data
+                        loadUserData();
+                    } else {
+                        // Anonymous sign-in
+                        firebase.auth().signInAnonymously().catch(function(error) {
+                            console.error('Auth error:', error);
+                            // Fallback: local guest id
+                            currentUserId = 'guest_' + Date.now();
+                        });
+                    }
+                });
+            }
+
+            // User data from Firestore (profile)
+            function loadUserData() {
+                if (!currentUser) return;
+                const userRef = db.collection('users').doc(currentUser.uid);
+                userRef.get().then(doc => {
+                    if (doc.exists) {
+                        const data = doc.data();
+                        document.getElementById('profileName').textContent = data.name || 'ဝယ်သူ';
+                        document.getElementById('profilePhone').textContent = data.phone || '09-XXX-XXX-XXX';
+                    }
+                }).catch(err => console.warn('User profile not found', err));
+            }
+
+            // =============================================================
+            // ၁၄။ FIREBASE REALTIME SYNC – PRODUCTS
+            // =============================================================
+            // ဤနေရာတွင် Admin မှ ပြောင်းလဲမှုများကို ချက်ချင်း လက်ခံရန်
+            let productsUnsubscribe = null;
+
+            function listenProducts() {
+                if (productsUnsubscribe) productsUnsubscribe();
+                productsUnsubscribe = db.collection('products')
+                    .onSnapshot((snapshot) => {
+                        if (snapshot.empty) {
+                            // No products in DB, fallback to mock
+                            console.warn('No products in Firestore, using mock data.');
+                            return;
+                        }
+                        const products = [];
+                        snapshot.forEach(doc => {
+                            products.push({ id: doc.id, ...doc.data() });
+                        });
+                        allProducts = products;
+                        // Re-apply current category filter
+                        const activeCat = document.querySelector('.category-chip.active');
+                        const cat = activeCat ? activeCat.dataset.cat : 'all';
+                        filterProducts(cat);
+                        console.log('✅ Products synced from Firestore:', products.length);
+                    }, (error) => {
+                        console.error('Product listener error:', error);
+                        // Fallback to mock data
+                        if (allProducts.length === 0) {
+                            allProducts = generateMockProducts(50);
+                            filterProducts('all');
+                        }
+                    });
+            }
+
+            // =============================================================
+            // ၁၅။ FIREBASE REALTIME SYNC – MESSAGES
+            // =============================================================
+            let messagesUnsubscribe = null;
+
+            function listenMessages() {
+                if (messagesUnsubscribe) messagesUnsubscribe();
+                messagesUnsubscribe = db.collection('messages')
+                    .orderBy('timestamp', 'asc')
+                    .onSnapshot((snapshot) => {
+                        const msgs = [];
+                        snapshot.forEach(doc => {
+                            const data = doc.data();
+                            msgs.push({
+                                id: doc.id,
+                                text: data.text,
+                                time: data.time || '--:--',
+                                isUser: data.userId === currentUserId,
+                                userId: data.userId
+                            });
+                        });
+                        messages = msgs;
+                        renderMessages();
+                        console.log('✅ Messages synced:', messages.length);
+                    }, (error) => {
+                        console.error('Message listener error:', error);
+                        // Keep local messages if offline
+                    });
+            }
+
+            // Override send message to save to Firestore
+            const originalSend = msgSendBtn.click;
+            msgSendBtn.addEventListener('click', function() {
+                const text = msgInput.value.trim();
+                if (!text) return;
+                const now = new Date();
+                const timeStr = now.toLocaleTimeString();
+                const msgData = {
+                    text: text,
+                    time: timeStr,
+                    userId: currentUserId,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    isUser: true
+                };
+                // Save to Firestore
+                db.collection('messages').add(msgData).then(() => {
+                    msgInput.value = '';
+                }).catch(err => {
+                    console.error('Send message error:', err);
+                    // Fallback: local save
+                    messages.push({ text, time: timeStr, isUser: true, userId: currentUserId });
+                    renderMessages();
+                    msgInput.value = '';
+                });
+            });
+
+            // =============================================================
+            // ၁၆။ ADMIN CONFIG (UI Config Sync)
+            // =============================================================
+            let configUnsubscribe = null;
+
+            function listenAdminConfig() {
+                if (configUnsubscribe) configUnsubscribe();
+                configUnsubscribe = db.collection('adminConfig').doc('uiSettings')
+                    .onSnapshot((doc) => {
+                        if (!doc.exists) return;
+                        const config = doc.data();
+                        // Apply grid columns
+                        const grid = document.querySelector('.product-grid');
+                        if (config.gridColumns) {
+                            grid.style.gridTemplateColumns = `repeat(${config.gridColumns}, 1fr)`;
+                        }
+                        // Apply colors
+                        if (config.primaryColor) {
+                            document.documentElement.style.setProperty('--primary', config.primaryColor);
+                        }
+                        if (config.secondaryColor) {
+                            document.documentElement.style.setProperty('--secondary', config.secondaryColor);
+                        }
+                        // Slow mode multiplier
+                        if (config.slowMultiplier) {
+                            slowModeMultiplier = config.slowMultiplier;
+                        }
+                        // Show/Hide category bar
+                        if (config.showCategories === false) {
+                            document.getElementById('categoryBar').style.display = 'none';
+                        } else {
+                            document.getElementById('categoryBar').style.display = '';
+                        }
+                        console.log('✅ Admin config applied:', config);
+                    }, (err) => {
+                        console.warn('Config listener error:', err);
+                    });
+            }
+
+            // =============================================================
+            // ၁၇။ MUSIC PLAYER (YouTube Playlist)
+            // =============================================================
+            // Admin မှ ထည့်သွင်းထားသော YouTube Link များကို ဖွင့်ရန်
+            let musicPlaylist = [];
+            let currentTrackIndex = 0;
+            let musicPlayerVisible = false;
+            let musicIframe = null;
+
+            function loadMusicPlaylist() {
+                // Firestore မှ playlist ကိုဖတ်ရန်
+                db.collection('adminConfig').doc('musicSettings')
+                    .onSnapshot((doc) => {
+                        if (doc.exists && doc.data().playlist) {
+                            musicPlaylist = doc.data().playlist.filter(url => url.trim() !== '');
+                            if (musicPlaylist.length > 0 && !musicIframe) {
+                                createMusicPlayer();
+                            }
+                        }
+                    }, (err) => {
+                        console.warn('Music config error:', err);
+                    });
+            }
+
+            function createMusicPlayer() {
+                if (musicIframe) return;
+                const container = document.createElement('div');
+                container.id = 'musicPlayerContainer';
+                container.style.cssText = `
+                    position:fixed; bottom:calc(var(--nav-height) + 80px); right:16px;
+                    width:280px; background:var(--card-bg); backdrop-filter:var(--glass-blur);
+                    border-radius:16px; border:1px solid var(--card-border);
+                    padding:12px; z-index:45; box-shadow:var(--shadow);
+                    display:none; transition:all var(--transition);
+                `;
+                container.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-weight:600; font-size:13px;">🎵 သီချင်းဖွင့်စက်</span>
+                        <button id="closeMusicBtn" style="background:none; border:none; font-size:16px; cursor:pointer; color:var(--text-secondary);">&times;</button>
+                    </div>
+                    <div id="musicIframeWrapper" style="margin-top:8px; border-radius:10px; overflow:hidden;">
+                        <iframe id="musicIframe" width="100%" height="120" src="" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen style="border-radius:10px;"></iframe>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin-top:8px; gap:8px;">
+                        <button id="prevTrackBtn" style="flex:1; padding:6px; background:var(--primary); color:#fff; border:none; border-radius:20px; cursor:pointer;">⏮</button>
+                        <button id="playPauseBtn" style="flex:1; padding:6px; background:var(--secondary); color:#fff; border:none; border-radius:20px; cursor:pointer;">▶</button>
+                        <button id="nextTrackBtn" style="flex:1; padding:6px; background:var(--primary); color:#fff; border:none; border-radius:20px; cursor:pointer;">⏭</button>
+                    </div>
+                `;
+                document.body.appendChild(container);
+                musicIframe = document.getElementById('musicIframe');
+                // Event listeners
+                document.getElementById('closeMusicBtn').addEventListener('click', () => {
+                    container.style.display = 'none';
+                    musicPlayerVisible = false;
+                });
+                document.getElementById('prevTrackBtn').addEventListener('click', () => playTrack(-1));
+                document.getElementById('nextTrackBtn').addEventListener('click', () => playTrack(1));
+                document.getElementById('playPauseBtn').addEventListener('click', togglePlayPause);
+                // Load first track
+                if (musicPlaylist.length > 0) {
+                    playTrack(0);
+                }
+                container.style.display = 'block';
+                musicPlayerVisible = true;
+            }
+
+            function playTrack(direction) {
+                if (musicPlaylist.length === 0) return;
+                if (typeof direction === 'number') {
+                    currentTrackIndex = (currentTrackIndex + direction + musicPlaylist.length) % musicPlaylist.length;
+                } else {
+                    currentTrackIndex = direction;
+                }
+                const url = musicPlaylist[currentTrackIndex];
+                // Extract video ID for YouTube embed
+                const videoId = url.match(/(?:v=|\/)([a-zA-Z0-9_-]{11})/);
+                if (videoId) {
+                    musicIframe.src = `https://www.youtube.com/embed/${videoId[1]}?autoplay=1&enablejsapi=1`;
+                } else {
+                    musicIframe.src = url;
+                }
+                // Store current track index in localStorage
+                localStorage.setItem('musicTrack', currentTrackIndex);
+            }
+
+            function togglePlayPause() {
+                const btn = document.getElementById('playPauseBtn');
+                if (btn.textContent === '▶') {
+                    btn.textContent = '⏸';
+                    // Resume playback (reload iframe)
+                    if (musicIframe.src) {
+                        const src = musicIframe.src;
+                        musicIframe.src = src.replace('autoplay=1', 'autoplay=1');
+                    }
+                } else {
+                    btn.textContent = '▶';
+                    // Pause (stop autoplay by reloading without autoplay)
+                    if (musicIframe.src) {
+                        const src = musicIframe.src.replace('autoplay=1', 'autoplay=0');
+                        musicIframe.src = src;
+                    }
+                }
+            }
+
+            // Music toggle button in header
+            document.getElementById('musicToggle').addEventListener('click', function() {
+                const container = document.getElementById('musicPlayerContainer');
+                if (container) {
+                    if (container.style.display === 'none' || container.style.display === '') {
+                        container.style.display = 'block';
+                        musicPlayerVisible = true;
+                    } else {
+                        container.style.display = 'none';
+                        musicPlayerVisible = false;
+                    }
+                } else {
+                    // Create if not exists
+                    createMusicPlayer();
+                }
+            });
+
+            // Restore music state from localStorage
+            const savedTrack = parseInt(localStorage.getItem('musicTrack'));
+            if (!isNaN(savedTrack) && savedTrack >= 0) {
+                currentTrackIndex = savedTrack;
+            }
+
+            // =============================================================
+            // ၁၈။ ORDER SAVING TO FIRESTORE
+            // =============================================================
+            // Confirm order button override
+            const originalConfirm = confirmOrderBtn.click;
+            confirmOrderBtn.addEventListener('click', function() {
+                if (screenshotInput.files.length === 0) {
+                    alert('ကျေးဇူးပြုပြီး ငွေလွှဲပြီးကြောင်း Screenshot တင်ပေးပါ။');
+                    return;
+                }
+
+                // Get checkout data
+                const name = sessionStorage.getItem('checkoutName') || 'Unknown';
+                const phone = sessionStorage.getItem('checkoutPhone') || 'N/A';
+                const address = sessionStorage.getItem('checkoutAddress') || 'N/A';
+                const items = cart.map(item => ({
+                    id: item.id,
+                    name: item.name,
+                    price: item.price,
+                    quantity: item.quantity
+                }));
+                const total = cart.reduce((sum, i) => sum + i.price * i.quantity, 0);
+
+                // Upload screenshot to Firebase Storage
+                const file = screenshotInput.files[0];
+                const storageRef = storage.ref(`orders/${currentUserId}_${Date.now()}_${file.name}`);
+                storageRef.put(file).then((snapshot) => {
+                    return snapshot.ref.getDownloadURL();
+                }).then((downloadURL) => {
+                    // Save order to Firestore
+                    const orderData = {
+                        userId: currentUserId,
+                        name: name,
+                        phone: phone,
+                        address: address,
+                        items: items,
+                        total: total,
+                        status: 'pending',
+                        paymentProof: downloadURL,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    };
+                    return db.collection('orders').add(orderData);
+                }).then((docRef) => {
+                    console.log('✅ Order saved:', docRef.id);
+                    // Send Telegram notification (via Cloud Function or direct fetch)
+                    sendTelegramNotification(name, total, docRef.id);
+                    // Clear cart
+                    cart = [];
+                    saveCart();
+                    // Success
+                    alert('✅ အော်ဒါအောင်မြင်ပါသည်! ကျေးဇူးတင်ပါတယ်။');
+                    // Confetti
+                    for (let i = 0; i < 80; i++) {
+                        const el = document.createElement('div');
+                        el.className = 'confetti-piece';
+                        el.style.left = Math.random() * 100 + 'vw';
+                        el.style.top = '-10px';
+                        el.style.background = ['#e11b1b', '#ff6b00', '#facc15', '#22c55e', '#3b82f6', '#8b5cf6'][Math.floor(Math.random() * 6)];
+                        el.style.animationDuration = (2 + Math.random() * 3) + 's';
+                        document.body.appendChild(el);
+                        setTimeout(() => el.remove(), 5000);
+                    }
+                    navigateTo('#success');
+                }).catch((err) => {
+                    console.error('Order save error:', err);
+                    alert('အော်ဒါမှတ်တမ်းတင်ရာတွင် အမှားရှိသည်။ နောက်မှကြိုးစားပါ။');
+                });
+            });
+
+            // =============================================================
+            // ၁၉။ TELEGRAM NOTIFICATION (via fetch)
+            // =============================================================
+            function sendTelegramNotification(name, total, orderId) {
+                // Round-Robin Bot Tokens
+                const tokens = [
+                    '8869917655:AAFk9tcBhEkmaFEOzXsbmcRQtymBtSZ3M9g',
+                    '8914390345:AAE-oorODF1HQbOLkuKJkNXwy-w2XbXtud0',
+                    '8684986169:AAE2JP-iOydPWEStbg2iDQ4koipL1czWYs0',
+                    '8949147819:AAGBSy8ZexmYrDMo2pRuqUA1k8PyOyE9OJQ'
+                ];
+                const chatId = '6917040501';
+                // Simple round-robin: use order id hash to pick token
+                const index = Math.floor(Math.random() * tokens.length);
+                const token = tokens[index];
+                const message = `🛒 အော်ဒါအသစ်!\n\n👤 ${name}\n💰 စုစုပေါင်း: Ks ${total.toLocaleString()}\n📦 အော်ဒါ ID: ${orderId}\n\nကျေးဇူးပြုပြီး စစ်ဆေးပေးပါ။`;
+                const url = `https://api.telegram.org/bot${token}/sendMessage`;
+                fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: chatId,
+                        text: message,
+                        parse_mode: 'HTML'
+                    })
+                }).then(res => res.json())
+                    .then(data => console.log('✅ Telegram sent:', data))
+                    .catch(err => console.warn('Telegram error:', err));
+            }
+
+            // =============================================================
+            // ၂၀။ HIDDEN ADMIN ACCESS (Logo double-tap)
+            // =============================================================
+            let logoClickCount = 0;
+            let logoClickTimer = null;
+            document.querySelector('.logo').addEventListener('click', function() {
+                logoClickCount++;
+                if (logoClickTimer) clearTimeout(logoClickTimer);
+                logoClickTimer = setTimeout(() => { logoClickCount = 0; }, 2000);
+                if (logoClickCount >= 5) {
+                    logoClickCount = 0;
+                    // Ask for admin password
+                    const password = prompt('Admin Password ထည့်ပါ (မူလ: 2003):');
+                    if (password === '2003') {
+                        // Navigate to admin panel (in a new tab or replace)
+                        window.location.href = 'admin.html';
+                    } else if (password !== null) {
+                        alert('မှားယွင်းသော စကားဝှက်။');
+                    }
+                }
+            });
+
+            // =============================================================
+            // ၂၁။ INITIALIZE ALL (စတင်ဖွင့်ခြင်း)
+            // =============================================================
+            function init() {
+                // Auth
+                initAuth();
+                // Listen to Firestore
+                listenProducts();
+                listenMessages();
+                listenAdminConfig();
+                loadMusicPlaylist();
+                // Cart UI
+                updateCartUI();
+                // DOM ready: parse hash
+                const hash = window.location.hash || '#home';
+                setTimeout(() => navigateTo(hash), 100);
+                // Auto-start music if available
+                setTimeout(() => {
+                    if (musicPlaylist.length > 0 && !musicIframe) {
+                        createMusicPlayer();
+                    }
+                }, 2000);
+                console.log('🚀 All systems initialized. Part 3 complete.');
+            }
+
+            // Run on DOM ready
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', init);
+            } else {
+                init();
+            }
+
+        })();
+    </script>
+    <!-- ============================================================ -->
+    <!-- ဤနေရာတွင် index.html Part 3 (Lines 601-900) ပြီးဆုံးပါသည်။ -->
+    <!-- index.html ဖိုင်အတွက် စုစုပေါင်း လိုင်း ၉၀၀ အထိ ရောက်ရှိပါပြီ။ -->
+    <!-- ကျန်ရှိသော ဖိုင်များ (admin.html, admin.js, user.js) ကို  -->
+    <!-- Part 4, Part 5, ... အဖြစ် ဆက်လက်ရေးသားပေးပါမည်။           -->
+    <!-- ============================================================ -->
+</body>
+</html>
                     
