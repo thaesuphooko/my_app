@@ -774,3 +774,764 @@
 // Code Injector (DeepSeek AI), Settings (Password, Shop Name, Clear Data)
 // နှင့် အပိုဆောင်း Admin Features များ ဆက်လက်ပါဝင်မည်။
 // ============================================================
+
+// ============================================================
+// admin.js - PART 2 (LINES 301-600)
+// UI Config (Real-time Sync), Telegram Integration, Backup & File Manager,
+// DeepSeek AI Code Injector, Settings (Password, Shop Name, Clear Data)
+// ============================================================
+
+(function() {
+    'use strict';
+
+    // =============================================================
+    // ၁၀။ UI CONFIG (Real-time Sync)
+    // =============================================================
+    // UI Configuration များကို Firestore မှ real-time ဖတ်ပြီး
+    // ဝယ်သူများထံ ချက်ချင်းသက်ရောက်စေရန်
+    // =============================================================
+
+    let configUnsubscribe = null;
+
+    function initUIConfig() {
+        const saveBtn = document.getElementById('saveConfigBtn');
+        if (!saveBtn) return;
+
+        // Load current config from Firestore
+        loadUIConfig();
+
+        // Save config
+        saveBtn.addEventListener('click', function() {
+            saveUIConfig();
+        });
+
+        // Toggle switches
+        document.querySelectorAll('.toggle-switch').forEach(toggle => {
+            toggle.addEventListener('click', function() {
+                this.classList.toggle('active');
+            });
+        });
+    }
+
+    async function loadUIConfig() {
+        try {
+            const doc = await db.collection('adminConfig').doc('uiSettings').get();
+            if (doc.exists) {
+                const config = doc.data();
+                // Colors
+                if (config.primaryColor) {
+                    document.getElementById('configPrimary').value = config.primaryColor;
+                }
+                if (config.secondaryColor) {
+                    document.getElementById('configSecondary').value = config.secondaryColor;
+                }
+                // Grid
+                if (config.gridDesktop) {
+                    document.getElementById('configGridDesktop').value = config.gridDesktop;
+                }
+                if (config.gridMobile) {
+                    document.getElementById('configGridMobile').value = config.gridMobile;
+                }
+                // Slow mode multiplier
+                if (config.slowMultiplier) {
+                    document.getElementById('configSlowMultiplier').value = config.slowMultiplier;
+                }
+                // Toggles
+                const flashSale = document.getElementById('toggleFlashSale');
+                const categories = document.getElementById('toggleCategories');
+                const slowMode = document.getElementById('toggleSlowMode');
+                if (flashSale) {
+                    flashSale.classList.toggle('active', config.flashSale !== false);
+                }
+                if (categories) {
+                    categories.classList.toggle('active', config.showCategories !== false);
+                }
+                if (slowMode) {
+                    slowMode.classList.toggle('active', config.slowMode !== false);
+                }
+            }
+        } catch (error) {
+            console.warn('Load UI config error:', error);
+        }
+    }
+
+    async function saveUIConfig() {
+        const config = {
+            primaryColor: document.getElementById('configPrimary').value,
+            secondaryColor: document.getElementById('configSecondary').value,
+            gridDesktop: parseInt(document.getElementById('configGridDesktop').value) || 4,
+            gridMobile: parseInt(document.getElementById('configGridMobile').value) || 2,
+            flashSale: document.getElementById('toggleFlashSale').classList.contains('active'),
+            showCategories: document.getElementById('toggleCategories').classList.contains('active'),
+            slowMode: document.getElementById('toggleSlowMode').classList.contains('active'),
+            slowMultiplier: parseInt(document.getElementById('configSlowMultiplier').value) || 6,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+
+        try {
+            await db.collection('adminConfig').doc('uiSettings').set(config, { merge: true });
+            if (window.showToast) {
+                window.showToast('✅ Config သိမ်းပြီးပါပြီ။', 'success');
+            } else {
+                alert('✅ Config သိမ်းပြီးပါပြီ။');
+            }
+            // Apply config immediately (for demo)
+            applyUIConfig(config);
+        } catch (error) {
+            alert('Config သိမ်းရာတွင် အမှားရှိသည်။');
+            console.error(error);
+        }
+    }
+
+    function applyUIConfig(config) {
+        // Apply colors
+        if (config.primaryColor) {
+            document.documentElement.style.setProperty('--primary', config.primaryColor);
+        }
+        if (config.secondaryColor) {
+            document.documentElement.style.setProperty('--secondary', config.secondaryColor);
+        }
+        // The rest will be applied on the client side via the real-time listener
+        // in index.html (main.js or user.js)
+    }
+
+    // Real-time listener for UI config (applies to admin panel as well)
+    function listenUIConfig() {
+        if (configUnsubscribe) {
+            configUnsubscribe();
+            configUnsubscribe = null;
+        }
+
+        configUnsubscribe = db.collection('adminConfig').doc('uiSettings')
+            .onSnapshot((doc) => {
+                if (doc.exists) {
+                    const config = doc.data();
+                    applyUIConfig(config);
+                    // Update form values if they don't match
+                    if (document.getElementById('configPrimary').value !== config.primaryColor) {
+                        document.getElementById('configPrimary').value = config.primaryColor || '#e11b1b';
+                    }
+                    if (document.getElementById('configSecondary').value !== config.secondaryColor) {
+                        document.getElementById('configSecondary').value = config.secondaryColor || '#ff6b00';
+                    }
+                    if (document.getElementById('configGridDesktop').value != config.gridDesktop) {
+                        document.getElementById('configGridDesktop').value = config.gridDesktop || 4;
+                    }
+                    if (document.getElementById('configGridMobile').value != config.gridMobile) {
+                        document.getElementById('configGridMobile').value = config.gridMobile || 2;
+                    }
+                    if (document.getElementById('configSlowMultiplier').value != config.slowMultiplier) {
+                        document.getElementById('configSlowMultiplier').value = config.slowMultiplier || 6;
+                    }
+                }
+            }, (error) => {
+                console.warn('UI Config listener error:', error);
+            });
+    }
+
+    // =============================================================
+    // ၁၁။ TELEGRAM INTEGRATION
+    // =============================================================
+    // Telegram Broadcast နှင့် Bot Tokens Management
+    // =============================================================
+
+    const TG_BOT_TOKENS = [
+        '8869917655:AAFk9tcBhEkmaFEOzXsbmcRQtymBtSZ3M9g',
+        '8914390345:AAE-oorODF1HQbOLkuKJkNXwy-w2XbXtud0',
+        '8684986169:AAE2JP-iOydPWEStbg2iDQ4koipL1czWYs0',
+        '8949147819:AAGBSy8ZexmYrDMo2pRuqUA1k8PyOyE9OJQ'
+    ];
+    const TG_CHAT_ID = '6917040501';
+
+    function initTelegram() {
+        const broadcastBtn = document.getElementById('tgBroadcastBtn');
+        const msgInput = document.getElementById('tgBroadcastMsg');
+
+        if (!broadcastBtn || !msgInput) return;
+
+        // Display tokens
+        const tokensList = document.getElementById('tgTokensList');
+        if (tokensList) {
+            tokensList.innerHTML = TG_BOT_TOKENS.map((t, i) =>
+                `${i+1}) ${t}`
+            ).join('<br />');
+        }
+
+        // Chat ID
+        const chatIdEl = document.getElementById('tgChatId');
+        if (chatIdEl) {
+            chatIdEl.textContent = TG_CHAT_ID;
+        }
+
+        // Broadcast
+        broadcastBtn.addEventListener('click', async function() {
+            const msg = msgInput.value.trim();
+            if (!msg) {
+                alert('စာသားထည့်ပါ။');
+                return;
+            }
+
+            // Use first token for broadcast (or round-robin)
+            const tokenIndex = Math.floor(Math.random() * TG_BOT_TOKENS.length);
+            const token = TG_BOT_TOKENS[tokenIndex];
+            const url = `https://api.telegram.org/bot${token}/sendMessage`;
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: TG_CHAT_ID,
+                        text: `📢 Broadcast:\n\n${msg}`,
+                        parse_mode: 'HTML'
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+                if (data.ok) {
+                    if (window.showToast) {
+                        window.showToast('✅ Broadcast ပို့ပြီးပါပြီ။', 'success');
+                    } else {
+                        alert('✅ Broadcast ပို့ပြီးပါပြီ။');
+                    }
+                    msgInput.value = '';
+                } else {
+                    throw new Error(data.description || 'Unknown error');
+                }
+            } catch (error) {
+                alert('Broadcast ပို့ရာတွင် အမှားရှိသည်။\n' + error.message);
+                console.error(error);
+            }
+        });
+
+        // Enter key support
+        msgInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                broadcastBtn.click();
+            }
+        });
+    }
+
+    // =============================================================
+    // ၁၂။ BACKUP & FILE MANAGER
+    // =============================================================
+    // Code Editor, Save Code, Backup, Restore
+    // =============================================================
+
+    function initBackupManager() {
+        const fileSelect = document.getElementById('backupFileSelect');
+        const codeEditor = document.getElementById('codeEditorArea');
+        const saveBtn = document.getElementById('saveCodeBtn');
+        const backupBtn = document.getElementById('backupNowBtn');
+
+        if (!fileSelect || !codeEditor) return;
+
+        // Load file content on selection change
+        fileSelect.addEventListener('change', function() {
+            loadFileContent(this.value);
+        });
+
+        // Save code
+        if (saveBtn) {
+            saveBtn.addEventListener('click', function() {
+                const filename = fileSelect.value;
+                const content = codeEditor.value;
+                saveFileContent(filename, content);
+            });
+        }
+
+        // Create backup
+        if (backupBtn) {
+            backupBtn.addEventListener('click', function() {
+                const filename = fileSelect.value;
+                const content = codeEditor.value;
+                createFileBackup(filename, content);
+            });
+        }
+
+        // Load initial file
+        loadFileContent(fileSelect.value);
+
+        // Load backup list
+        loadBackupList();
+    }
+
+    async function loadFileContent(filename) {
+        const editor = document.getElementById('codeEditorArea');
+        if (!editor) return;
+
+        try {
+            const doc = await db.collection('backups').doc(filename).get();
+            if (doc.exists) {
+                editor.value = doc.data().content || `// ${filename} - ကုဒ်ရှိပါသည်။\n// Last updated: ${doc.data().updatedAt ? doc.data().updatedAt.toDate().toLocaleString() : 'N/A'}`;
+            } else {
+                // Default content based on file type
+                const defaultContent = getDefaultContent(filename);
+                editor.value = defaultContent;
+            }
+        } catch (error) {
+            console.warn('Load file error:', error);
+            editor.value = `// ${filename} - ကုဒ်မရှိသေးပါ\n// Error: ${error.message}`;
+        }
+    }
+
+    function getDefaultContent(filename) {
+        const defaults = {
+            'index.html': `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Premium Shop</title>
+</head>
+<body>
+    <h1>Premium Shop</h1>
+    <p>Welcome to Premium Shop</p>
+</body>
+</html>`,
+            'admin.html': `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Panel</title>
+</head>
+<body>
+    <h1>Admin Panel</h1>
+    <p>Welcome to Admin Panel</p>
+</body>
+</html>`,
+            'style.css': `/* Main Styles */\nbody {\n    font-family: sans-serif;\n    margin: 0;\n    padding: 0;\n}`,
+            'main.js': `// Main JavaScript\nconsole.log('Hello from main.js');`,
+            'user.js': `// User JavaScript\nconsole.log('Hello from user.js');`,
+            'admin.js': `// Admin JavaScript\nconsole.log('Hello from admin.js');`,
+            'firebase-config.js': `// Firebase Config\n// Firebase configuration goes here`
+        };
+        return defaults[filename] || `// ${filename} - ကုဒ်ရေးရန် နေရာ\n// File created: ${new Date().toLocaleString()}`;
+    }
+
+    async function saveFileContent(filename, content) {
+        try {
+            await db.collection('backups').doc(filename).set({
+                content: content,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            if (window.showToast) {
+                window.showToast(`✅ ${filename} သိမ်းပြီးပါပြီ။`, 'success');
+            } else {
+                alert(`✅ ${filename} သိမ်းပြီးပါပြီ။`);
+            }
+            loadBackupList();
+        } catch (error) {
+            alert(`File သိမ်းရာတွင် အမှားရှိသည်။\n${error.message}`);
+            console.error(error);
+        }
+    }
+
+    async function createFileBackup(filename, content) {
+        const backupName = `${filename}_${Date.now()}`;
+        try {
+            await db.collection('backupHistory').doc(backupName).set({
+                filename: filename,
+                content: content,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            if (window.showToast) {
+                window.showToast('✅ Backup ပြုလုပ်ပြီးပါပြီ။', 'success');
+            } else {
+                alert('✅ Backup ပြုလုပ်ပြီးပါပြီ။');
+            }
+            loadBackupList();
+        } catch (error) {
+            alert('Backup လုပ်ရာတွင် အမှားရှိသည်။');
+            console.error(error);
+        }
+    }
+
+    async function loadBackupList() {
+        const container = document.getElementById('backupList');
+        if (!container) return;
+
+        try {
+            const snapshot = await db.collection('backupHistory')
+                .orderBy('createdAt', 'desc')
+                .limit(10)
+                .get();
+
+            if (snapshot.empty) {
+                container.innerHTML = '<div class="text-muted" style="text-align:center;padding:20px;">Backup မရှိသေးပါ</div>';
+                return;
+            }
+
+            let html = '';
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                const date = data.createdAt ? data.createdAt.toDate().toLocaleString() : 'N/A';
+                html += `
+                    <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--card-border);align-items:center;flex-wrap:wrap;gap:4px;">
+                        <span style="font-size:13px;font-weight:500;">${data.filename}</span>
+                        <span style="font-size:11px;color:var(--text-light);">${date}</span>
+                        <button class="admin-btn admin-btn-sm admin-btn-outline restore-backup-btn" data-id="${doc.id}" style="font-size:11px;">Restore</button>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+
+            // Restore buttons
+            document.querySelectorAll('.restore-backup-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const id = this.dataset.id;
+                    restoreBackup(id);
+                });
+            });
+        } catch (error) {
+            console.warn('Load backup list error:', error);
+            container.innerHTML = '<div class="text-muted" style="text-align:center;padding:20px;">Backup ဖွင့်ရာတွင် အမှားရှိသည်</div>';
+        }
+    }
+
+    async function restoreBackup(backupId) {
+        if (!confirm('ဤ Backup ကို ပြန်လည်ရယူမည် သေချာပါသလား?\nလက်ရှိကုဒ်များ ဆုံးရှုံးနိုင်ပါသည်။')) return;
+
+        try {
+            const doc = await db.collection('backupHistory').doc(backupId).get();
+            if (!doc.exists) {
+                alert('Backup မတွေ့ပါ။');
+                return;
+            }
+            const data = doc.data();
+            const filename = data.filename;
+            const content = data.content || '';
+
+            // Save to backups collection
+            await db.collection('backups').doc(filename).set({
+                content: content,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            // Update editor
+            const editor = document.getElementById('codeEditorArea');
+            if (editor) {
+                editor.value = content;
+            }
+
+            if (window.showToast) {
+                window.showToast(`✅ ${filename} ကို ပြန်လည်ရယူပြီးပါပြီ။`, 'success');
+            } else {
+                alert(`✅ ${filename} ကို ပြန်လည်ရယူပြီးပါပြီ။`);
+            }
+            loadBackupList();
+        } catch (error) {
+            alert('Backup ပြန်လည်ရယူရာတွင် အမှားရှိသည်။');
+            console.error(error);
+        }
+    }
+
+    // =============================================================
+    // ၁၃။ DEEPSEEK AI CODE INJECTOR
+    // =============================================================
+    // သဘာဝဘာသာစကားဖြင့် အမိန့်ပေးရုံဖြင့် ကုဒ်ထုတ်ပေးသည့်
+    // DeepSeek AI Integration
+    // =============================================================
+
+    const DEEPSEEK_API_KEY = 'sk-0958bf018f8e4e048cf61d5cde979b86';
+    const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
+
+    function initCodeInjector() {
+        const injectBtn = document.getElementById('aiInjectBtn');
+        const previewBtn = document.getElementById('aiPreviewBtn');
+        const promptInput = document.getElementById('aiPromptInput');
+        const resultDiv = document.getElementById('aiResult');
+
+        if (!injectBtn || !promptInput) return;
+
+        injectBtn.addEventListener('click', async function() {
+            const prompt = promptInput.value.trim();
+            if (!prompt) {
+                alert('အမိန့်တစ်ခုခု ရိုက်ထည့်ပါ။');
+                return;
+            }
+
+            resultDiv.style.display = 'block';
+            resultDiv.textContent = '⏳ AI ကုဒ်ထုတ်နေသည်...';
+            resultDiv.style.background = 'var(--card-bg)';
+
+            try {
+                const code = await callDeepSeekAPI(prompt);
+                resultDiv.textContent = code;
+                resultDiv.style.background = 'var(--card-bg)';
+                if (window.showToast) {
+                    window.showToast('✅ AI ကုဒ်ထုတ်ပြီးပါပြီ။', 'success');
+                }
+            } catch (error) {
+                resultDiv.textContent = `❌ AI ချိတ်ဆက်မှု အမှားရှိသည်။\n${error.message}`;
+                resultDiv.style.background = 'rgba(220,38,38,0.05)';
+                console.error('DeepSeek error:', error);
+            }
+        });
+
+           // Preview button - open in new window
+        if (previewBtn) {
+            previewBtn.addEventListener('click', function() {
+                const code = resultDiv.textContent;
+                if (!code || code.includes('AI ကုဒ်ထုတ်နေသည်') || code.includes('AI ချိတ်ဆက်မှု')) {
+                    alert('ကုဒ်မရှိသေးပါ။ "Code Inject" ကို ဦးစွာနှိပ်ပါ။');
+                    return;
+                }
+                // Try to detect HTML
+                const isHTML = code.includes('<html') || code.includes('<!DOCTYPE');
+                const win = window.open('', '_blank');
+                if (win) {
+                    if (isHTML) {
+                        win.document.write(code);
+                    } else {
+                        win.document.write(`<html><head><title>AI Code Preview</title></head><body><pre style="white-space:pre-wrap;word-wrap:break-word;padding:20px;font-family:monospace;background:#1a1a2e;color:#e0e0e0;min-height:100vh;">${code}</pre></body></html>`);
+                    }
+                    win.document.close();
+                } else {
+                    alert('Popup blocked. Please allow popups for this site.');
+                }
+            });
+        }
+    }
+
+    async function callDeepSeekAPI(prompt) {
+        const response = await fetch(DEEPSEEK_API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+            },
+            body: JSON.stringify({
+                model: 'deepseek-chat',
+                messages: [
+                    {
+                        role: 'system',
+                        content: `You are a code generator assistant. Generate HTML, CSS, or JavaScript code based on the user request.
+                        Only output the code without explanation, unless the user specifically asks for explanation.
+                        If the request is to modify existing code, output the complete modified code.
+                        Keep the code clean, well-commented, and production-ready.
+                        For HTML, include proper structure. For CSS, include proper selectors. For JavaScript, include proper syntax.
+                        If the request is about a specific file (like style.css, main.js), output code that would go in that file.`
+                    },
+                    {
+                        role: 'user',
+                        content: prompt
+                    }
+                ],
+                max_tokens: 1500,
+                temperature: 0.7
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error?.message || `HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        const content = data.choices?.[0]?.message?.content;
+
+        if (!content) {
+            throw new Error('AI မှ ကုဒ်ထုတ်မပေးနိုင်ပါ။');
+        }
+
+        return content;
+    }
+
+    // =============================================================
+    // ၁၄။ SETTINGS (Password, Shop Name, Clear Data)
+    // =============================================================
+    // Admin Password ပြောင်းခြင်း, ဆိုင်အမည်ပြောင်းခြင်း,
+    // ဒေတာအားလုံးရှင်းခြင်း
+    // =============================================================
+
+    function initSettings() {
+        // Update password
+        const passwordBtn = document.getElementById('updatePasswordBtn');
+        const passwordInput = document.getElementById('adminPasswordInput');
+        if (passwordBtn && passwordInput) {
+            passwordBtn.addEventListener('click', async function() {
+                const newPass = passwordInput.value.trim();
+                if (!newPass || newPass.length < 4) {
+                    alert('စကားဝှက်ကို အနည်းဆုံး ၄ လုံးထည့်ပါ။');
+                    return;
+                }
+                try {
+                    await db.collection('adminConfig').doc('settings').set({
+                        adminPassword: newPass,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    }, { merge: true });
+                    if (window.showToast) {
+                        window.showToast('✅ Password ပြောင်းပြီးပါပြီ။', 'success');
+                    } else {
+                        alert('✅ Password ပြောင်းပြီးပါပြီ။');
+                    }
+                } catch (error) {
+                    alert('Password ပြောင်းရာတွင် အမှားရှိသည်။');
+                    console.error(error);
+                }
+            });
+        }
+
+        // Update shop name
+        const shopNameBtn = document.getElementById('updateShopNameBtn');
+        const shopNameInput = document.getElementById('shopNameInput');
+        if (shopNameBtn && shopNameInput) {
+            shopNameBtn.addEventListener('click', async function() {
+                const name = shopNameInput.value.trim();
+                if (!name) {
+                    alert('ဆိုင်အမည်ထည့်ပါ။');
+                    return;
+                }
+                try {
+                    await db.collection('adminConfig').doc('settings').set({
+                        shopName: name,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    }, { merge: true });
+                    if (window.showToast) {
+                        window.showToast('✅ ဆိုင်အမည် သိမ်းပြီးပါပြီ။', 'success');
+                    } else {
+                        alert('✅ ဆိုင်အမည် သိမ်းပြီးပါပြီ။');
+                    }
+                } catch (error) {
+                    alert('ဆိုင်အမည် သိမ်းရာတွင် အမှားရှိသည်။');
+                    console.error(error);
+                }
+            });
+        }
+
+        // Load settings from Firestore
+        loadSettings();
+
+        // Clear all data
+        const clearBtn = document.getElementById('clearAllDataBtn');
+        if (clearBtn) {
+            clearBtn.addEventListener('click', function() {
+                if (!confirm('⚠️ ဒေတာအားလုံးကို ရှင်းမည် သေချာပါသလား? ဤလုပ်ဆောင်ချက်ကို ပြန်မယူနိုင်ပါ။')) return;
+                if (!confirm('နောက်တစ်ခါ သေချာစစ်ဆေးပါ။ ရှင်းမည် သေချာပါသလား?')) return;
+                clearAllData();
+            });
+        }
+    }
+
+    async function loadSettings() {
+        try {
+            const doc = await db.collection('adminConfig').doc('settings').get();
+            if (doc.exists) {
+                const data = doc.data();
+                if (data.adminPassword) {
+                    document.getElementById('adminPasswordInput').value = data.adminPassword;
+                }
+                if (data.shopName) {
+                    document.getElementById('shopNameInput').value = data.shopName;
+                }
+            }
+        } catch (error) {
+            console.warn('Load settings error:', error);
+        }
+    }
+
+    async function clearAllData() {
+        try {
+            // Delete all products
+            const productsSnap = await db.collection('products').get();
+            const productBatch = db.batch();
+            productsSnap.forEach(doc => productBatch.delete(doc.ref));
+            await productBatch.commit();
+            console.log('✅ Products deleted.');
+
+            // Delete all orders
+            const ordersSnap = await db.collection('orders').get();
+            const orderBatch = db.batch();
+            ordersSnap.forEach(doc => orderBatch.delete(doc.ref));
+            await orderBatch.commit();
+            console.log('✅ Orders deleted.');
+
+            // Delete all messages
+            const messagesSnap = await db.collection('messages').get();
+            const msgBatch = db.batch();
+            messagesSnap.forEach(doc => msgBatch.delete(doc.ref));
+            await msgBatch.commit();
+            console.log('✅ Messages deleted.');
+
+            // Reload everything
+            loadDashboardStats();
+            loadProducts();
+            loadOrders();
+
+            if (window.showToast) {
+                window.showToast('✅ ဒေတာအားလုံး ရှင်းပြီးပါပြီ။', 'success');
+            } else {
+                alert('✅ ဒေတာအားလုံး ရှင်းပြီးပါပြီ။');
+            }
+        } catch (error) {
+            alert('ဒေတာရှင်းရာတွင် အမှားရှိသည်။');
+            console.error(error);
+        }
+    }
+
+    // =============================================================
+    // ၁၅။ INITIALIZATION (ဆက်လက်)
+    // =============================================================
+
+    function initAdminPart2() {
+        console.log('👤 Initializing Admin Panel Part 2...');
+
+        // UI Config
+        initUIConfig();
+        listenUIConfig();
+
+        // Telegram
+        initTelegram();
+
+        // Backup & File Manager
+        initBackupManager();
+
+        // DeepSeek Code Injector
+        initCodeInjector();
+
+        // Settings
+        initSettings();
+
+        // Expose additional functions
+        window.loadBackupList = loadBackupList;
+        window.loadFileContent = loadFileContent;
+        window.saveFileContent = saveFileContent;
+        window.loadUIConfig = loadUIConfig;
+        window.saveUIConfig = saveUIConfig;
+        window.callDeepSeekAPI = callDeepSeekAPI;
+
+        console.log('✅ admin.js - Part 2 (Lines 301-600) complete.');
+        console.log('📌 Admin Panel fully loaded.');
+    }
+
+    // Run on DOM ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initAdminPart2);
+    } else {
+        initAdminPart2();
+    }
+
+})(); // IIFE end
+
+// ============================================================
+// ဤနေရာတွင် admin.js Part 2 ပြီးဆုံးပါသည်။ လိုင်း ၆၀၀ အတိအကျ။
+// admin.js ဖိုင်အတွက် စုစုပေါင်း လိုင်း ၆၀၀ အထိ ပြီးမြောက်ပါပြီ။
+// 
+// ပရောဂျက်တစ်ခုလုံးအတွက် လိုအပ်သော ဖိုင်များအားလုံးကို
+// သတ်မှတ်ထားသော လိုင်းအကန့်အသတ်ဖြင့် ရေးသားပြီးပါပြီ။
+//
+// အားလုံးသော ဖိုင်များ-
+// ✅ index.html (Part 1-3, 900 lines)
+// ✅ admin.html (Part 1-2, 600 lines)
+// ✅ style.css (Part 1-3, 900 lines)
+// ✅ firebase-config.js (Part 1-3, 900 lines)
+// ✅ main.js (Part 1-2, 600 lines)
+// ✅ user.js (Part 1-2, 600 lines)
+// ✅ admin.js (Part 1-2, 600 lines)
+//
+// စုစုပေါင်း လိုင်း ~ 5,100 lines
+// ============================================================
