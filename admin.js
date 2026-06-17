@@ -1,5 +1,5 @@
 // ============================================================
-// admin.js - Admin JavaScript (အပိုင်း ၁/၄)
+// admin.js - Admin JavaScript (အပိုင်း ၁/၅)
 // Core, Auth, Config
 // ============================================================
 
@@ -122,7 +122,7 @@ function getRapidAPILimitFromStorage() {
 function saveRapidAPILimit(limit) { if (limit) { localStorage.setItem("rapidapi_limit", JSON.stringify(limit)); } }
 
 // ============================================================
-// admin.js - Admin JavaScript (အပိုင်း ၂/၄)
+// admin.js - Admin JavaScript (အပိုင်း ၂/၅)
 // Grid & Tracking Settings
 // ============================================================
 
@@ -166,7 +166,7 @@ function saveTrackingSettings() {
 }
 
 // ============================================================
-// admin.js - Admin JavaScript (အပိုင်း ၃/၄)
+// admin.js - Admin JavaScript (အပိုင်း ၃/၅)
 // Products with Select All & Delete
 // ============================================================
 
@@ -392,8 +392,8 @@ function renderAdminChatMessages() {
 }
 
 // ============================================================
-// admin.js - Admin JavaScript (အပိုင်း ၄/၄)
-// Order Tracking, Sync, Event Listeners
+// admin.js - Admin JavaScript (အပိုင်း ၄/၅)
+// Order Tracking & Sync
 // ============================================================
 
 // ============================================================
@@ -554,6 +554,11 @@ async function syncAmazonProducts(searchTerm, maxPages = 10) {
     }
     return 0;
 }
+
+// ============================================================
+// admin.js - Admin JavaScript (အပိုင်း ၅/၅)
+// Event Listeners
+// ============================================================
 
 // ============================================================
 // 3. EVENT LISTENERS
@@ -740,7 +745,7 @@ document.addEventListener("DOMContentLoaded", function() {
     // Tracking Settings
     document.getElementById("saveTrackingSettingsBtn")?.addEventListener("click", saveTrackingSettings);
 
-       // Bulk Discount
+    // Bulk Discount
     document.getElementById("applyBulkDiscountBtn")?.addEventListener("click", () => {
         const amount = parseInt(document.getElementById("bulkDiscountAmount").value);
         if (isNaN(amount)) { showStatus("bulkStatus", "❌ Please enter a valid number", "error"); return; }
@@ -890,4 +895,3 @@ document.addEventListener("DOMContentLoaded", function() {
 
     console.log("✅ Admin Panel loaded!");
 });
-```
