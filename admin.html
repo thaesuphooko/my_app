@@ -5,27 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Admin Panel - Shop.com.mm</title>
 
-    <!-- ===== PAPA PARSE (CSV) ===== -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js">
-    </script>
-
-    <!-- ===== LEAFET.JS (Map) ===== -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
-    </script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    <!-- ===== FIREBASE SDK ===== -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js">
-    </script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js">
-    </script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js">
-    </script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 
     <script>
-        // ============================================================
-        // FIREBASE CONFIG (Project: app-my-caee3)
-        // ============================================================
         const firebaseConfig = {
             apiKey: "AIzaSyDSu2XksfUZ6mAfktUpBqFtNxrgj96h1l4",
             authDomain: "app-my-caee3.firebaseapp.com",
@@ -35,7 +23,6 @@
             appId: "1:169669907659:web:8fba75e7aed449e3ffb74e",
             measurementId: "G-RTM9J8L6R1"
         };
-
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         console.log("✅ Firebase connected!");
@@ -43,179 +30,36 @@
 
     <link rel="stylesheet" href="style.css">
     <style>
-        /* ===== ADMIN STYLES ===== */
-        .admin-panel {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 1rem;
-        }
-        .admin-section {
-            background: #fff;
-            padding: 1.2rem;
-            border-radius: 12px;
-            margin-bottom: 1.2rem;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-            border: 1px solid #eee;
-        }
-        .admin-section h3 {
-            font-size: 1.1rem;
-            margin-bottom: 0.8rem;
-            color: #222;
-            border-bottom: 2px solid #e11b1b;
-            padding-bottom: 0.4rem;
-        }
-        .admin-section label {
-            display: block;
-            font-weight: 600;
-            font-size: 0.85rem;
-            margin-top: 0.5rem;
-            color: #555;
-        }
-        .admin-section input,
-        .admin-section textarea {
-            width: 100%;
-            padding: 0.5rem 0.8rem;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            margin-top: 0.2rem;
-        }
-        .admin-section textarea {
-            height: 70px;
-            resize: vertical;
-        }
-        .admin-section .btn-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            margin-top: 0.8rem;
-        }
-        .admin-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.85rem;
-            margin-top: 0.5rem;
-        }
-        .admin-table th {
-            background: #f8f8f8;
-            padding: 0.5rem 0.6rem;
-            text-align: left;
-            border-bottom: 2px solid #eee;
-        }
-        .admin-table td {
-            padding: 0.4rem 0.6rem;
-            border-bottom: 1px solid #eee;
-            vertical-align: middle;
-        }
-        .admin-table input {
-            width: 100%;
-            padding: 0.2rem 0.4rem;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 0.8rem;
-        }
-        .admin-table .btn-sm {
-            padding: 0.15rem 0.6rem;
-            font-size: 0.7rem;
-            border-radius: 20px;
-        }
-        .admin-header {
-            background: #e11b1b;
-            color: #fff;
-            padding: 0.8rem 1.5rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-radius: 12px 12px 0 0;
-        }
-        .admin-header h1 {
-            font-size: 1.2rem;
-            margin: 0;
-        }
-        .admin-header .admin-user {
-            font-size: 0.85rem;
-            opacity: 0.9;
-        }
-        .admin-grid-2 {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
-        }
-        .status-msg {
-            padding: 0.5rem;
-            border-radius: 8px;
-            margin-top: 0.5rem;
-            font-weight: 500;
-        }
-        .status-msg.success {
-            background: #d4edda;
-            color: #155724;
-        }
-        .status-msg.error {
-            background: #f8d7da;
-            color: #721c24;
-        }
-        .status-msg.info {
-            background: #d1ecf1;
-            color: #0c5460;
-        }
-        .grid-col-btn {
-            min-width: 80px;
-        }
-        .grid-col-btn.btn-primary {
-            background: #e11b1b;
-            color: #fff;
-            border-color: #e11b1b;
-        }
-        .grid-col-btn.btn-primary:hover {
-            background: #c00;
-        }
-
-        /* ===== BULK ACTIONS ===== */
-        .admin-bulk-actions {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            margin-bottom: 1rem;
-            flex-wrap: wrap;
-            padding: 0.5rem 0.8rem;
-            background: #f8f9fa;
-            border-radius: 8px;
-        }
-        .admin-bulk-actions label {
-            display: flex;
-            align-items: center;
-            gap: 0.3rem;
-            font-size: 0.85rem;
-            cursor: pointer;
-        }
-        .admin-bulk-actions .btn-danger {
-            background: #dc3545;
-            color: #fff;
-        }
-        .admin-bulk-actions .btn-danger:hover {
-            background: #b02a37;
-        }
-
-        /* ===== TRACKING MAP ===== */
-        .tracking-map-container {
-            width: 100%;
-            height: 300px;
-            border-radius: 12px;
-            overflow: hidden;
-            border: 1px solid #ddd;
-            margin-top: 0.5rem;
-        }
-        .tracking-map-container .leaflet-container {
-            width: 100%;
-            height: 100%;
-        }
-
-        @media (max-width: 768px) {
-            .admin-grid-2 {
-                grid-template-columns: 1fr;
-            }
-        }
+        .admin-panel { max-width: 1200px; margin: 0 auto; padding: 1rem; }
+        .admin-section { background: #fff; padding: 1.2rem; border-radius: 12px; margin-bottom: 1.2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #eee; }
+        .admin-section h3 { font-size: 1.1rem; margin-bottom: 0.8rem; color: #222; border-bottom: 2px solid #e11b1b; padding-bottom: 0.4rem; }
+        .admin-section label { display: block; font-weight: 600; font-size: 0.85rem; margin-top: 0.5rem; color: #555; }
+        .admin-section input, .admin-section textarea { width: 100%; padding: 0.5rem 0.8rem; border: 1px solid #ddd; border-radius: 8px; font-size: 0.9rem; margin-top: 0.2rem; }
+        .admin-section textarea { height: 70px; resize: vertical; }
+        .admin-section .btn-group { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.8rem; }
+        .admin-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 0.5rem; }
+        .admin-table th { background: #f8f8f8; padding: 0.5rem 0.6rem; text-align: left; border-bottom: 2px solid #eee; }
+        .admin-table td { padding: 0.4rem 0.6rem; border-bottom: 1px solid #eee; vertical-align: middle; }
+        .admin-table input { width: 100%; padding: 0.2rem 0.4rem; border: 1px solid #ddd; border-radius: 4px; font-size: 0.8rem; }
+        .admin-table .btn-sm { padding: 0.15rem 0.6rem; font-size: 0.7rem; border-radius: 20px; }
+        .admin-header { background: #e11b1b; color: #fff; padding: 0.8rem 1.5rem; display: flex; justify-content: space-between; align-items: center; border-radius: 12px 12px 0 0; }
+        .admin-header h1 { font-size: 1.2rem; margin: 0; }
+        .admin-header .admin-user { font-size: 0.85rem; opacity: 0.9; }
+        .admin-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .status-msg { padding: 0.5rem; border-radius: 8px; margin-top: 0.5rem; font-weight: 500; }
+        .status-msg.success { background: #d4edda; color: #155724; }
+        .status-msg.error { background: #f8d7da; color: #721c24; }
+        .status-msg.info { background: #d1ecf1; color: #0c5460; }
+        @media (max-width: 768px) { .admin-grid-2 { grid-template-columns: 1fr; } }
+        .grid-col-btn { min-width: 80px; }
+        .grid-col-btn.btn-primary { background: #e11b1b; color: #fff; border-color: #e11b1b; }
+        .grid-col-btn.btn-primary:hover { background: #c00; }
+        .admin-bulk-actions { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; padding: 0.5rem 0.8rem; background: #f8f9fa; border-radius: 8px; }
+        .admin-bulk-actions label { display: flex; align-items: center; gap: 0.3rem; font-size: 0.85rem; cursor: pointer; }
+        .admin-bulk-actions .btn-danger { background: #dc3545; color: #fff; }
+        .admin-bulk-actions .btn-danger:hover { background: #b02a37; }
+        .tracking-map-container { width: 100%; height: 300px; border-radius: 12px; overflow: hidden; border: 1px solid #ddd; margin-top: 0.5rem; }
+        .tracking-map-container .leaflet-container { width: 100%; height: 100%; }
     </style>
 </head>
 <body>
@@ -229,136 +73,75 @@
             </div>
         </div>
 
-        <!-- ========================================================== -->
         <!-- ===== GRID LAYOUT CONTROLLER ===== -->
-        <!-- ========================================================== -->
         <div class="admin-section">
             <h3>📐 Product Grid Layout</h3>
-            <p style="font-size:0.85rem;color:#888;margin-bottom:0.5rem;">
-                ပစ္စည်းများ၏ အရွယ်အစားကို Admin မှ ချိန်ညှိနိုင်ပါသည်။
-            </p>
+            <p style="font-size:0.85rem;color:#888;margin-bottom:0.5rem;">ပစ္စည်းများ၏ အရွယ်အစားကို Admin မှ ချိန်ညှိနိုင်ပါသည်။</p>
             <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
                 <button class="btn grid-col-btn" data-cols="2">2 Columns</button>
                 <button class="btn grid-col-btn" data-cols="3">3 Columns</button>
                 <button class="btn grid-col-btn" data-cols="4">4 Columns</button>
                 <button class="btn grid-col-btn" data-cols="5">5 Columns</button>
             </div>
-            <div id="gridStatus" style="margin-top:0.5rem;font-size:0.85rem;color:#888;">
-                Current: <span id="currentGridDisplay">4</span> columns
-            </div>
+            <div id="gridStatus" style="margin-top:0.5rem;font-size:0.85rem;color:#888;">Current: <span id="currentGridDisplay">4</span> columns</div>
         </div>
 
-        <!-- ========================================================== -->
         <!-- ===== ADMIN ROUTE SETTINGS ===== -->
-        <!-- ========================================================== -->
         <div class="admin-section">
             <h3>🔗 Admin Route Settings</h3>
             <div class="admin-grid-2">
-                <div>
-                    <label>Admin Route (URL Hash)</label>
-                    <input type="text" id="adminRouteInput" placeholder="#step" value="#step" />
-                </div>
-                <div>
-                    <label>Admin Page Filename</label>
-                    <input type="text" id="adminPageInput" placeholder="admin.html" value="admin.html" />
-                </div>
+                <div><label>Admin Route (URL Hash)</label><input type="text" id="adminRouteInput" placeholder="#step" value="#step" /></div>
+                <div><label>Admin Page Filename</label><input type="text" id="adminPageInput" placeholder="admin.html" value="admin.html" /></div>
             </div>
             <button class="btn btn-success" id="saveAdminRouteBtn">💾 Save Route Settings</button>
             <div id="routeStatus" class="status-msg" style="display:none;"></div>
         </div>
 
-        <!-- ========================================================== -->
         <!-- ===== STORE CUSTOMIZATION ===== -->
-        <!-- ========================================================== -->
         <div class="admin-section">
             <h3>🏪 Store Customization</h3>
             <div class="admin-grid-2">
-                <div>
-                    <label>Store Name</label>
-                    <input type="text" id="adminStoreName" value="Shop" />
-                </div>
-                <div>
-                    <label>Currency Symbol</label>
-                    <input type="text" id="adminCurrency" value="MMK" />
-                </div>
-                <div>
-                    <label>Header Title (Browser Tab)</label>
-                    <input type="text" id="adminHeaderTitle" value="🛒 Shop.com.mm" />
-                </div>
-                <div>
-                    <label>Chat Widget Title</label>
-                    <input type="text" id="adminChatTitle" value="💬 Support & Order Chat" />
-                </div>
+                <div><label>Store Name</label><input type="text" id="adminStoreName" value="Shop" /></div>
+                <div><label>Currency Symbol</label><input type="text" id="adminCurrency" value="MMK" /></div>
+                <div><label>Header Title (Browser Tab)</label><input type="text" id="adminHeaderTitle" value="🛒 Shop.com.mm" /></div>
+                <div><label>Chat Widget Title</label><input type="text" id="adminChatTitle" value="💬 Support & Order Chat" /></div>
             </div>
-            <label>Footer Text</label>
-            <input type="text" id="adminFooterText" value="© 2026 Shop.com.mm — Real Amazon API Integration" />
+            <label>Footer Text</label><input type="text" id="adminFooterText" value="© 2026 Shop.com.mm — Real Amazon API Integration" />
             <button class="btn btn-success" id="saveStoreConfigBtn">💾 Save Store Settings</button>
             <div id="storeStatus" class="status-msg" style="display:none;"></div>
         </div>
 
-        <!-- ========================================================== -->
         <!-- ===== ADMIN PASSWORD ===== -->
-        <!-- ========================================================== -->
         <div class="admin-section">
             <h3>🔑 Admin Password</h3>
             <div class="admin-grid-2">
-                <div>
-                    <label>Current Password</label>
-                    <input type="password" id="adminCurrentPwd" placeholder="Current password" />
-                </div>
-                <div>
-                    <label>New Password</label>
-                    <input type="password" id="adminNewPwd" placeholder="New password (min 4 chars)" />
-                </div>
+                <div><label>Current Password</label><input type="password" id="adminCurrentPwd" placeholder="Current password" /></div>
+                <div><label>New Password</label><input type="password" id="adminNewPwd" placeholder="New password (min 4 chars)" /></div>
             </div>
             <button class="btn btn-primary" id="adminChangePwdBtn">Change Password</button>
             <div id="adminPwdStatus" class="status-msg" style="display:none;"></div>
         </div>
 
-        <!-- ========================================================== -->
         <!-- ===== CHECKOUT SETTINGS ===== -->
-        <!-- ========================================================== -->
         <div class="admin-section">
             <h3>📦 Checkout Settings</h3>
             <div class="admin-grid-2">
-                <div>
-                    <label>Name Label</label>
-                    <input type="text" id="adminLabelName" value="အမည်" />
-                </div>
-                <div>
-                    <label>Phone Label</label>
-                    <input type="text" id="adminLabelPhone" value="ဖုန်းနံပါတ်" />
-                </div>
-                <div>
-                    <label>Address Label</label>
-                    <input type="text" id="adminLabelAddress" value="လိပ်စာ" />
-                </div>
-                <div>
-                    <label>Submit Button Text</label>
-                    <input type="text" id="adminLabelSubmit" value="ဆက်လုပ်ရန်" />
-                </div>
-                <div>
-                    <label>Bank Name</label>
-                    <input type="text" id="adminBankName" value="Wave Pay" />
-                </div>
-                <div>
-                    <label>Payment Number</label>
-                    <input type="text" id="adminPaymentNumber" value="09 781 145 573 (Thae Su Phoo Ko)" />
-                </div>
+                <div><label>Name Label</label><input type="text" id="adminLabelName" value="အမည်" /></div>
+                <div><label>Phone Label</label><input type="text" id="adminLabelPhone" value="ဖုန်းနံပါတ်" /></div>
+                <div><label>Address Label</label><input type="text" id="adminLabelAddress" value="လိပ်စာ" /></div>
+                <div><label>Submit Button Text</label><input type="text" id="adminLabelSubmit" value="ဆက်လုပ်ရန်" /></div>
+                <div><label>Bank Name</label><input type="text" id="adminBankName" value="Wave Pay" /></div>
+                <div><label>Payment Number</label><input type="text" id="adminPaymentNumber" value="09 781 145 573 (Thae Su Phoo Ko)" /></div>
             </div>
             <button class="btn btn-success" id="adminSaveCheckoutBtn">💾 Save Checkout Settings</button>
             <div id="checkoutStatus" class="status-msg" style="display:none;"></div>
         </div>
 
-        <!-- ========================================================== -->
         <!-- ===== TELEGRAM SETTINGS ===== -->
-        <!-- ========================================================== -->
         <div class="admin-section">
             <h3>📨 Telegram Settings</h3>
-            <label>Bot Tokens (one per line)</label>
-            <textarea id="telegramTokens" placeholder="Bot tokens..."></textarea>
-            <label>Chat ID</label>
-            <input type="text" id="telegramChatId" placeholder="Your Telegram Chat ID" />
+            <label>Bot Tokens (one per line)</label><textarea id="telegramTokens" placeholder="Bot tokens..."></textarea>
+            <label>Chat ID</label><input type="text" id="telegramChatId" placeholder="Your Telegram Chat ID" />
             <div class="btn-group">
                 <button class="btn btn-success" id="saveTelegramBtn">💾 Save</button>
                 <button class="btn btn-primary" id="testTelegramBtn">📨 Test Message</button>
@@ -367,44 +150,27 @@
             <div id="telegramStatus" class="status-msg" style="display:none;"></div>
         </div>
 
-        <!-- ========================================================== -->
         <!-- ===== TELEGRAM BROADCAST ===== -->
-        <!-- ========================================================== -->
         <div class="admin-section">
             <h3>📢 Telegram Broadcast</h3>
             <p style="font-size:0.85rem;color:#888;margin-bottom:0.5rem;">Send message to any user via Telegram (by username or phone)</p>
             <div class="admin-grid-2">
-                <div>
-                    <label>Recipient (Username or Phone)</label>
-                    <input type="text" id="broadcastRecipient" placeholder="username or phone number" />
-                </div>
-                <div>
-                    <label>Subject (optional)</label>
-                    <input type="text" id="broadcastSubject" placeholder="Subject" />
-                </div>
+                <div><label>Recipient (Username or Phone)</label><input type="text" id="broadcastRecipient" placeholder="username or phone number" /></div>
+                <div><label>Subject (optional)</label><input type="text" id="broadcastSubject" placeholder="Subject" /></div>
             </div>
-            <label>Message</label>
-            <textarea id="broadcastMessage" placeholder="Your message to user..."></textarea>
+            <label>Message</label><textarea id="broadcastMessage" placeholder="Your message to user..."></textarea>
             <button class="btn btn-primary" id="broadcastBtn">📨 Send Broadcast</button>
             <div id="broadcastStatus" class="status-msg" style="display:none;"></div>
         </div>
 
-        <!-- ========================================================== -->
         <!-- ===== API LIMITS DISPLAY ===== -->
-        <!-- ========================================================== -->
         <div class="admin-section">
             <h3>📊 API Limits & Usage</h3>
-            <div id="apiLimitDisplay">
-                <div style="color:#888;font-size:0.85rem;">Loading limits...</div>
-            </div>
-            <button class="btn btn-outline" id="refreshLimitsBtn" style="margin-top:0.5rem;">
-                🔄 Refresh Limits
-            </button>
+            <div id="apiLimitDisplay"><div style="color:#888;font-size:0.85rem;">Loading limits...</div></div>
+            <button class="btn btn-outline" id="refreshLimitsBtn" style="margin-top:0.5rem;">🔄 Refresh Limits</button>
         </div>
 
-        <!-- ========================================================== -->
         <!-- ===== AMAZON API SYNC ===== -->
-        <!-- ========================================================== -->
         <div class="admin-section">
             <h3>🛒 Amazon API Sync</h3>
             <div style="margin:0.5rem 0;padding:0.5rem;background:#f8f9fa;border-radius:8px;">
@@ -415,116 +181,66 @@
                 </div>
             </div>
             <div class="admin-grid-2">
-                <div>
-                    <label>API Key</label>
-                    <input type="text" id="adminApiKey" value="1852a28efamsh993c0fa32ed6003p1072dbjsnd07318e9d120" />
-                </div>
-                <div>
-                    <label>API Host</label>
-                    <input type="text" id="adminApiHost" value="real-time-amazon-data.p.rapidapi.com" />
-                </div>
+                <div><label>API Key</label><input type="text" id="adminApiKey" value="1852a28efamsh993c0fa32ed6003p1072dbjsnd07318e9d120" /></div>
+                <div><label>API Host</label><input type="text" id="adminApiHost" value="real-time-amazon-data.p.rapidapi.com" /></div>
             </div>
             <button class="btn btn-outline" id="saveApiConfigBtn">💾 Save API Config</button>
             <div style="margin-top:0.8rem;">
                 <div class="admin-grid-2">
-                    <div>
-                        <label>Search Term</label>
-                        <input type="text" id="adminSearchTerm" placeholder="laptop, phone, shirt..." />
-                    </div>
-                    <div>
-                        <label>Max Pages (1 page ≈ 10 items)</label>
-                        <input type="number" id="adminMaxPages" value="20" min="1" max="50" />
-                    </div>
+                    <div><label>Search Term</label><input type="text" id="adminSearchTerm" placeholder="laptop, phone, shirt..." /></div>
+                    <div><label>Max Pages (1 page ≈ 10 items)</label><input type="number" id="adminMaxPages" value="20" min="1" max="50" /></div>
                 </div>
                 <button class="btn btn-primary" id="syncAmazonBtn">📥 Sync from Amazon</button>
                 <div id="syncStatus" class="status-msg" style="display:none;"></div>
             </div>
         </div>
 
-        <!-- ========================================================== -->
         <!-- ===== GOOGLE SHEETS SYNC ===== -->
-        <!-- ========================================================== -->
         <div class="admin-section">
             <h3>📊 Google Sheets Sync</h3>
-            <label>Published CSV URL</label>
-            <input type="text" id="adminSheetUrl" placeholder="https://docs.google.com/spreadsheets/d/e/.../pub?output=csv" />
+            <label>Published CSV URL</label><input type="text" id="adminSheetUrl" placeholder="https://docs.google.com/spreadsheets/d/e/.../pub?output=csv" />
             <button class="btn btn-success" id="syncSheetBtn">📥 Sync Google Sheet</button>
             <div id="sheetSyncStatus" class="status-msg" style="display:none;"></div>
         </div>
 
-        <!-- ========================================================== -->
-             <!-- ===== TRACKING SETTINGS ===== -->
-        <!-- ========================================================== -->
+        <!-- ===== TRACKING SETTINGS ===== -->
         <div class="admin-section">
             <h3>🚚 Order Tracking Settings</h3>
-            <p style="font-size:0.85rem;color:#888;margin-bottom:0.5rem;">
-                အော်ဒါတစ်ခုစီ၏ အဆင့်များအတွက် အချိန်သတ်မှတ်ချက်များ (စက္ကန့်ဖြင့်)
-            </p>
+            <p style="font-size:0.85rem;color:#888;margin-bottom:0.5rem;">အော်ဒါတစ်ခုစီ၏ အဆင့်များအတွက် အချိန်သတ်မှတ်ချက်များ (စက္ကန့်ဖြင့်)</p>
             <div class="admin-grid-2">
-                <div>
-                    <label>📦 Order Received (seconds)</label>
-                    <input type="number" id="trackingTimeReceived" value="10" min="0" />
-                    <small style="color:#888;font-size:0.7rem;">Default: 10 seconds</small>
-                </div>
-                <div>
-                    <label>⚙️ Processing (seconds)</label>
-                    <input type="number" id="trackingTimeProcessing" value="10800" min="0" />
-                    <small style="color:#888;font-size:0.7rem;">Default: 3 hours (10800s)</small>
-                </div>
-                <div>
-                    <label>🚚 Shipped (seconds)</label>
-                    <input type="number" id="trackingTimeShipped" value="43200" min="0" />
-                    <small style="color:#888;font-size:0.7rem;">Default: 12 hours (43200s)</small>
-                </div>
-                <div>
-                    <label>✅ Delivered (seconds)</label>
-                    <input type="number" id="trackingTimeDelivered" value="172800" min="0" />
-                    <small style="color:#888;font-size:0.7rem;">Default: 2 days (172800s)</small>
-                </div>
+                <div><label>📦 Order Received (seconds)</label><input type="number" id="trackingTimeReceived" value="10" min="0" /><small style="color:#888;font-size:0.7rem;">Default: 10 seconds</small></div>
+                <div><label>⚙️ Processing (seconds)</label><input type="number" id="trackingTimeProcessing" value="10800" min="0" /><small style="color:#888;font-size:0.7rem;">Default: 3 hours (10800s)</small></div>
+                <div><label>🚚 Shipped (seconds)</label><input type="number" id="trackingTimeShipped" value="43200" min="0" /><small style="color:#888;font-size:0.7rem;">Default: 12 hours (43200s)</small></div>
+                <div><label>✅ Delivered (seconds)</label><input type="number" id="trackingTimeDelivered" value="172800" min="0" /><small style="color:#888;font-size:0.7rem;">Default: 2 days (172800s)</small></div>
             </div>
             <button class="btn btn-success" id="saveTrackingSettingsBtn">💾 Save Tracking Settings</button>
             <div id="trackingStatus" class="status-msg" style="display:none;"></div>
         </div>
 
-        <!-- ========================================================== -->
         <!-- ===== BULK PRICE UPDATE ===== -->
-        <!-- ========================================================== -->
         <div class="admin-section">
             <h3>💰 Bulk Price Update</h3>
             <div class="admin-grid-2">
-                <div>
-                    <label>Discount Amount (negative for discount, positive for increase)</label>
-                    <input type="number" id="bulkDiscountAmount" placeholder="-5000" />
-                </div>
-                <div style="display:flex;align-items:flex-end;">
-                    <button class="btn btn-primary" id="applyBulkDiscountBtn" style="width:100%;">Apply to All Products</button>
-                </div>
+                <div><label>Discount Amount (negative for discount, positive for increase)</label><input type="number" id="bulkDiscountAmount" placeholder="-5000" /></div>
+                <div style="display:flex;align-items:flex-end;"><button class="btn btn-primary" id="applyBulkDiscountBtn" style="width:100%;">Apply to All Products</button></div>
             </div>
             <div id="bulkStatus" class="status-msg" style="display:none;"></div>
         </div>
 
-        <!-- ========================================================== -->
         <!-- ===== USER MANAGEMENT ===== -->
-        <!-- ========================================================== -->
         <div class="admin-section">
             <h3>👥 User Management</h3>
             <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.5rem;">
                 <input type="text" id="adminUserSearch" placeholder="Search user..." style="flex:2;min-width:150px;" />
                 <button class="btn btn-outline" id="adminUserSearchBtn">🔍 Search</button>
             </div>
-            <div id="userListContainer" style="max-height:200px;overflow-y:auto;border:1px solid #ddd;border-radius:8px;padding:0.3rem;">
-                <div style="color:#888;font-size:0.85rem;text-align:center;padding:0.5rem;">Loading users...</div>
-            </div>
+            <div id="userListContainer" style="max-height:200px;overflow-y:auto;border:1px solid #ddd;border-radius:8px;padding:0.3rem;"><div style="color:#888;font-size:0.85rem;text-align:center;padding:0.5rem;">Loading users...</div></div>
         </div>
 
-        <!-- ========================================================== -->
         <!-- ===== USER MESSAGES (Chat) ===== -->
-        <!-- ========================================================== -->
         <div class="admin-section">
             <h3>💬 User Messages (Chat)</h3>
-            <div style="max-height:200px;overflow-y:auto;border:1px solid #ddd;border-radius:8px;padding:0.3rem;" id="adminChatMessages">
-                <div style="color:#888;font-size:0.85rem;text-align:center;padding:0.5rem;">Loading messages...</div>
-            </div>
+            <div style="max-height:200px;overflow-y:auto;border:1px solid #ddd;border-radius:8px;padding:0.3rem;" id="adminChatMessages"><div style="color:#888;font-size:0.85rem;text-align:center;padding:0.5rem;">Loading messages...</div></div>
             <div style="margin-top:0.5rem;">
                 <label>Reply to user</label>
                 <div style="display:flex;gap:0.3rem;">
@@ -536,9 +252,7 @@
             </div>
         </div>
 
-        <!-- ========================================================== -->
         <!-- ===== CSV IMPORT/EXPORT ===== -->
-        <!-- ========================================================== -->
         <div class="admin-section">
             <h3>📂 CSV Import / Export</h3>
             <input type="file" id="csvFile" accept=".csv" />
@@ -551,56 +265,41 @@
             <div id="csvStatus" class="status-msg" style="display:none;"></div>
         </div>
 
-        <!-- ========================================================== -->
-        <!-- ===== PRODUCTS (with Bulk Delete) ===== -->
-        <!-- ========================================================== -->
+        <!-- ===== PRODUCTS WITH BULK DELETE ===== -->
         <div class="admin-section">
             <h3>📦 Products ( <span id="productCount">0</span> )</h3>
-
-            <!-- ===== BULK ACTIONS ===== -->
             <div class="admin-bulk-actions">
-                <label>
-                    <input type="checkbox" id="selectAllProductsCheckbox" />
-                    Select All
-                </label>
+                <label><input type="checkbox" id="selectAllProductsCheckboxHeader" /> Select All</label>
                 <span style="color:#888;font-size:0.85rem;" id="selectedCountDisplay">0 selected</span>
                 <button class="btn btn-danger" id="deleteSelectedBtn" style="font-size:0.8rem;padding:0.2rem 1rem;">🗑️ Delete Selected</button>
                 <span style="flex:1;"></span>
                 <button class="btn btn-outline" id="refreshProductsBtn" style="font-size:0.8rem;padding:0.2rem 1rem;">🔄 Refresh</button>
             </div>
-
             <div style="overflow-x:auto;">
                 <table class="admin-table">
-                    <thead>
-                        <tr>
-                            <th style="width:30px;"><input type="checkbox" id="selectAllProductsCheckboxHeader" /></th>
-                            <th style="width:50px;">ID</th>
-                            <th style="width:60px;">Image</th>
-                            <th>Name</th>
-                            <th style="width:100px;">Price</th>
-                            <th style="width:120px;">Status</th>
-                            <th style="width:100px;">Actions</th>
-                        </tr>
-                    </thead>
+                    <thead><tr><th style="width:30px;"></th><th style="width:50px;">ID</th><th style="width:60px;">Image</th><th>Name</th><th style="width:100px;">Price</th><th style="width:120px;">Status</th><th style="width:100px;">Actions</th></tr></thead>
                     <tbody id="adminProductRows"></tbody>
                 </table>
             </div>
             <div class="pagination" id="adminPagination"></div>
         </div>
 
-        <!-- ========================================================== -->
-        <!-- ===== BACK TO STORE ===== -->
-        <!-- ========================================================== -->
+        <!-- ===== ORDER TRACKING LIST (ADMIN) ===== -->
+        <div class="admin-section">
+            <h3>📦 All Orders (Tracking)</h3>
+            <div id="adminOrderTrackingList" style="max-height:300px;overflow-y:auto;border:1px solid #eee;border-radius:8px;padding:0.3rem;">
+                <div style="color:#888;font-size:0.85rem;text-align:center;padding:0.5rem;">No orders yet</div>
+            </div>
+            <button class="btn btn-outline" id="refreshOrdersBtn" style="margin-top:0.5rem;font-size:0.8rem;padding:0.2rem 1rem;">🔄 Refresh Orders</button>
+        </div>
+
+          <!-- ===== BACK TO STORE ===== -->
         <div style="text-align:center;margin-top:1rem;">
             <button class="btn btn-outline" id="exitAdminBtn" style="padding:0.5rem 2rem;">🏠 Back to Store</button>
         </div>
     </div>
 
-    <!-- ========================================================== -->
-    <!-- ===== SCRIPTS ===== -->
-    <!-- ========================================================== -->
     <script src="main.js"></script>
     <script src="admin.js"></script>
-
 </body>
 </html>
