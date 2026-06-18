@@ -1,20 +1,15 @@
-<!-- ============================================================
-     firebase-config.js - Complete Version
-     ဒီ Code ကို firebase-config.js ဖိုင်အဖြစ် သိမ်းပါ။
-     ============================================================ -->
-
-<script>
 // ============================================================
-// firebase-config.js - COMPLETE (All-in-One)
+// firebase-config.js - Complete & Error-Free
+// မြန်မာလို Variable Name လုံးဝမပါ
 // ============================================================
 
 (function() {
     'use strict';
 
-    console.log('🔥 Firebase Config (Complete) စတင်နေပါပြီ...');
+    console.log('Firebase Config starting...');
 
     // Firebase Configuration
-    const firebaseConfig = {
+    var firebaseConfig = {
         apiKey: "AIzaSyDSu2XksfUZ6mAfktUpBqFtNxrgj96h1l4",
         authDomain: "app-my-caee3.firebaseapp.com",
         projectId: "app-my-caee3",
@@ -27,35 +22,36 @@
     // Initialize Firebase
     try {
         if (typeof firebase === 'undefined') {
-            throw new Error('Firebase SDK not loaded. Check index.html');
+            throw new Error('Firebase SDK not loaded');
         }
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
-            console.log('✅ Firebase App initialized');
+            console.log('Firebase initialized');
         }
     } catch (e) {
-        console.error('❌ Firebase init error:', e);
+        console.error('Firebase init error:', e);
     }
 
-    // Get Services
-    let db, auth, storage;
+    // Get services
+    var db, auth, storage;
     try {
         db = firebase.firestore();
         auth = firebase.auth();
         storage = firebase.storage();
-        db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
-        console.log('✅ Firestore, Auth, Storage ready');
+        db.enablePersistence({ synchronizeTabs: true }).catch(function() {});
+        console.log('Firestore, Auth, Storage ready');
     } catch (e) {
-        console.error('❌ Services init error:', e);
+        console.error('Services init error:', e);
     }
 
-    // Global Variables
+    // Global variables
     window.db = db;
     window.auth = auth;
     window.storage = storage;
     window.allProducts = [];
     window.cart = JSON.parse(localStorage.getItem('cart')) || [];
     window.currentUser = null;
+
     window.TELEGRAM_IDS = [
         '8869917655:AAFk9tcBhEkmaFEOzXsbmcRQtymBtSZ3M9g',
         '8914390345:AAE-oorODF1HQbOLkuKJkNXwy-w2XbXtud0',
@@ -73,14 +69,16 @@
     };
     window.ADMIN_SECRET = '2003';
 
-    // ===== CORE CRUD FUNCTIONS =====
+    // ==================== CRUD FUNCTIONS ====================
 
     window.getCollection = async function(collectionName) {
         try {
             if (!db) throw new Error('Firestore not available');
-            const snapshot = await db.collection(collectionName).get();
-            const results = [];
-            snapshot.forEach(doc => results.push({ id: doc.id, ...doc.data() }));
+            var snapshot = await db.collection(collectionName).get();
+            var results = [];
+            snapshot.forEach(function(doc) {
+                results.push({ id: doc.id, ...doc.data() });
+            });
             return results;
         } catch (e) {
             console.error('getCollection error:', e);
@@ -91,7 +89,7 @@
     window.getDocument = async function(collectionName, docId) {
         try {
             if (!db) throw new Error('Firestore not available');
-            const doc = await db.collection(collectionName).doc(docId).get();
+            var doc = await db.collection(collectionName).doc(docId).get();
             return doc.exists ? { id: doc.id, ...doc.data() } : null;
         } catch (e) {
             console.error('getDocument error:', e);
@@ -102,12 +100,12 @@
     window.addDocument = async function(collectionName, data) {
         try {
             if (!db) throw new Error('Firestore not available');
-            const docData = {
+            var docData = {
                 ...data,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
             };
-            const docRef = await db.collection(collectionName).add(docData);
+            var docRef = await db.collection(collectionName).add(docData);
             return docRef.id;
         } catch (e) {
             console.error('addDocument error:', e);
@@ -138,53 +136,33 @@
         }
     };
 
-    window.queryCollection = async function(collectionName, conditions = [], orderByField = null, orderDirection = 'asc', limit = null) {
+    window.queryCollection = async function(collectionName, conditions, orderByField, orderDirection, limit) {
+        conditions = conditions || [];
         try {
             if (!db) throw new Error('Firestore not available');
-            let query = db.collection(collectionName);
-            conditions.forEach(c => {
+            var query = db.collection(collectionName);
+            conditions.forEach(function(c) {
                 query = query.where(c.field, c.operator, c.value);
             });
             if (orderByField) {
-                query = query.orderBy(orderByField, orderDirection);
+                query = query.orderBy(orderByField, orderDirection || 'asc');
             }
             if (limit) {
                 query = query.limit(limit);
             }
-            const snapshot = await query.get();
-            const results = [];
-            snapshot.forEach(doc => results.push({ id: doc.id, ...doc.data() }));
+            var snapshot = await query.get();
+            var results = [];
+            snapshot.forEach(function(doc) {
+                results.push({ id: doc.id, ...doc.data() });
+            });
             return results;
         } catch (e) {
             console.error('queryCollection error:', e);
-            // Fallback: get all and filter manually
-            try {
-                const all = await window.getCollection(collectionName);
-                let filtered = all;
-                conditions.forEach(c => {
-                    filtered = filtered.filter(item => {
-                        if (c.operator === '==') return item[c.field] === c.value;
-                        if (c.operator === 'array-contains') {
-                            return Array.isArray(item[c.field]) && item[c.field].includes(c.value);
-                        }
-                        return true;
-                    });
-                });
-                if (orderByField) {
-                    filtered.sort((a, b) => {
-                        const va = a[orderByField] || '';
-                        const vb = b[orderByField] || '';
-                        return orderDirection === 'asc' ? va - vb : vb - va;
-                    });
-                }
-                return filtered;
-            } catch (fallbackError) {
-                return [];
-            }
+            return [];
         }
     };
 
-    // ===== USER FUNCTIONS =====
+    // ==================== USER FUNCTIONS ====================
 
     window.getUserProfile = async function(userId) {
         return await window.getDocument('users', userId);
@@ -195,7 +173,7 @@
     };
 
     window.getWishlist = async function(userId) {
-        const doc = await window.getDocument('wishlists', userId);
+        var doc = await window.getDocument('wishlists', userId);
         return doc ? doc.items || [] : [];
     };
 
@@ -217,34 +195,34 @@
     };
 
     window.getOrdersByUser = async function(userId) {
-        // No orderBy - sort client-side
-        const orders = await window.queryCollection('orders', [
+        var orders = await window.queryCollection('orders', [
             { field: 'userId', operator: '==', value: userId }
         ]);
-        return orders.sort((a, b) => {
-            const da = a.createdAt?.toDate?.() || new Date(0);
-            const db = b.createdAt?.toDate?.() || new Date(0);
+        return orders.sort(function(a, b) {
+            var da = a.createdAt && a.createdAt.toDate ? a.createdAt.toDate() : new Date(0);
+            var db = b.createdAt && b.createdAt.toDate ? b.createdAt.toDate() : new Date(0);
             return db - da;
         });
     };
 
-    window.sendMessage = async function(userId, text, sender = 'user') {
+    window.sendMessage = async function(userId, text, sender) {
+        sender = sender || 'user';
         if (!db) throw new Error('Firestore not available');
-        const data = {
+        var data = {
             userId: userId,
             text: text,
             sender: sender,
             read: false,
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         };
-        const docRef = await db.collection('messages').add(data);
+        var docRef = await db.collection('messages').add(data);
         return docRef.id;
     };
 
-    // ===== PRODUCT & ORDER FUNCTIONS =====
+    // ==================== PRODUCT & ORDER ====================
 
     window.addProduct = async function(productData) {
-        const data = {
+        var data = {
             ...productData,
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -265,21 +243,23 @@
 
     window.bulkDeleteProducts = async function(productIds) {
         if (!db) throw new Error('Firestore not available');
-        const batch = db.batch();
-        productIds.forEach(id => {
+        var batch = db.batch();
+        productIds.forEach(function(id) {
             batch.delete(db.collection('products').doc(id));
         });
         await batch.commit();
     };
 
-    window.bulkUpdateProductPrices = async function(productIds, percentageChange, priceField = 'price') {
+    window.bulkUpdateProductPrices = async function(productIds, percentageChange, priceField) {
+        priceField = priceField || 'price';
         if (!db) throw new Error('Firestore not available');
-        const batch = db.batch();
-        for (const id of productIds) {
-            const doc = await db.collection('products').doc(id).get();
+        var batch = db.batch();
+        for (var i = 0; i < productIds.length; i++) {
+            var id = productIds[i];
+            var doc = await db.collection('products').doc(id).get();
             if (!doc.exists) continue;
-            const current = doc.data()[priceField] || 0;
-            const newPrice = Math.round(current * (1 + percentageChange / 100));
+            var current = doc.data()[priceField] || 0;
+            var newPrice = Math.round(current * (1 + percentageChange / 100));
             batch.update(db.collection('products').doc(id), {
                 [priceField]: newPrice,
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -289,34 +269,37 @@
     };
 
     window.createOrder = async function(orderData) {
-        const orderId = await window.addDocument('orders', {
+        var orderId = await window.addDocument('orders', {
             ...orderData,
             status: 'pending',
             statusHistory: [{
                 status: 'pending',
                 timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                note: 'အော်ဒါအသစ်'
+                note: 'New order'
             }],
             tracking: {
                 currentLocation: { lat: 16.8409, lng: 96.1735 },
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
             }
         });
-        const msg = `🆕 <b>အော်ဒါအသစ် #${orderId}</b>\n👤 ${orderData.name || 'ဧည့်သည်'}\n💰 Ks ${(orderData.total || 0).toLocaleString()}`;
+        var msg = 'New order #' + orderId + '\n' +
+            'Customer: ' + (orderData.name || 'Guest') + '\n' +
+            'Total: Ks ' + ((orderData.total || 0).toLocaleString());
         window.sendTelegramNotification(msg);
         return orderId;
     };
 
-    window.updateOrderStatus = async function(orderId, newStatus, note = '') {
+    window.updateOrderStatus = async function(orderId, newStatus, note) {
+        note = note || '';
         if (!db) throw new Error('Firestore not available');
-        const ref = db.collection('orders').doc(orderId);
-        const doc = await ref.get();
+        var ref = db.collection('orders').doc(orderId);
+        var doc = await ref.get();
         if (!doc.exists) throw new Error('Order not found');
-        const history = doc.data().statusHistory || [];
+        var history = doc.data().statusHistory || [];
         history.push({
             status: newStatus,
             timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-            note: note || `Status changed to ${newStatus}`
+            note: note || 'Status changed to ' + newStatus
         });
         await ref.update({
             status: newStatus,
@@ -331,17 +314,17 @@
 
     window.addReview = async function(productId, reviewData) {
         if (!db) throw new Error('Firestore not available');
-        const reviewId = await window.addDocument('reviews', {
+        var reviewId = await window.addDocument('reviews', {
             ...reviewData,
             productId: productId,
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
-        const productRef = db.collection('products').doc(productId);
-        const product = await productRef.get();
+        var productRef = db.collection('products').doc(productId);
+        var product = await productRef.get();
         if (product.exists) {
-            const currentReviews = product.data().reviewsCount || 0;
-            const currentRating = product.data().rating || 0;
-            const newRating = ((currentRating * currentReviews) + reviewData.rating) / (currentReviews + 1);
+            var currentReviews = product.data().reviewsCount || 0;
+            var currentRating = product.data().rating || 0;
+            var newRating = ((currentRating * currentReviews) + reviewData.rating) / (currentReviews + 1);
             await productRef.update({
                 rating: Math.round(newRating * 10) / 10,
                 reviewsCount: currentReviews + 1,
@@ -351,19 +334,22 @@
         return reviewId;
     };
 
-    window.getReviewsForProduct = async function(productId, limit = 20) {
-        const reviews = await window.queryCollection('reviews', [
+    window.getReviewsForProduct = async function(productId, limit) {
+        limit = limit || 20;
+        var reviews = await window.queryCollection('reviews', [
             { field: 'productId', operator: '==', value: productId }
         ]);
-        return reviews.sort((a, b) => {
-            return (b.createdAt?.toDate?.() || new Date(0)) - (a.createdAt?.toDate?.() || new Date(0));
+        return reviews.sort(function(a, b) {
+            var da = a.createdAt && a.createdAt.toDate ? a.createdAt.toDate() : new Date(0);
+            var db = b.createdAt && b.createdAt.toDate ? b.createdAt.toDate() : new Date(0);
+            return db - da;
         }).slice(0, limit);
     };
 
-    // ===== ADMIN & SETTINGS =====
+    // ==================== ADMIN & SETTINGS ====================
 
     window.getSettings = async function() {
-        const doc = await window.getDocument('settings', 'siteConfig');
+        var doc = await window.getDocument('settings', 'siteConfig');
         if (doc) return doc;
         return {
             primaryColor: '#e11b1b',
@@ -379,13 +365,14 @@
         await window.updateDocument('settings', 'siteConfig', settings);
     };
 
-    window.getUISettings = async function(forceRefresh = false) {
-        const cacheKey = 'ui_settings';
+    window.getUISettings = async function(forceRefresh) {
+        forceRefresh = forceRefresh || false;
+        var cacheKey = 'ui_settings';
         if (!forceRefresh) {
-            const cached = window.getCachedData ? window.getCachedData(cacheKey) : null;
+            var cached = window.getCachedData ? window.getCachedData(cacheKey) : null;
             if (cached) return cached;
         }
-        const settings = await window.getSettings();
+        var settings = await window.getSettings();
         if (window.cacheData) window.cacheData(cacheKey, settings, 300);
         return settings;
     };
@@ -396,19 +383,19 @@
         document.dispatchEvent(new CustomEvent('uiSettingsChanged', { detail: newSettings }));
     };
 
-    // ===== TELEGRAM =====
+    // ==================== TELEGRAM ====================
 
-    window.sendTelegramNotification = async function(message, chatId = null) {
+    window.sendTelegramNotification = async function(message, chatId) {
+        chatId = chatId || window.TELEGRAM_CHAT_ID || '6917040501';
         try {
-            const chat = chatId || window.TELEGRAM_CHAT_ID || '6917040501';
-            const tokens = window.TELEGRAM_IDS || [];
+            var tokens = window.TELEGRAM_IDS || [];
             if (tokens.length === 0) return false;
-            const token = tokens[Math.floor(Math.random() * tokens.length)];
-            const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+            var token = tokens[Math.floor(Math.random() * tokens.length)];
+            var response = await fetch('https://api.telegram.org/bot' + token + '/sendMessage', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    chat_id: chat,
+                    chat_id: chatId,
                     text: message,
                     parse_mode: 'HTML'
                 })
@@ -422,34 +409,36 @@
 
     window.sendBroadcastMessage = async function(message) {
         try {
-            const users = await window.getCollection('users');
-            let sent = 0,
+            var users = await window.getCollection('users');
+            var sent = 0,
                 failed = 0;
-            for (const user of users) {
-                const chatId = user.telegramChatId || window.TELEGRAM_CHAT_ID;
-                const success = await window.sendTelegramNotification(message, chatId);
+            for (var i = 0; i < users.length; i++) {
+                var user = users[i];
+                var chatId = user.telegramChatId || window.TELEGRAM_CHAT_ID;
+                var success = await window.sendTelegramNotification(message, chatId);
                 if (success) sent++;
                 else failed++;
             }
-            return { sent, failed };
+            return { sent: sent, failed: failed };
         } catch (e) {
             console.error('sendBroadcastMessage error:', e);
             return { sent: 0, failed: 0 };
         }
     };
 
-    // ===== DEEPSEEK AI =====
+    // ==================== DEEPSEEK AI ====================
 
-    window.generateCodeWithDeepSeek = async function(instruction, context = '') {
+    window.generateCodeWithDeepSeek = async function(instruction, context) {
+        context = context || '';
         try {
-            const apiKey = window.DEEPSEEK_API_KEY || 'sk-0958bf018f8e4e048cf61d5cde979b86';
-            const url = 'https://api.deepseek.com/v1/chat/completions';
-            const prompt = `You are a code assistant. Instruction: "${instruction}". ${context ? 'Context:\n' + context : ''}`;
-            const response = await fetch(url, {
+            var apiKey = window.DEEPSEEK_API_KEY || 'sk-0958bf018f8e4e048cf61d5cde979b86';
+            var url = 'https://api.deepseek.com/v1/chat/completions';
+            var prompt = 'You are a code assistant. Instruction: "' + instruction + '". ' + (context ? 'Context:\n' + context : '');
+            var response = await fetch(url, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${apiKey}`
+                    'Authorization': 'Bearer ' + apiKey
                 },
                 body: JSON.stringify({
                     model: 'deepseek-chat',
@@ -459,20 +448,23 @@
                 })
             });
             if (!response.ok) throw new Error('API error');
-            const data = await response.json();
+            var data = await response.json();
             return data.choices[0].message.content;
         } catch (e) {
             console.error('DeepSeek error:', e);
-            return `Error: ${e.message}`;
+            return 'Error: ' + e.message;
         }
     };
 
-    // ===== BACKUPS =====
+    // ==================== BACKUPS ====================
 
-    window.getBackups = async function(limit = 10) {
-        const backups = await window.queryCollection('backups');
-        return backups.sort((a, b) => {
-            return (b.createdAt?.toDate?.() || new Date(0)) - (a.createdAt?.toDate?.() || new Date(0));
+    window.getBackups = async function(limit) {
+        limit = limit || 10;
+        var backups = await window.queryCollection('backups');
+        return backups.sort(function(a, b) {
+            var da = a.createdAt && a.createdAt.toDate ? a.createdAt.toDate() : new Date(0);
+            var db = b.createdAt && b.createdAt.toDate ? b.createdAt.toDate() : new Date(0);
+            return db - da;
         }).slice(0, limit);
     };
 
@@ -487,10 +479,10 @@
 
     window.restoreBackup = async function(backupId, targetCollection) {
         try {
-            const backup = await window.getDocument('backups', backupId);
+            var backup = await window.getDocument('backups', backupId);
             if (!backup || !backup.data || !backup.data[targetCollection]) return false;
-            for (const doc of backup.data[targetCollection]) {
-                await window.addDocument(targetCollection, doc);
+            for (var i = 0; i < backup.data[targetCollection].length; i++) {
+                await window.addDocument(targetCollection, backup.data[targetCollection][i]);
             }
             return true;
         } catch (e) {
@@ -505,22 +497,23 @@
 
     window.bulkAddDocuments = async function(collectionName, dataArray) {
         if (!db) throw new Error('Firestore not available');
-        const batch = db.batch();
-        const ids = [];
-        dataArray.forEach(data => {
-            const ref = db.collection(collectionName).doc();
+        var batch = db.batch();
+        var ids = [];
+        for (var i = 0; i < dataArray.length; i++) {
+            var data = dataArray[i];
+            var ref = db.collection(collectionName).doc();
             batch.set(ref, {
                 ...data,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
             });
             ids.push(ref.id);
-        });
+        }
         await batch.commit();
         return ids;
     };
 
-        // ===== UTILITY FUNCTIONS =====
+     // ===== UTILITY FUNCTIONS =====
 
     window.formatPrice = function(price, currency = 'Ks') {
         return `${currency} ${(price || 0).toLocaleString()}`;
@@ -588,19 +581,6 @@
             document.dispatchEvent(new CustomEvent('authStateChanged', { detail: { user } }));
         });
     }
-
-    // ===== FIRESTORE RULES REMINDER =====
-    console.log('📜 Firestore Security Rules:');
-    console.log(`
-    rules_version = '2';
-    service cloud.firestore {
-      match /databases/{database}/documents {
-        match /{document=**} {
-          allow read, write: if true;
-        }
-      }
-    }
-    `);
 
     console.log('✅ firebase-config.js (Complete) အဆင်သင့်ဖြစ်ပါပြီ။');
     document.dispatchEvent(new CustomEvent('firebaseComplete'));
