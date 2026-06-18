@@ -1960,3 +1960,62 @@ ${new Date().toLocaleString()}
 // ကျန်ရှိသော ဖိုင်မှာ admin.js သာ ကျန်ပါသည်။
 // ============================================================
 
+
+// firebase-config.js ထဲမှာ
+db.enablePersistence({ synchronizeTabs: true })
+    .then(() => {
+        console.log('✅ Offline persistence enabled');
+    })
+    .catch((err) => {
+        if (err.code === 'failed-precondition') {
+            console.warn('⚠️ Multiple tabs open - persistence limited');
+        } else if (err.code === 'unimplemented') {
+            console.warn('⚠️ Browser doesn\'t support persistence');
+        }
+    });
+
+// Products ကို Cache ကနေ ဦးစွာဖတ်ပြီးမှ Firestore ကိုခေါ်ပါ
+window.loadProductsFromFirestore = function() {
+    // Cache ကနေ ဦးစွာဖတ်ပါ
+    const cached = localStorage.getItem('cachedProducts');
+    if (cached) {
+        try {
+            const products = JSON.parse(cached);
+            window.allProducts = products;
+            window.filteredProducts = [...products];
+            window.renderProductGrid();
+            console.log('📦 Products loaded from cache:', products.length);
+        } catch(e) {}
+    }
+    
+    // Firestore ကနေ Live ဖတ်ပါ (Permission Denied ဖြစ်ရင်လည်း Cache ရှိမယ်)
+    if (!db) return;
+    db.collection('products')
+        .get()
+        .then((snapshot) => {
+            const products = [];
+            snapshot.forEach(doc => {
+                products.push({ id: doc.id, ...doc.data() });
+            });
+            window.allProducts = products;
+            window.filteredProducts = [...products];
+            window.renderProductGrid();
+            // Cache ထဲသိမ်းပါ
+            localStorage.setItem('cachedProducts', JSON.stringify(products));
+            console.log('✅ Products loaded from Firestore:', products.length);
+        })
+        .catch((err) => {
+            console.warn('⚠️ Firestore error (using cache):', err.message);
+            // Cache ရှိပြီးသားဆိုရင် ဘာမှမလုပ်ပါ
+            if (!window.allProducts || window.allProducts.length === 0) {
+                document.getElementById('productGrid').innerHTML = `
+                    <div style="grid-column:1/-1;text-align:center;padding:40px;color:#dc2626;">
+                        <i class="fas fa-exclamation-circle" style="font-size:28px;"></i>
+                        <p>ဒေတာများ ဖွင့်ရာတွင် အမှားရှိသည်။</p>
+                        <p style="font-size:12px;color:#888;">${err.message}</p>
+                        <button onclick="window.loadProductsFromFirestore()" style="margin-top:12px;padding:8px 24px;background:#e11b1b;color:#fff;border:none;border-radius:20px;cursor:pointer;">ပြန်ကြိုးစားမည်</button>
+                    </div>
+                `;
+            }
+        });
+};
