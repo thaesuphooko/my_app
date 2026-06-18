@@ -1,456 +1,1004 @@
-<script>
-// =============================================================
-// ပထမဆုံး - ALL GLOBAL VARIABLES ကို window ပေါ်တင်ပါ
-// =============================================================
-window.allProducts = [];
-window.cart = JSON.parse(localStorage.getItem('premiumCart') || '[]');
-window.messages = [];
-window.filteredProducts = [];
-window.currentPageNum = 1;
-const PAGE_SIZE = 20;
+<!-- ============================================================
+     index.html - Part 1 (Lines 1 to 300)
+     ဖိုင်: index.html  ၏ ပထမအပိုင်း
+     စုစုပေါင်း လိုင်း ၃၀၀ ထိရှိပြီး
+     HTML တည်ဆောက်ပုံ၊ CSS နှင့် အခြေခံ Script များ ပါဝင်သည်
+     ============================================================ -->
 
-// =============================================================
-// FIREBASE INIT
-// =============================================================
-const firebaseConfig = {
-    apiKey: "AIzaSyDSu2XksfUZ6mAfktUpBqFtNxrgj96h1l4",
-    authDomain: "app-my-caee3.firebaseapp.com",
-    projectId: "app-my-caee3",
-    storageBucket: "app-my-caee3.firebasestorage.app",
-    messagingSenderId: "169669907659",
-    appId: "1:169669907659:web:8fba75e7aed449e3ffb74e"
-};
+<!DOCTYPE html>
+<html lang="my" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Thae Su - Premium E-Commerce</title>
 
-let db, auth, storage;
-try {
-    firebase.initializeApp(firebaseConfig);
-    db = firebase.firestore();
-    auth = firebase.auth();
-    storage = firebase.storage();
-    window.db = db;
-    window.auth = auth;
-    window.storage = storage;
-    console.log('✅ Firebase initialized');
-} catch(e) {
-    console.error('❌ Firebase error:', e);
-}
+    <!-- ========== CDN Libraries ========== -->
+    <!-- Font Awesome 6 (Icons) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Leaflet CSS (Mapping) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
-// =============================================================
-// ROUTING
-// =============================================================
-window.navigateTo = function(hash) {
-    const pageId = hash.replace('#', '').split('/')[0] || 'home';
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    const target = document.getElementById(`page-${pageId}`);
-    if (target) target.classList.add('active');
-    document.querySelectorAll('.nav-item').forEach(item => {
-        item.classList.toggle('active', item.dataset.hash === `#${pageId}`);
-    });
-    if (pageId === 'cart') window.updateCartUI();
-    if (pageId === 'messages') window.renderMessages();
-    window.location.hash = hash;
-};
+    <!-- ========== Eruda Debugger Console (Mobile Debug) ========== -->
+    <script src="https://cdn.jsdelivr.net/npm/eruda">
+    </script>
+    <script>
+        eruda.init();
+        console.log('✅ Eruda Console ကို အောင်မြင်စွာ စတင်နိုင်ခဲ့ပါပြီ။');
+    </script>
 
-// Navigation clicks
-document.querySelectorAll('.nav-item, .profile-menu-item[data-hash]').forEach(el => {
-    el.addEventListener('click', () => {
-        if (el.dataset.hash) window.navigateTo(el.dataset.hash);
-    });
-});
+    <!-- ========== Preconnect for Performance ========== -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
 
-// =============================================================
-// CART UI (Globally Exposed)
-// =============================================================
-window.updateCartUI = function() {
-    const container = document.getElementById('cartItems');
-    const summary = document.getElementById('cartSummary');
-    const totalEl = document.getElementById('cartTotal');
-    const badge = document.getElementById('cartBadge');
-    const totalItems = window.cart.reduce((sum, i) => sum + (i.quantity || 0), 0);
-    
-    if (badge) {
-        badge.textContent = totalItems;
-        badge.style.display = totalItems > 0 ? 'inline' : 'none';
-    }
-    
-    if (window.cart.length === 0) {
-        if (container) container.innerHTML = `<div style="text-align:center;padding:30px;color:#888;"><i class="fas fa-cart-plus" style="font-size:36px;opacity:0.3;"></i><p>စျေးဝယ်တောင်း ဗလာဖြစ်နေသည်</p></div>`;
-        if (summary) summary.style.display = 'none';
-        return;
-    }
-    
-    let html = '';
-    let total = 0;
-    window.cart.forEach(item => {
-        const qty = item.quantity || 1;
-        const subtotal = (item.price || 0) * qty;
-        total += subtotal;
-        html += `
-            <div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid #eee;align-items:center;">
-                <img src="${item.image || 'https://picsum.photos/seed/'+item.id+'/50/50'}" style="width:50px;height:50px;object-fit:cover;border-radius:8px;">
-                <div style="flex:1;">
-                    <div style="font-weight:600;font-size:14px;">${item.name || 'N/A'}</div>
-                    <div style="color:#e11b1b;font-weight:700;">Ks ${Number(item.price).toLocaleString()}</div>
-                    <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
-                        <button onclick="window.updateQuantity('${item.id}', -1)" style="width:28px;height:28px;border-radius:50%;border:1px solid #ddd;background:transparent;cursor:pointer;">-</button>
-                        <span>${qty}</span>
-                        <button onclick="window.updateQuantity('${item.id}', 1)" style="width:28px;height:28px;border-radius:50%;border:1px solid #ddd;background:transparent;cursor:pointer;">+</button>
+    <style>
+        /* ==========================================================
+                   GLOBAL CSS VARIABLES & RESET
+                   ========================================================== */
+
+        /* ----- Light Theme (Default) ----- */
+        :root {
+            /* Primary Colors */
+            --primary: #e11b1b;
+            --primary-dark: #b71c1c;
+            --secondary: #ff6b00;
+
+            /* Background & Glass */
+            --bg-start: #fce4ec;
+            --bg-end: #f3e5f5;
+            --glass-bg: rgba(255, 255, 255, 0.70);
+            --glass-border: rgba(255, 255, 255, 0.25);
+            --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+
+            /* Text Colors */
+            --text-primary: #1a1a2e;
+            --text-secondary: #4a4a6a;
+            --text-muted: #8888aa;
+            --text-inverse: #ffffff;
+
+            /* Card & Surface */
+            --card-bg: rgba(255, 255, 255, 0.75);
+            --card-border: rgba(255, 255, 255, 0.30);
+            --card-shadow: 0 8px 28px rgba(0, 0, 0, 0.06);
+
+            /* Status */
+            --stock-instock: #2e7d32;
+            --stock-low: #f57c00;
+            --stock-out: #c62828;
+            --discount-bg: #e11b1b;
+            --discount-text: #ffffff;
+
+            /* Rating */
+            --star-color: #ffb400;
+            --star-empty: #d0d0d0;
+
+            /* Nav */
+            --nav-bg: rgba(255, 255, 255, 0.92);
+            --nav-shadow: 0 -4px 20px rgba(0, 0, 0, 0.06);
+            --nav-active: #e11b1b;
+
+            /* Inputs */
+            --input-bg: rgba(255, 255, 255, 0.80);
+            --input-border: #e0e0e0;
+            --input-focus: #e11b1b;
+
+            /* Transitions */
+            --transition-fast: 0.2s ease;
+            --transition-med: 0.35s ease;
+            --transition-slow: 0.5s ease;
+
+            /* Layout */
+            --header-height: 60px;
+            --nav-height: 68px;
+            --max-width: 480px;
+            --grid-gap: 12px;
+            --card-radius: 18px;
+        }
+
+        /* ----- Dark Theme ----- */
+        [data-theme="dark"] {
+            --bg-start: #1a1a2e;
+            --bg-end: #16213e;
+            --glass-bg: rgba(30, 30, 50, 0.78);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+
+            --text-primary: #f0f0f5;
+            --text-secondary: #b0b0d0;
+            --text-muted: #707090;
+            --text-inverse: #1a1a2e;
+
+            --card-bg: rgba(35, 35, 60, 0.80);
+            --card-border: rgba(255, 255, 255, 0.06);
+            --card-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+
+            --nav-bg: rgba(25, 25, 45, 0.92);
+            --nav-shadow: 0 -4px 20px rgba(0, 0, 0, 0.40);
+
+            --input-bg: rgba(40, 40, 65, 0.80);
+            --input-border: #3a3a5a;
+            --input-focus: #e11b1b;
+
+            --star-empty: #4a4a6a;
+        }
+
+        /* ----- Reset & Base ----- */
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-size: 16px;
+            scroll-behavior: smooth;
+            -webkit-text-size-adjust: 100%;
+        }
+
+        body {
+            background: linear-gradient(145deg, var(--bg-start), var(--bg-end));
+            color: var(--text-primary);
+            min-height: 100vh;
+            min-height: 100dvh;
+            padding: 0;
+            margin: 0;
+            padding-top: var(--header-height);
+            padding-bottom: var(--nav-height);
+            transition: background var(--transition-slow), color var(--transition-slow);
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 20px;
+        }
+
+        /* ==========================================================
+                   TYPOGRAPHY & UTILITY
+                   ========================================================== */
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+        button {
+            font-family: inherit;
+            cursor: pointer;
+            border: none;
+            outline: none;
+            background: none;
+            -webkit-touch-callout: none;
+        }
+        input,
+        textarea,
+        select {
+            font-family: inherit;
+            outline: none;
+            border: none;
+        }
+        img {
+            display: block;
+            max-width: 100%;
+            height: auto;
+        }
+        ul,
+        ol {
+            list-style: none;
+        }
+
+        .container {
+            max-width: var(--max-width);
+            margin: 0 auto;
+            padding: 0 14px;
+            width: 100%;
+        }
+
+        /* ==========================================================
+                   HEADER - Top Bar with Clock, Music, Theme Toggle
+                   ========================================================== */
+        .app-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            height: var(--header-height);
+            background: var(--glass-bg);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border-bottom: 1px solid var(--glass-border);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.04);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 14px;
+            transition: background var(--transition-med), border-color var(--transition-med);
+        }
+
+        .app-header .brand {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--primary);
+            letter-spacing: -0.3px;
+        }
+        .app-header .brand i {
+            font-size: 1.3rem;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* ----- Smart Clock ----- */
+        .smart-clock {
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            background: var(--glass-bg);
+            padding: 4px 12px;
+            border-radius: 40px;
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            white-space: nowrap;
+            letter-spacing: 0.3px;
+            font-variant-numeric: tabular-nums;
+            transition: background var(--transition-fast), color var(--transition-fast);
+            min-width: 70px;
+            text-align: center;
+        }
+        .smart-clock.slow-mode {
+            color: var(--secondary);
+            border-color: var(--secondary);
+            animation: pulse-clock 2s infinite;
+        }
+
+        @keyframes pulse-clock {
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.55;
+            }
+        }
+
+        /* ----- Music Player Toggle ----- */
+        .music-toggle {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--glass-bg);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--transition-fast);
+        }
+        .music-toggle:hover {
+            transform: scale(1.05);
+        }
+        .music-toggle.playing {
+            color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        /* ----- Dark Theme Toggle ----- */
+        .theme-toggle {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--glass-bg);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--transition-fast);
+        }
+        .theme-toggle:hover {
+            transform: scale(1.05);
+        }
+
+        /* ==========================================================
+                   MAIN CONTENT AREA (Pages rendered here)
+                   ========================================================== */
+        .main-content {
+            min-height: calc(100vh - var(--header-height) - var(--nav-height));
+            min-height: calc(100dvh - var(--header-height) - var(--nav-height));
+            padding: 16px 0 20px 0;
+            transition: opacity var(--transition-med);
+        }
+
+        /* Page sections — hidden by default, shown via JS */
+        .page-section {
+            display: none;
+            animation: fadeSlideUp 0.35s ease both;
+        }
+        .page-section.active {
+            display: block;
+        }
+
+        @keyframes fadeSlideUp {
+            from {
+                opacity: 0;
+                transform: translateY(18px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ==========================================================
+                   BOTTOM NAVIGATION (Fixed)
+                   ========================================================== */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            height: var(--nav-height);
+            background: var(--nav-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-top: 1px solid var(--glass-border);
+            box-shadow: var(--nav-shadow);
+            display: flex;
+            align-items: stretch;
+            justify-content: space-around;
+            padding: 0 4px;
+            padding-bottom: env(safe-area-inset-bottom, 0);
+            transition: background var(--transition-med), border-color var(--transition-med);
+        }
+
+        .bottom-nav .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            font-size: 0.6rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            transition: color var(--transition-fast);
+            position: relative;
+            padding: 4px 0;
+            -webkit-tap-highlight-color: transparent;
+            border-radius: 12px;
+        }
+
+        .bottom-nav .nav-item i {
+            font-size: 1.4rem;
+            transition: transform var(--transition-fast);
+        }
+
+        .bottom-nav .nav-item span {
+            font-size: 0.55rem;
+            letter-spacing: 0.2px;
+        }
+
+        .bottom-nav .nav-item.active {
+            color: var(--nav-active);
+        }
+        .bottom-nav .nav-item.active i {
+            transform: scale(1.05);
+            text-shadow: 0 0 12px rgba(225, 27, 27, 0.25);
+        }
+
+        /* ----- Badge (Cart / Messages) ----- */
+        .nav-badge {
+            position: absolute;
+            top: 2px;
+            right: 50%;
+            transform: translateX(calc(50% + 18px));
+            background: var(--primary);
+            color: #fff;
+            font-size: 0.5rem;
+            font-weight: 700;
+            min-width: 18px;
+            height: 18px;
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 5px;
+            border: 2px solid var(--nav-bg);
+            box-shadow: 0 2px 8px rgba(225, 27, 27, 0.35);
+            transition: transform var(--transition-fast);
+            pointer-events: none;
+        }
+        .nav-badge.hidden {
+            transform: translateX(calc(50% + 18px)) scale(0);
+            opacity: 0;
+        }
+
+        /* ==========================================================
+                   PRODUCT CARD (Glassmorphism)
+                   ========================================================== */
+        .product-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--grid-gap);
+            padding: 4px 0;
+        }
+
+        .product-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--card-border);
+            border-radius: var(--card-radius);
+            padding: 10px 10px 14px 10px;
+            box-shadow: var(--card-shadow);
+            transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+        .product-card:active {
+            transform: scale(0.97);
+        }
+
+        .product-card .img-wrap {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            background: var(--glass-bg);
+            aspect-ratio: 1 / 1;
+            margin-bottom: 8px;
+        }
+        .product-card .img-wrap img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform var(--transition-slow);
+        }
+        .product-card .img-wrap:hover img {
+            transform: scale(1.03);
+        }
+
+        /* ----- Discount Badge ----- */
+        .discount-badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: var(--discount-bg);
+            color: var(--discount-text);
+            font-size: 0.6rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 30px;
+            box-shadow: 0 2px 12px rgba(225, 27, 27, 0.35);
+            letter-spacing: 0.2px;
+        }
+
+        .product-card .product-name {
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            line-height: 1.3;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            margin-bottom: 4px;
+        }
+
+        .product-card .price-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 4px;
+        }
+        .product-card .price-old {
+            font-size: 0.68rem;
+            color: var(--text-muted);
+            text-decoration: line-through;
+        }
+        .product-card .price-current {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .product-card .rating-row {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+        .product-card .rating-row .stars {
+            color: var(--star-color);
+            letter-spacing: 1px;
+        }
+        .product-card .rating-row .stars .empty {
+            color: var(--star-empty);
+        }
+
+        .product-card .meta-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+            padding-top: 6px;
+            border-top: 1px solid var(--glass-border);
+        }
+        .product-card .meta-row .location {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+        .product-card .meta-row .sold {
+            font-weight: 600;
+            color: var(--secondary);
+        }
+
+        /* ----- Stock indicator mini bar ----- */
+        .stock-bar {
+            width: 100%;
+            height: 3px;
+            border-radius: 10px;
+            background: var(--glass-border);
+            margin-top: 6px;
+            overflow: hidden;
+        }
+        .stock-bar .fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width var(--transition-slow);
+            background: var(--stock-instock);
+        }
+        .stock-bar .fill.low {
+            background: var(--stock-low);
+        }
+        .stock-bar .fill.out {
+            background: var(--stock-out);
+        }
+
+        /* ==========================================================
+                   RESPONSIVE: Larger screens (Tablet & up)
+                   ========================================================== */
+        @media (min-width: 640px) {
+            .product-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 16px;
+            }
+            .container {
+                padding: 0 20px;
+            }
+        }
+
+        @media (min-width: 900px) {
+            .product-grid {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 20px;
+            }
+            .container {
+                max-width: 720px;
+            }
+        }
+
+        @media (min-width: 1200px) {
+            .product-grid {
+                grid-template-columns: repeat(5, 1fr);
+                gap: 24px;
+            }
+            .container {
+                max-width: 960px;
+            }
+        }
+
+        /* ==========================================================
+                   LOADING SPINNER (Global)
+                   ========================================================== */
+        .global-loader {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px;
+            gap: 16px;
+            color: var(--text-muted);
+        }
+        .global-loader .spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid var(--glass-border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.9s linear infinite;
+        }
+        .global-loader p {
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* ==========================================================
+                   MISC HELPERS
+                   ========================================================== */
+        .text-center {
+            text-align: center;
+        }
+        .mt-8 {
+            margin-top: 8px;
+        }
+        .mt-12 {
+            margin-top: 12px;
+        }
+        .mb-8 {
+            margin-bottom: 8px;
+        }
+        .hidden {
+            display: none !important;
+        }
+
+        /* ==========================================================
+                   FLOATING CHAT WIDGET (shown globally, hidden on #messages)
+                   ========================================================== */
+        .chat-widget {
+            position: fixed;
+            bottom: calc(var(--nav-height) + 18px);
+            right: 18px;
+            z-index: 900;
+            width: 58px;
+            height: 58px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: #fff;
+            font-size: 1.6rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 6px 28px rgba(225, 27, 27, 0.40);
+            transition: transform var(--transition-fast), opacity var(--transition-fast);
+            border: 2px solid rgba(255, 255, 255, 0.25);
+        }
+        .chat-widget:active {
+            transform: scale(0.92);
+        }
+        .chat-widget.hidden {
+            transform: scale(0);
+            opacity: 0;
+            pointer-events: none;
+        }
+        /* Chat widget badge (unread) */
+        .chat-widget .chat-badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            background: #ff3b30;
+            color: #fff;
+            font-size: 0.55rem;
+            font-weight: 700;
+            min-width: 20px;
+            height: 20px;
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #fff;
+        }
+
+        /* ==========================================================
+                   FIREBASE SDK LOADING PLACEHOLDER (will be replaced)
+                   ========================================================== */
+        /* Firebase scripts will be loaded in the footer, after this style block */
+        /* ========================================================== */
+
+        /* ==========================================================
+                   BOTTOM NAV SAFE AREA FIX
+                   ========================================================== */
+        @supports (padding-bottom: env(safe-area-inset-bottom)) {
+            .bottom-nav {
+                padding-bottom: env(safe-area-inset-bottom, 0);
+            }
+        }
+
+        /* ==========================================================
+                   DARK MODE TRANSITIONS FOR ALL ELEMENTS
+                   ========================================================== */
+        .app-header,
+        .bottom-nav,
+        .product-card,
+        .smart-clock,
+        .music-toggle,
+        .theme-toggle,
+        .chat-widget {
+            transition: background var(--transition-med), color var(--transition-med),
+                border-color var(--transition-med), box-shadow var(--transition-med);
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ==========================================================
+    HEADER
+    ========================================================== -->
+    <header class="app-header" id="appHeader">
+        <div class="brand">
+            <i class="fas fa-store-alt"></i>
+            <span>Thae Su</span>
+        </div>
+        <div class="header-right">
+            <!-- Smart Clock -->
+            <div class="smart-clock" id="smartClock">00:00:00</div>
+            <!-- Music Toggle -->
+            <button class="music-toggle" id="musicToggle" aria-label="Toggle Music">
+                <i class="fas fa-music"></i>
+            </button>
+            <!-- Dark Theme Toggle -->
+            <button class="theme-toggle" id="themeToggle" aria-label="Toggle Theme">
+                <i class="fas fa-moon"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- ==========================================================
+    MAIN CONTENT (Pages rendered here)
+    ========================================================== -->
+    <main class="main-content" id="mainContent">
+        <div class="container">
+
+            <!-- ========== HOME PAGE (#home) ========== -->
+            <section class="page-section active" id="page-home">
+                <!-- Categories Bar will be injected by JS -->
+                <div id="categoriesBar" style="margin-bottom:14px;"></div>
+                <!-- Product Grid -->
+                <div id="productGrid" class="product-grid">
+                    <!-- Products rendered by JavaScript -->
+                </div>
+                <!-- Pagination -->
+                <div id="paginationControls" style="display:flex;justify-content:center;gap:8px;margin-top:18px;flex-wrap:wrap;"></div>
+            </section>
+
+                       <!-- ========== MESSAGES PAGE (#messages) ========== -->
+            <section class="page-section" id="page-messages">
+                <h2 style="font-size:1.2rem;font-weight:600;margin-bottom:12px;">
+                    <i class="fas fa-comment-dots" style="color:var(--primary);"></i> စကားဝိုင်းများ
+                </h2>
+                <div id="messageList" style="display:flex;flex-direction:column;gap:12px;">
+                    <p style="color:var(--text-muted);text-align:center;padding:30px 0;">
+                        <i class="fas fa-spinner fa-spin"></i> စာများ ဖွင့်နေသည်...
+                    </p>
+                </div>
+                <!-- Chat input area -->
+                <div style="display:flex;gap:8px;margin-top:16px;position:sticky;bottom:0;padding:10px 0;background:var(--glass-bg);backdrop-filter:blur(8px);border-radius:16px;padding:10px;">
+                    <input type="text" id="chatInput" placeholder="စာရိုက်ပါ..." style="flex:1;padding:10px 16px;border-radius:30px;background:var(--input-bg);border:1px solid var(--input-border);color:var(--text-primary);font-size:0.9rem;">
+                    <button id="chatSendBtn" style="padding:10px 18px;border-radius:30px;background:var(--primary);color:#fff;font-weight:600;font-size:0.9rem;">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </section>
+
+            <!-- ========== CART PAGE (#cart) ========== -->
+            <section class="page-section" id="page-cart">
+                <h2 style="font-size:1.2rem;font-weight:600;margin-bottom:12px;">
+                    <i class="fas fa-shopping-cart" style="color:var(--primary);"></i> စျေးဝယ်တောင်း
+                </h2>
+                <div id="cartItems" style="display:flex;flex-direction:column;gap:12px;">
+                    <p style="color:var(--text-muted);text-align:center;padding:30px 0;">
+                        <i class="fas fa-shopping-bag"></i> ဈေးဝယ်တောင်း ဗလာဖြစ်နေသည်။
+                    </p>
+                </div>
+                <div id="cartSummary" style="margin-top:12px;padding:16px;background:var(--glass-bg);backdrop-filter:blur(6px);border-radius:16px;border:1px solid var(--glass-border);">
+                    <div style="display:flex;justify-content:space-between;font-weight:600;">
+                        <span>စုစုပေါင်း</span>
+                        <span id="cartTotal" style="color:var(--primary);">Ks 0</span>
+                    </div>
+                    <button id="checkoutBtn" style="width:100%;margin-top:12px;padding:14px;border-radius:30px;background:var(--primary);color:#fff;font-weight:700;font-size:1rem;transition:transform var(--transition-fast);">
+                        <i class="fas fa-arrow-right"></i> ဝယ်မည်
+                    </button>
+                </div>
+            </section>
+
+            <!-- ========== PROFILE PAGE (#profile) ========== -->
+            <section class="page-section" id="page-profile">
+                <div style="display:flex;flex-direction:column;align-items:center;padding:16px 0;">
+                    <!-- Avatar -->
+                    <div style="width:90px;height:90px;border-radius:50%;background:var(--glass-bg);border:3px solid var(--primary);display:flex;align-items:center;justify-content:center;font-size:2.8rem;color:var(--primary);margin-bottom:10px;box-shadow:0 4px 20px rgba(225,27,27,0.15);">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <h3 id="profileName" style="font-size:1.1rem;font-weight:600;">ဧည့်သည်</h3>
+                    <p id="profilePhone" style="font-size:0.8rem;color:var(--text-muted);">+95 9 xxx xxx xxx</p>
+                </div>
+                <!-- Profile Menu Grid (Viber-style) -->
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px;">
+                    <div class="profile-menu-item" data-hash="#orders" style="background:var(--glass-bg);backdrop-filter:blur(6px);border-radius:16px;padding:16px 8px;text-align:center;border:1px solid var(--glass-border);transition:all var(--transition-fast);">
+                        <div style="width:44px;height:44px;border-radius:50%;background:#e3f2fd;color:#0d47a1;display:flex;align-items:center;justify-content:center;font-size:1.2rem;margin:0 auto 6px;">
+                            <i class="fas fa-box"></i>
+                        </div>
+                        <span style="font-size:0.7rem;font-weight:500;">My Orders</span>
+                    </div>
+                    <div class="profile-menu-item" data-hash="#tracking" style="background:var(--glass-bg);backdrop-filter:blur(6px);border-radius:16px;padding:16px 8px;text-align:center;border:1px solid var(--glass-border);transition:all var(--transition-fast);">
+                        <div style="width:44px;height:44px;border-radius:50%;background:#fff3e0;color:#e65100;display:flex;align-items:center;justify-content:center;font-size:1.2rem;margin:0 auto 6px;">
+                            <i class="fas fa-truck"></i>
+                        </div>
+                        <span style="font-size:0.7rem;font-weight:500;">Tracking</span>
+                    </div>
+                    <div class="profile-menu-item" data-hash="#wishlist" style="background:var(--glass-bg);backdrop-filter:blur(6px);border-radius:16px;padding:16px 8px;text-align:center;border:1px solid var(--glass-border);transition:all var(--transition-fast);">
+                        <div style="width:44px;height:44px;border-radius:50%;background:#fce4ec;color:#c62828;display:flex;align-items:center;justify-content:center;font-size:1.2rem;margin:0 auto 6px;">
+                            <i class="fas fa-heart"></i>
+                        </div>
+                        <span style="font-size:0.7rem;font-weight:500;">Wishlist</span>
+                    </div>
+                    <div class="profile-menu-item" data-hash="#address" style="background:var(--glass-bg);backdrop-filter:blur(6px);border-radius:16px;padding:16px 8px;text-align:center;border:1px solid var(--glass-border);transition:all var(--transition-fast);">
+                        <div style="width:44px;height:44px;border-radius:50%;background:#e8f5e9;color:#1b5e20;display:flex;align-items:center;justify-content:center;font-size:1.2rem;margin:0 auto 6px;">
+                            <i class="fas fa-map-pin"></i>
+                        </div>
+                        <span style="font-size:0.7rem;font-weight:500;">Address</span>
+                    </div>
+                    <div class="profile-menu-item" data-hash="#messages" style="background:var(--glass-bg);backdrop-filter:blur(6px);border-radius:16px;padding:16px 8px;text-align:center;border:1px solid var(--glass-border);transition:all var(--transition-fast);">
+                        <div style="width:44px;height:44px;border-radius:50%;background:#e8eaf6;color:#283593;display:flex;align-items:center;justify-content:center;font-size:1.2rem;margin:0 auto 6px;">
+                            <i class="fas fa-headset"></i>
+                        </div>
+                        <span style="font-size:0.7rem;font-weight:500;">Support</span>
+                    </div>
+                    <div class="profile-menu-item" data-hash="#settings" style="background:var(--glass-bg);backdrop-filter:blur(6px);border-radius:16px;padding:16px 8px;text-align:center;border:1px solid var(--glass-border);transition:all var(--transition-fast);">
+                        <div style="width:44px;height:44px;border-radius:50%;background:#f5f5f5;color:#424242;display:flex;align-items:center;justify-content:center;font-size:1.2rem;margin:0 auto 6px;">
+                            <i class="fas fa-cog"></i>
+                        </div>
+                        <span style="font-size:0.7rem;font-weight:500;">Settings</span>
+                    </div>
+                    <div class="profile-menu-item" data-hash="#logout" style="background:var(--glass-bg);backdrop-filter:blur(6px);border-radius:16px;padding:16px 8px;text-align:center;border:1px solid var(--glass-border);transition:all var(--transition-fast);grid-column:span 2;">
+                        <div style="width:44px;height:44px;border-radius:50%;background:#ffebee;color:#b71c1c;display:flex;align-items:center;justify-content:center;font-size:1.2rem;margin:0 auto 6px;">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </div>
+                        <span style="font-size:0.7rem;font-weight:500;">Logout</span>
                     </div>
                 </div>
-                <div style="font-weight:700;">Ks ${subtotal.toLocaleString()}</div>
-                <button onclick="window.removeFromCart('${item.id}')" style="background:none;border:none;color:#e11b1b;font-size:18px;cursor:pointer;">✕</button>
-            </div>
-        `;
-    });
-    if (container) container.innerHTML = html;
-    if (summary) {
-        summary.style.display = 'block';
-        if (totalEl) totalEl.textContent = `Ks ${total.toLocaleString()}`;
-    }
-};
+            </section>
 
-window.addToCartById = function(productId) {
-    const product = window.allProducts.find(p => p.id === productId);
-    if (!product) return;
-    const existing = window.cart.find(item => item.id === productId);
-    if (existing) existing.quantity += 1;
-    else window.cart.push({ ...product, quantity: 1 });
-    localStorage.setItem('premiumCart', JSON.stringify(window.cart));
-    window.updateCartUI();
-    window.showToast(`${product.name} ကို စျေးဝယ်တောင်းထဲ ထည့်လိုက်ပါပြီ။`);
-};
+            <!-- ========== OTHER PAGES (placeholder) ========== -->
+            <section class="page-section" id="page-orders">
+                <h2 style="font-size:1.2rem;font-weight:600;"><i class="fas fa-list-ul" style="color:var(--primary);"></i> အော်ဒါများ</h2>
+                <div style="padding:30px 0;text-align:center;color:var(--text-muted);">အော်ဒါစာရင်း ဗလာဖြစ်နေသည်။</div>
+            </section>
+            <section class="page-section" id="page-tracking">
+                <h2 style="font-size:1.2rem;font-weight:600;"><i class="fas fa-map-marked-alt" style="color:var(--primary);"></i> ပို့ဆောင်မှု ခြေရာခံ</h2>
+                <div id="trackingMap" style="height:300px;border-radius:16px;overflow:hidden;margin-top:12px;background:var(--glass-bg);"></div>
+                <div id="trackingTimeline" style="margin-top:16px;display:flex;flex-direction:column;gap:8px;"></div>
+            </section>
+            <section class="page-section" id="page-checkout-address">
+                <h2 style="font-size:1.2rem;font-weight:600;"><i class="fas fa-address-card" style="color:var(--primary);"></i> လိပ်စာ ဖြည့်ပါ</h2>
+                <!-- Checkout form will be rendered by JS -->
+                <div id="checkoutAddressForm"></div>
+            </section>
+            <section class="page-section" id="page-checkout-payment">
+                <h2 style="font-size:1.2rem;font-weight:600;"><i class="fas fa-credit-card" style="color:var(--primary);"></i> ငွေလွှဲပါ</h2>
+                <div id="paymentDetails"></div>
+            </section>
+            <section class="page-section" id="page-checkout-screenshot">
+                <h2 style="font-size:1.2rem;font-weight:600;"><i class="fas fa-image" style="color:var(--primary);"></i> ငွေလွှဲဓာတ်ပုံ တင်ပါ</h2>
+                <div id="screenshotUploader"></div>
+            </section>
 
-window.removeFromCart = function(productId) {
-    window.cart = window.cart.filter(item => item.id !== productId);
-    localStorage.setItem('premiumCart', JSON.stringify(window.cart));
-    window.updateCartUI();
-};
+        </div>
+    </main>
 
-window.updateQuantity = function(productId, delta) {
-    const item = window.cart.find(p => p.id === productId);
-    if (item) {
-        item.quantity += delta;
-        if (item.quantity <= 0) { window.removeFromCart(productId); return; }
-        localStorage.setItem('premiumCart', JSON.stringify(window.cart));
-        window.updateCartUI();
-    }
-};
+    <!-- ==========================================================
+    FLOATING CHAT WIDGET
+    ========================================================== -->
+    <button class="chat-widget" id="chatWidget" aria-label="Open Chat">
+        <i class="fas fa-comment-dots"></i>
+        <span class="chat-badge hidden" id="chatWidgetBadge">0</span>
+    </button>
 
-// =============================================================
-// PRODUCTS (Globally Exposed)
-// =============================================================
-window.renderProductGrid = function() {
-    const grid = document.getElementById('productGrid');
-    if (!grid) return;
-    const start = 0;
-    const end = window.currentPageNum * PAGE_SIZE;
-    const items = window.filteredProducts.slice(start, end);
-    
-    if (items.length === 0 && window.currentPageNum === 1) {
-        grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:#888;">ပစ္စည်းများ မရှိသေးပါ</div>`;
-        document.getElementById('loadMoreBtn').style.display = 'none';
-        return;
-    }
-    
-    let html = '';
-    items.forEach(p => {
-        html += `
-            <div class="product-item" onclick="window.addToCartById('${p.id}')">
-                <img src="${p.image || 'https://picsum.photos/seed/'+p.id+'/300/300'}" alt="${p.name}" loading="lazy">
-                <div class="product-name">${p.name || 'N/A'}</div>
-                <div style="display:flex;gap:8px;align-items:center;">
-                    <span style="text-decoration:line-through;font-size:12px;color:#888;">Ks ${Number(p.originalPrice || p.price * 1.2).toLocaleString()}</span>
-                    <span class="product-price">Ks ${Number(p.price).toLocaleString()}</span>
-                </div>
-                <div style="font-size:12px;color:#888;">⭐ ${p.rating || 0} (${p.reviews || 0})</div>
-                <button onclick="event.stopPropagation();window.addToCartById('${p.id}')" style="width:100%;padding:6px;background:#ff6b00;color:#fff;border:none;border-radius:20px;margin-top:6px;cursor:pointer;font-weight:600;">Add to Cart</button>
-            </div>
-        `;
-    });
-    grid.innerHTML = html;
-    document.getElementById('loadMoreBtn').style.display = (end < window.filteredProducts.length) ? 'block' : 'none';
-};
+    <!-- ==========================================================
+    BOTTOM NAVIGATION
+    ========================================================== -->
+    <nav class="bottom-nav" id="bottomNav">
+        <a href="#home" class="nav-item active" data-page="home">
+            <i class="fas fa-home"></i>
+            <span>ပင်မ</span>
+        </a>
+        <a href="#messages" class="nav-item" data-page="messages">
+            <i class="fas fa-comment-dots"></i>
+            <span>စကား</span>
+            <span class="nav-badge hidden" id="msgBadge">0</span>
+        </a>
+        <a href="#cart" class="nav-item" data-page="cart">
+            <i class="fas fa-shopping-cart"></i>
+            <span>တောင်း</span>
+            <span class="nav-badge hidden" id="cartBadge">0</span>
+        </a>
+        <a href="#profile" class="nav-item" data-page="profile">
+            <i class="fas fa-user"></i>
+            <span>ပရိုဖိုင်</span>
+        </a>
+    </nav>
 
-window.loadProducts = function() {
-    if (!db) {
-        console.error('❌ Firestore not initialized');
-        return;
-    }
-    console.log('📦 Loading products...');
-    db.collection('products')
-        .get()
-        .then((snapshot) => {
-            const products = [];
-            snapshot.forEach(doc => {
-                products.push({ id: doc.id, ...doc.data() });
-            });
-            window.allProducts = products;
-            window.filteredProducts = [...products];
-            window.currentPageNum = 1;
-            window.renderProductGrid();
-            console.log(`✅ Products loaded: ${products.length}`);
-        })
-        .catch((err) => {
-            console.warn('⚠️ Firestore error:', err.message);
-            document.getElementById('productGrid').innerHTML = `
-                <div style="grid-column:1/-1;text-align:center;padding:40px;color:#dc2626;">
-                    <i class="fas fa-exclamation-circle" style="font-size:28px;"></i>
-                    <p>ဒေတာများ ဖွင့်ရာတွင် အမှားရှိသည်။</p>
-                    <p style="font-size:12px;color:#888;">${err.message}</p>
-                    <button onclick="window.loadProducts()" style="margin-top:12px;padding:8px 24px;background:#e11b1b;color:#fff;border:none;border-radius:20px;cursor:pointer;">ပြန်ကြိုးစားမည်</button>
-                </div>
-            `;
-        });
-};
+    <!-- ==========================================================
+    FOOTER - Firebase SDKs & Application Scripts
+    Loading order: Firebase → config → main → user → admin
+    ========================================================== -->
 
-// Category filter
-document.querySelectorAll('.category-chip').forEach(chip => {
-    chip.addEventListener('click', function() {
-        document.querySelectorAll('.category-chip').forEach(c => {
-            c.style.background = '#eee';
-            c.style.color = '#333';
-        });
-        this.style.background = '#e11b1b';
-        this.style.color = '#fff';
-        const cat = this.dataset.cat;
-        window.filteredProducts = cat === 'all' ? [...window.allProducts] : window.allProducts.filter(p => p.category === cat);
-        window.currentPageNum = 1;
-        window.renderProductGrid();
-    });
-});
+    <!-- 1. Firebase Core SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js">
+    </script>
+    <!-- 2. Firebase Firestore -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js">
+    </script>
+    <!-- 3. Firebase Auth -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js">
+    </script>
+    <!-- 4. Firebase Storage -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js">
+    </script>
 
-// Load more
-document.getElementById('loadMoreBtn').addEventListener('click', function() {
-    window.currentPageNum++;
-    window.renderProductGrid();
-});
+    <!-- 5. Leaflet JS (Mapping) -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+    </script>
+    <!-- 6. Papa Parse (CSV) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js">
+    </script>
 
-// =============================================================
-// MESSAGES (Globally Exposed)
-// =============================================================
-window.renderMessages = function() {
-    const container = document.getElementById('messageList');
-    if (!container) return;
-    if (window.messages.length === 0) {
-        container.innerHTML = `<div style="text-align:center;padding:30px;color:#888;"><i class="fas fa-inbox" style="font-size:36px;opacity:0.3;"></i><p>စာများ မရှိသေးပါ</p></div>`;
-        return;
-    }
-    let html = '';
-    window.messages.forEach(msg => {
-        const align = msg.isUser ? 'right' : 'left';
-        const bg = msg.isUser ? '#e11b1b' : '#eee';
-        const color = msg.isUser ? '#fff' : '#333';
-        html += `
-            <div style="text-align:${align};margin-bottom:6px;">
-                <span style="display:inline-block;padding:8px 14px;border-radius:12px;background:${bg};color:${color};max-width:80%;">
-                    ${msg.text}
-                    <div style="font-size:10px;opacity:0.7;margin-top:2px;">${msg.time || ''}</div>
-                </span>
-            </div>
-        `;
-    });
-    container.innerHTML = html;
-    container.scrollTop = container.scrollHeight;
-};
+    <!-- 7. Application Scripts (order matters) -->
+    <!-- Firebase Config -->
+    <script src="firebase-config.js">
+    </script>
+    <!-- Main App Logic -->
+    <script src="main.js">
+    </script>
+    <!-- User-specific logic -->
+    <script src="user.js">
+    </script>
+    <!-- Admin Panel logic -->
+    <script src="admin.js">
+    </script>
 
-// Send message
-document.getElementById('msgSendBtn').addEventListener('click', function() {
-    const input = document.getElementById('msgInput');
-    const text = input.value.trim();
-    if (!text) return;
-    if (!db) { window.showToast('Firebase ချိတ်ဆက်မှု မရှိပါ။'); return; }
-    const userId = auth.currentUser ? auth.currentUser.uid : 'guest';
-    db.collection('messages').add({
-        text: text,
-        time: new Date().toLocaleTimeString(),
-        userId: userId,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-        isUser: true
-    }).then(() => {
-        input.value = '';
-        setTimeout(() => {
-            const replies = ['မင်္ဂလာပါ! ဘာကူညီရမလဲ?', 'ကျေးဇူးပါ။ ပြန်လည်ဆက်သွယ်ပါမယ်။', 'အော်ဒါအခြေအနေ စစ်ဆေးပေးပါ့မယ်။'];
-            db.collection('messages').add({
-                text: replies[Math.floor(Math.random() * replies.length)],
-                time: new Date().toLocaleTimeString(),
-                userId: 'bot',
-                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                isUser: false
-            });
-        }, 1500);
-    }).catch(err => {
-        console.error('Send message error:', err);
-        window.showToast('စာပို့ရာတွင် အမှားရှိသည်။');
-    });
-});
+    <!-- ==========================================================
+    INLINE BOOTSTRAP (runs after all scripts loaded)
+    ========================================================== -->
+    <script>
+        (function() {
+            'use strict';
+            console.log('🚀 Thae Su E-Commerce စတင်နေပါပြီ...');
+            // အောက်ပါ function များကို main.js မှာ အသေးစိတ် ထည့်သွင်းထားပါသည်။
+            // ဤနေရာတွင် အခြေခံ DOM ပြင်ဆင်မှုများသာ လုပ်ဆောင်ပါမည်။
+        })();
+    </script>
 
-document.getElementById('msgInput').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') document.getElementById('msgSendBtn').click();
-});
-
-// Listen to messages
-function listenMessages() {
-    if (!db) return;
-    db.collection('messages')
-        .orderBy('timestamp', 'asc')
-        .limit(100)
-        .onSnapshot((snapshot) => {
-            window.messages = [];
-            snapshot.forEach(doc => {
-                window.messages.push({ id: doc.id, ...doc.data() });
-            });
-            window.renderMessages();
-        }, (err) => {
-            console.error('Message listener error:', err);
-        });
-}
-
-// =============================================================
-// TOAST
-// =============================================================
-window.showToast = function(message) {
-    const existing = document.querySelector('.toast');
-    if (existing) existing.remove();
-    const div = document.createElement('div');
-    div.className = 'toast';
-    div.textContent = message;
-    document.body.appendChild(div);
-    setTimeout(() => div.remove(), 3000);
-};
-
-// =============================================================
-// CHECKOUT
-// =============================================================
-document.getElementById('checkoutBtn').addEventListener('click', function() {
-    if (window.cart.length === 0) {
-        window.showToast('စျေးဝယ်တောင်းထဲ ပစ္စည်းမရှိပါ။');
-        return;
-    }
-    window.navigateTo('#checkout-address');
-});
-
-document.getElementById('checkoutForm1').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const name = document.getElementById('chkName').value.trim();
-    const phone = document.getElementById('chkPhone').value.trim();
-    const address = document.getElementById('chkAddress').value.trim();
-    if (!name || !phone || !address) {
-        window.showToast('ကျေးဇူးပြုပြီး အချက်အလက်အားလုံးကို ဖြည့်သွင်းပါ။');
-        return;
-    }
-    sessionStorage.setItem('checkoutName', name);
-    sessionStorage.setItem('checkoutPhone', phone);
-    sessionStorage.setItem('checkoutAddress', address);
-    window.navigateTo('#checkout-payment');
-});
-
-let countdownSeconds = 3600;
-let countdownInterval = null;
-
-document.getElementById('paidBtn').addEventListener('click', function() {
-    if (countdownInterval) clearInterval(countdownInterval);
-    window.showToast('✅ ငွေလွှဲပြီးပါပြီ။');
-    window.cart = [];
-    localStorage.setItem('premiumCart', JSON.stringify(window.cart));
-    window.updateCartUI();
-    window.navigateTo('#success');
-});
-
-document.getElementById('copyWaveBtn').addEventListener('click', function() {
-    navigator.clipboard?.writeText('Thae Su Phuo Ko - 09 781 145 573')
-        .then(() => window.showToast('✅ ကူးယူပြီးပါပြီ။'))
-        .catch(() => alert('Thae Su Phuo Ko - 09 781 145 573'));
-});
-
-document.getElementById('backHomeBtn').addEventListener('click', function() {
-    window.navigateTo('#home');
-});
-
-// =============================================================
-// PROFILE
-// =============================================================
-document.getElementById('logoutBtn').addEventListener('click', function() {
-    if (confirm('အကောင့်မှ ထွက်မည် သေချာပါသလား?')) {
-        localStorage.removeItem('premiumCart');
-        window.cart = [];
-        window.updateCartUI();
-        window.showToast('အကောင့်မှ ထွက်လိုက်ပါပြီ။');
-        window.navigateTo('#home');
-    }
-});
-
-// =============================================================
-// CHAT FAB
-// =============================================================
-document.getElementById('chatFab').addEventListener('click', function() {
-    window.navigateTo('#messages');
-});
-
-// =============================================================
-// AUTH
-// =============================================================
-if (auth) {
-    auth.onAuthStateChanged((user) => {
-        if (user) {
-            console.log('✅ Auth: User logged in', user.uid);
-            document.getElementById('profileName').textContent = user.displayName || 'ဝယ်သူ';
-            document.getElementById('profilePhone').textContent = user.phoneNumber || '09-XXX-XXX-XXX';
-        } else {
-            auth.signInAnonymously().catch(err => console.warn('Anonymous sign-in error:', err));
-        }
-    });
-}
-
-// =============================================================
-// SMART CLOCK
-// =============================================================
-let clockStart = Date.now();
-let isSlowMode = false;
-let slowModeMultiplier = 6;
-
-function updateClock() {
-    const el = document.getElementById('smartClock');
-    if (!el) return;
-    const elapsed = (Date.now() - clockStart) / 1000;
-    const totalSec = isSlowMode ? (elapsed / slowModeMultiplier) : elapsed;
-    const hours = Math.floor(totalSec / 3600) % 24;
-    const mins = Math.floor((totalSec % 3600) / 60);
-    const secs = Math.floor(totalSec % 60);
-    el.textContent = `${String(hours).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
-    if (elapsed >= 60 && !isSlowMode) {
-        isSlowMode = true;
-        el.style.color = '#ff6b00';
-    }
-}
-setInterval(updateClock, 1000);
-updateClock();
-
-// =============================================================
-// THEME TOGGLE
-// =============================================================
-document.getElementById('themeToggle').addEventListener('click', function() {
-    const isDark = document.documentElement.style.backgroundColor === '#1a1a2e';
-    document.documentElement.style.backgroundColor = isDark ? '#f5f5f5' : '#1a1a2e';
-    document.documentElement.style.color = isDark ? '#333' : '#eee';
-    this.textContent = isDark ? '🌙' : '☀️';
-});
-
-// =============================================================
-// INIT
-// =============================================================
-function init() {
-    console.log('🚀 Initializing app...');
-    window.loadProducts();
-    window.updateCartUI();
-    listenMessages();
-    const hash = window.location.hash || '#home';
-    window.navigateTo(hash);
-    console.log('✅ App initialized.');
-}
-
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-} else {
-    init();
-}
-</script>
+    <!-- ==========================================================
+    index.html - Part 1 (Lines 1 to 300) ပြီးဆုံးပါပြီ။
+    နောက်ထပ် အပိုင်း (Part 2) အတွက် ဆက်လက်တောင်းခံနိုင်ပါသည်။
+    ========================================================== -->
