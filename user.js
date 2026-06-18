@@ -455,42 +455,47 @@
      * @param {string} userId 
      */
     async function loadUserMessages(userId) {
-        try {
-            // Unsubscribe from previous listener
-            if (messagesUnsubscribe) {
-                messagesUnsubscribe();
-                messagesUnsubscribe = null;
-            }
-
-            const db = window.db;
-            if (!db) return;
-
-            // Real-time listener for messages
-            messagesUnsubscribe = db.collection('messages')
-                .where('userId', '==', userId)
-                .orderBy('createdAt', 'asc')
-                .onSnapshot((snapshot) => {
-                    const messages = [];
-                    snapshot.forEach(doc => {
-                        const data = doc.data();
-                        messages.push({
-                            id: doc.id,
-                            ...data,
-                            createdAt: data.createdAt ? data.createdAt.toDate() : new Date()
-                        });
-                    });
-                    messageList = messages;
-                    renderMessages();
-                    updateChatBadge();
-                }, (error) => {
-                    console.error('❌ Messages listener error:', error);
-                });
-
-            console.log('✅ Messages listener started');
-        } catch (error) {
-            console.error('❌ loadUserMessages error:', error);
+    try {
+        // Unsubscribe from previous listener
+        if (messagesUnsubscribe) {
+            messagesUnsubscribe();
+            messagesUnsubscribe = null;
         }
+
+        const db = window.db;
+        if (!db) return;
+
+        // *** အရေးကြီး: .orderBy('createdAt', 'asc') ကို ဖယ်ထားပါ။ ***
+        messagesUnsubscribe = db.collection('messages')
+            .where('userId', '==', userId)
+            .onSnapshot((snapshot) => {
+                const messages = [];
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    messages.push({
+                        id: doc.id,
+                        ...data,
+                        createdAt: data.createdAt ? data.createdAt.toDate() : new Date()
+                    });
+                });
+                // *** Client-side မှာ sort လုပ်ပါ (Index မလိုတော့ဘူး) ***
+                messageList = messages.sort((a, b) => a.createdAt - b.createdAt);
+                renderMessages();
+                updateChatBadge();
+            }, (error) => {
+                console.error('❌ Messages listener error:', error);
+                // အမှားဖြစ်ရင် ဗလာပြပါ
+                messageList = [];
+                renderMessages();
+                updateChatBadge();
+            });
+
+        console.log('✅ Messages listener started (no index needed)');
+    } catch (error) {
+        console.error('❌ loadUserMessages error:', error);
     }
+}
+
 
     /**
      * renderMessages - စာများကို UI တွင် ပြသခြင်း
