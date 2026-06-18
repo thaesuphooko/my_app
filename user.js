@@ -1857,3 +1857,15 @@
 // user.js ဖိုင်သည် ယခုအခါ အပြည့်အစုံ ဖြစ်ပါသည်။
 // နောက်ထပ် ဖိုင် (admin.js) အတွက် ဆက်လက်တောင်းခံနိုင်ပါသည်။
 // ============================================================
+
+document.addEventListener('firebaseComplete', function() {
+    // user.js ထဲက init လုပ်တဲ့ function တွေကို ဒီမှာ ခေါ်ပါ
+    if (window.currentUser) {
+        loadUserProfile(window.currentUser.uid);
+        loadWishlist(window.currentUser.uid);
+        loadUserOrders(window.currentUser.uid);
+        loadUserMessages(window.currentUser.uid);
+        loadAddresses();
+        loadUserPreferences();
+    }
+});
