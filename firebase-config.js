@@ -1640,3 +1640,666 @@
 // အထက်ပါ အဆင့်မြင့် Helper Functions များကို
 // အသုံးပြု၍ ဆက်လက်ရေးသားနိုင်ပါပြီ။
 // ============================================================
+// ============================================================
+// firebase-config.js - Part 4 (Lines 1 to 300)
+// ဖိုင်: firebase-config.js ၏ စတုတ္ထအပိုင်း
+// - Admin Settings & UI Config (Real-time)
+// - Backup Management (List, Restore, Delete)
+// - File Manager (HTML, CSS, JS code storage)
+// - CSV Import/Export Helpers
+// - Advanced Search & Pagination
+// - Analytics (Sales, Revenue, Top Products)
+// - Discount & Promotion Helpers
+// - Validation & Error Handling Utilities
+// ============================================================
+
+(function() {
+    'use strict';
+
+    console.log('🔥 firebase-config.js Part 4 စတင်နေပါပြီ...');
+
+    // ==========================================================
+    // ၁။ Admin Settings & UI Config Management
+    // ==========================================================
+
+    /**
+     * getUISettings - UI ဆက်တင်များကို ရယူခြင်း (cached)
+     * @param {boolean} forceRefresh - cache ကို ကျော်ပြီး ပြန်ဆွဲရန်
+     * @returns {Promise<Object>}
+     */
+    window.getUISettings = async function(forceRefresh = false) {
+        try {
+            const cacheKey = 'ui_settings';
+            if (!forceRefresh) {
+                const cached = window.getCachedData(cacheKey);
+                if (cached) return cached;
+            }
+            const settings = await window.getSettings();
+            window.cacheData(cacheKey, settings, 300); // 5 min cache
+            return settings;
+        } catch (error) {
+            console.error('❌ getUISettings error:', error);
+            return {
+                primaryColor: '#e11b1b',
+                gridColumns: 2,
+                cardGap: 12,
+                flashSale: true,
+                categoriesBar: true,
+                slowModeEnabled: true,
+                musicEnabled: true
+            };
+        }
+    };
+
+    /**
+     * updateUISettings - UI ဆက်တင်များကို ပြင်ဆင်ခြင်း (real-time sync အတွက်)
+     * @param {Object} newSettings 
+     * @returns {Promise<void>}
+     */
+    window.updateUISettings = async function(newSettings) {
+        try {
+            await window.updateSettings(newSettings);
+            // Cache ကို ရှင်းလိုက်ပါ
+            localStorage.removeItem('cache_ui_settings');
+            // Real-time event ကို dispatch လုပ်ခြင်းဖြင့် အခြား tabs များသို့ အကြောင်းကြားမည်
+            const event = new CustomEvent('uiSettingsChanged', { detail: newSettings });
+            document.dispatchEvent(event);
+            console.log('✅ UI Settings updated and broadcasted');
+        } catch (error) {
+            console.error('❌ updateUISettings error:', error);
+            throw error;
+        }
+    };
+
+    /**
+     * listenUISettings - UI ဆက်တင်များကို Real-time နားထောင်ခြင်း
+     * @param {Function} callback - (settings) => void
+     * @returns {Function} - unsubscribe function
+     */
+    window.listenUISettings = function(callback) {
+        return window.listenDocument('settings', 'siteConfig', (data) => {
+            if (data) {
+                window.cacheData('ui_settings', data, 300);
+                callback(data);
+            }
+        });
+    };
+
+    // ==========================================================
+    // ၂။ Backup Management
+    // ==========================================================
+
+    /**
+     * listBackups - Backup စာရင်းကို ရယူခြင်း
+     * @param {number} limit 
+     * @returns {Promise<Array>}
+     */
+    window.listBackups = async function(limit = 10) {
+        try {
+            return await window.getBackups(limit);
+        } catch (error) {
+            console.error('❌ listBackups error:', error);
+            return [];
+        }
+    };
+
+    /**
+     * restoreBackup - Backup တစ်ခုကို ပြန်လည်အသုံးပြုခြင်း
+     * @param {string} backupId 
+     * @param {string} targetCollection - ပြန်ထည့်မည့် collection
+     * @returns {Promise<boolean>}
+     */
+    window.restoreBackup = async function(backupId, targetCollection) {
+        try {
+            const backup = await window.getDocument('backups', backupId);
+            if (!backup) throw new Error('Backup not found');
+            const data = backup.data;
+            if (!data || typeof data !== 'object') throw new Error('Invalid backup data');
+            // data သည် object ဖြစ်ပြီး collection name နှင့် documents array ပါရမည်
+            // ဥပမာ: { products: [...], orders: [...], settings: {...} }
+            if (Array.isArray(data[targetCollection])) {
+                await window.bulkAddDocuments(targetCollection, data[targetCollection]);
+                console.log(`✅ Backup ${backupId} restored to ${targetCollection}`);
+                return true;
+            } else {
+                throw new Error(`Collection ${targetCollection} not found in backup`);
+            }
+        } catch (error) {
+            console.error('❌ restoreBackup error:', error);
+            return false;
+        }
+    };
+
+    /**
+     * deleteBackup - Backup တစ်ခုကို ဖျက်ခြင်း
+     * @param {string} backupId 
+     * @returns {Promise<void>}
+     */
+    window.deleteBackup = async function(backupId) {
+        try {
+            await window.deleteDocument('backups', backupId);
+            console.log(`✅ Backup ${backupId} deleted`);
+        } catch (error) {
+            console.error('❌ deleteBackup error:', error);
+            throw error;
+        }
+    };
+
+    // ==========================================================
+    // ၃။ File Manager (Store/Retrieve HTML, CSS, JS code)
+    // ==========================================================
+
+    /**
+     * saveCodeFile - Code ဖိုင်တစ်ခုကို Firestore တွင် သိမ်းဆည်းခြင်း
+     * @param {string} fileName - 'index.html', 'style.css', 'main.js' စသည်
+     * @param {string} content - ကုဒ်စာသား
+     * @param {string} version - optional version
+     * @returns {Promise<string>} - Document ID
+     */
+    window.saveCodeFile = async function(fileName, content, version = 'current') {
+        try {
+            const data = {
+                fileName: fileName,
+                content: content,
+                version: version,
+                size: content.length,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+            // Use a specific document ID for each file + version
+            const docId = `${fileName}_${version}`.replace(/[^a-zA-Z0-9_]/g, '_');
+            const db = window.db;
+            if (!db) throw new Error('Firestore မရှိပါ။');
+            await db.collection('codeFiles').doc(docId).set(data, { merge: true });
+            console.log(`✅ Code file saved: ${fileName} (${version})`);
+            return docId;
+        } catch (error) {
+            console.error('❌ saveCodeFile error:', error);
+            throw error;
+        }
+    };
+
+    /**
+     * getCodeFile - Firestore မှ Code ဖိုင်တစ်ခုကို ရယူခြင်း
+     * @param {string} fileName 
+     * @param {string} version 
+     * @returns {Promise<string|null>} - Code content
+     */
+    window.getCodeFile = async function(fileName, version = 'current') {
+        try {
+            const docId = `${fileName}_${version}`.replace(/[^a-zA-Z0-9_]/g, '_');
+            const doc = await window.getDocument('codeFiles', docId);
+            return doc ? doc.content : null;
+        } catch (error) {
+            console.error('❌ getCodeFile error:', error);
+            return null;
+        }
+    };
+
+    /**
+     * listCodeFiles - Code ဖိုင်များ၏ စာရင်းကို ရယူခြင်း
+     * @param {string} version 
+     * @returns {Promise<Array>}
+     */
+    window.listCodeFiles = async function(version = 'current') {
+        try {
+            const db = window.db;
+            if (!db) throw new Error('Firestore မရှိပါ။');
+            // Query where version matches
+            const snapshot = await db.collection('codeFiles')
+                .where('version', '==', version)
+                .get();
+            const results = [];
+            snapshot.forEach(doc => {
+                results.push({ id: doc.id, ...doc.data() });
+            });
+            return results;
+        } catch (error) {
+            console.error('❌ listCodeFiles error:', error);
+            return [];
+        }
+    };
+
+    // ==========================================================
+    // ၄။ CSV Import/Export Helpers (using Papa Parse)
+    // ==========================================================
+
+    /**
+     * exportToCSV - Data ကို CSV ဖိုင်အဖြစ် ပြောင်းပြီး download လုပ်ခြင်း
+     * @param {Array<Object>} data - ဒေတာ Array
+     * @param {string} filename - သိမ်းမည့်ဖိုင်အမည်
+     * @param {Array<string>} fields - ထည့်သွင်းမည့် အကွက်များ (optional)
+     */
+    window.exportToCSV = function(data, filename = 'export.csv', fields = null) {
+        try {
+            if (typeof Papa === 'undefined') {
+                console.error('❌ Papa Parse library not loaded');
+                return;
+            }
+            let csvData = data;
+            if (fields) {
+                csvData = data.map(row => {
+                    const newRow = {};
+                    fields.forEach(f => { newRow[f] = row[f] || ''; });
+                    return newRow;
+                });
+            }
+            const csv = Papa.unparse(csvData);
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', filename);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            console.log(`✅ CSV exported: ${filename}`);
+        } catch (error) {
+            console.error('❌ exportToCSV error:', error);
+            alert('CSV ထုတ်ရာတွင် အမှားဖြစ်ပွားခဲ့သည်။');
+        }
+    };
+
+    /**
+     * importFromCSV - CSV ဖိုင်မှ data ကို ဖတ်ပြီး callback ပြန်ပေးခြင်း
+     * @param {File} file - CSV ဖိုင်
+     * @param {Function} callback - (results) => void
+     * @param {Object} options - Papa Parse options
+     */
+    window.importFromCSV = function(file, callback, options = {}) {
+        try {
+            if (typeof Papa === 'undefined') {
+                console.error('❌ Papa Parse library not loaded');
+                return;
+            }
+            Papa.parse(file, {
+                header: options.header !== undefined ? options.header : true,
+                dynamicTyping: options.dynamicTyping !== undefined ? options.dynamicTyping : true,
+                skipEmptyLines: options.skipEmptyLines !== undefined ? options.skipEmptyLines : true,
+                complete: function(results) {
+                    console.log(`✅ CSV imported: ${results.data.length} rows`);
+                    callback(results.data);
+                },
+                error: function(error) {
+                    console.error('❌ CSV parse error:', error);
+                    alert('CSV ဖိုင်ဖတ်ရာတွင် အမှားဖြစ်ပွားခဲ့သည်။');
+                }
+            });
+        } catch (error) {
+            console.error('❌ importFromCSV error:', error);
+        }
+    };
+
+    /**
+     * bulkImportProductsFromCSV - CSV မှ ကုန်ပစ္စည်းများကို အစုလိုက် ထည့်သွင်းခြင်း
+     * @param {File} file - CSV ဖိုင်
+     * @param {string} mode - 'replace' or 'merge'
+     * @param {Function} progressCallback - (percent) => void
+     * @returns {Promise<{added: number, updated: number, errors: number}>}
+     */
+    window.bulkImportProductsFromCSV = function(file, mode = 'merge', progressCallback = null) {
+        return new Promise((resolve, reject) => {
+            try {
+                window.importFromCSV(file, async (rows) => {
+                    let added = 0, updated = 0, errors = 0;
+                    const total = rows.length;
+                    try {
+                        for (let i = 0; i < rows.length; i++) {
+                            const row = rows[i];
+                            if (!row.name || !row.price) {
+                                errors++;
+                                continue;
+                            }
+                            const productData = {
+                                name: row.name,
+                                price: parseFloat(row.price) || 0,
+                                originalPrice: parseFloat(row.originalPrice) || parseFloat(row.price) * 1.2,
+                                category: row.category ? row.category.split(',').map(c => c.trim()) : ['General'],
+                                image: row.image || '',
+                                description: row.description || '',
+                                stock: parseInt(row.stock) || 10,
+                                location: row.location || 'Myanmar [Burma]'
+                            };
+                            if (mode === 'replace') {
+                                // Check if exists
+                                const existing = await window.queryCollection('products', [{ field: 'name', operator: '==', value: productData.name }]);
+                                if (existing.length > 0) {
+                                    await window.updateProduct(existing[0].id, productData);
+                                    updated++;
+                                } else {
+                                    await window.addProduct(productData);
+                                    added++;
+                                }
+                            } else {
+                                // merge mode: add without checking
+                                await window.addProduct(productData);
+                                added++;
+                            }
+                            if (progressCallback) {
+                                progressCallback((i + 1) / total * 100);
+                            }
+                        }
+                        resolve({ added, updated, errors });
+                    } catch (error) {
+                        reject(error);
+                    }
+                });
+            } catch (error) {
+                reject(error);
+            }
+        });
+    };
+
+    // ==========================================================
+    // ၅။ Advanced Search & Pagination Helpers
+    // ==========================================================
+
+    /**
+     * searchProductsAdvanced - ကုန်ပစ္စည်းများကို အဆင့်မြင့်ရှာဖွေခြင်း
+     * @param {Object} filters - {keyword, category, minPrice, maxPrice, inStock}
+     * @param {number} page 
+     * @param {number} perPage 
+     * @param {string} sortBy - 'price', 'rating', 'sold', 'createdAt'
+     * @param {string} sortOrder - 'asc' or 'desc'
+     * @returns {Promise<{data: Array, total: number, page: number, totalPages: number}>}
+     */
+    window.searchProductsAdvanced = async function(filters = {}, page = 1, perPage = 20, sortBy = 'createdAt', sortOrder = 'desc') {
+        try {
+            const db = window.db;
+            if (!db) throw new Error('Firestore မရှိပါ။');
+            let query = db.collection('products');
+
+            // Apply filters
+            if (filters.category && filters.category !== 'အားလုံး') {
+                query = query.where('category', 'array-contains', filters.category);
+            }
+            if (filters.keyword) {
+                // Firestore doesn't support full-text search, we'll do client-side after fetching
+                // Or we can use a combination of where clauses (limited)
+                // For now, we fetch all and filter later, but limit to 1000
+            }
+            if (filters.minPrice !== undefined && filters.minPrice > 0) {
+                query = query.where('price', '>=', filters.minPrice);
+            }
+            if (filters.maxPrice !== undefined && filters.maxPrice > 0) {
+                query = query.where('price', '<=', filters.maxPrice);
+            }
+            if (filters.inStock === true) {
+                query = query.where('stock', '>', 0);
+            }
+
+            // Sorting
+            if (sortBy) {
+                query = query.orderBy(sortBy, sortOrder);
+            }
+
+            // Pagination (Firestore requires offset, but we use startAfter for performance)
+            // For simplicity, we'll get all and slice in memory (not ideal for large datasets)
+            // Better to use pagination with startAfter, but requires cursor tracking.
+            // Using simple offset here for demo
+            const snapshot = await query.get();
+            let products = [];
+            snapshot.forEach(doc => {
+                products.push({ id: doc.id, ...doc.data() });
+            });
+
+            // Client-side filtering for keyword
+            if (filters.keyword) {
+                const kw = filters.keyword.toLowerCase();
+                products = products.filter(p => {
+                    const name = (p.name || '').toLowerCase();
+                    const cat = (Array.isArray(p.category) ? p.category.join(' ') : p.category || '').toLowerCase();
+                    return name.includes(kw) || cat.includes(kw);
+                });
+            }
+
+            const total = products.length;
+            const totalPages = Math.ceil(total / perPage);
+            const start = (page - 1) * perPage;
+            const end = Math.min(start + perPage, total);
+            const data = products.slice(start, end);
+
+            return { data, total, page, totalPages };
+        } catch (error) {
+            console.error('❌ searchProductsAdvanced error:', error);
+            return { data: [], total: 0, page: 1, totalPages: 0 };
+        }
+    };
+
+    // ==========================================================
+    // ၆။ Analytics Helpers (Sales, Revenue, Top Products)
+    // ==========================================================
+
+    /**
+     * getSalesAnalytics - ရောင်းအား စာရင်းအင်းကို ရယူခြင်း
+     * @param {string} period - 'today', 'week', 'month', 'year'
+     * @returns {Promise<Object>}
+     */
+    window.getSalesAnalytics = async function(period = 'today') {
+        try {
+            const db = window.db;
+            if (!db) throw new Error('Firestore မရှိပါ။');
+            // Get all orders
+            const orders = await window.getCollection('orders');
+            // Filter by period
+            const now = new Date();
+            let startDate = new Date();
+            if (period === 'today') {
+                startDate.setHours(0, 0, 0, 0);
+            } else if (period === 'week') {
+                startDate.setDate(now.getDate() - 7);
+            } else if (period === 'month') {
+                startDate.setMonth(now.getMonth() - 1);
+            } else if (period === 'year') {
+                startDate.setFullYear(now.getFullYear() - 1);
+            }
+
+            const filtered = orders.filter(o => {
+                if (!o.createdAt) return false;
+                const date = o.createdAt.toDate ? o.createdAt.toDate() : new Date(o.createdAt);
+                return date >= startDate;
+            });
+
+            const totalOrders = filtered.length;
+            const totalRevenue = filtered.reduce((sum, o) => sum + (o.total || 0), 0);
+            const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+
+            // Top products
+            const productSales = {};
+            filtered.forEach(o => {
+                if (o.items && Array.isArray(o.items)) {
+                    o.items.forEach(item => {
+                        const id = item.id || item.productId;
+                        if (id) {
+                            productSales[id] = (productSales[id] || 0) + (item.quantity || 1);
+                        }
+                    });
+                }
+            });
+            const topProducts = Object.entries(productSales)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10)
+                .map(([id, count]) => ({ productId: id, sold: count }));
+
+                        return {
+                period,
+                totalOrders,
+                totalRevenue,
+                avgOrderValue,
+                topProducts
+            };
+        } catch (error) {
+            console.error('❌ getSalesAnalytics error:', error);
+            return { totalOrders: 0, totalRevenue: 0, avgOrderValue: 0, topProducts: [] };
+        }
+    };
+
+    // ==========================================================
+    // ၇။ Discount & Promotion Helpers
+    // ==========================================================
+
+    /**
+     * calculateDiscount - လျှော့စျေးနှုန်းကို တွက်ချက်ခြင်း
+     * @param {number} originalPrice 
+     * @param {number} discountPercent 
+     * @param {string} type - 'percentage' or 'fixed'
+     * @param {number} fixedAmount 
+     * @returns {Object} - {discountedPrice, savings, percent}
+     */
+    window.calculateDiscount = function(originalPrice, discountPercent = 0, type = 'percentage', fixedAmount = 0) {
+        let discountedPrice = originalPrice;
+        let savings = 0;
+        let percent = 0;
+        if (type === 'percentage') {
+            percent = Math.min(discountPercent, 100);
+            discountedPrice = originalPrice * (1 - percent / 100);
+            savings = originalPrice - discountedPrice;
+        } else if (type === 'fixed') {
+            const amount = Math.min(fixedAmount, originalPrice);
+            discountedPrice = originalPrice - amount;
+            savings = amount;
+            percent = (savings / originalPrice) * 100;
+        }
+        return {
+            originalPrice,
+            discountedPrice: Math.round(discountedPrice),
+            savings: Math.round(savings),
+            percent: Math.round(percent)
+        };
+    };
+
+    /**
+     * applyFlashSale - Flash sale ပစ္စည်းများကို စစ်ဆေးပြီး discount သတ်မှတ်ခြင်း
+     * @param {Array<Object>} products 
+     * @param {number} flashDiscountPercent 
+     * @param {Array<string>} flashProductIds - (optional) specific IDs
+     * @returns {Array<Object>} - updated products with flash sale flag
+     */
+    window.applyFlashSale = function(products, flashDiscountPercent = 20, flashProductIds = null) {
+        return products.map(p => {
+            const isFlash = flashProductIds ? flashProductIds.includes(p.id) : true;
+            if (isFlash && flashDiscountPercent > 0) {
+                const calc = window.calculateDiscount(p.price, flashDiscountPercent, 'percentage');
+                return {
+                    ...p,
+                    isFlashSale: true,
+                    flashPrice: calc.discountedPrice,
+                    flashSavings: calc.savings,
+                    flashPercent: calc.percent
+                };
+            }
+            return { ...p, isFlashSale: false };
+        });
+    };
+
+    // ==========================================================
+    // ၈။ Validation Helpers
+    // ==========================================================
+
+    /**
+     * validateEmail - အီးမေးလ် တိကျမှု စစ်ဆေးခြင်း
+     * @param {string} email 
+     * @returns {boolean}
+     */
+    window.validateEmail = function(email) {
+        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return re.test(email);
+    };
+
+    /**
+     * validatePhone - ဖုန်းနံပါတ် တိကျမှု စစ်ဆေးခြင်း (မြန်မာ format)
+     * @param {string} phone 
+     * @returns {boolean}
+     */
+    window.validatePhone = function(phone) {
+        // Myanmar phone format: 09xxxxxxxxx or 09-xxx-xxx-xxx
+        const re = /^(09)[0-9]{8,9}$|^(09)[0-9]{2}-[0-9]{3}-[0-9]{3}$/;
+        const cleaned = phone.replace(/-/g, '').replace(/\s/g, '');
+        return re.test(cleaned) || re.test(phone);
+    };
+
+    /**
+     * validateRequired - လိုအပ်သောအကွက်များကို စစ်ဆေးခြင်း
+     * @param {Object} data 
+     * @param {Array<string>} requiredFields 
+     * @returns {Object} - { valid: boolean, errors: Array<string> }
+     */
+    window.validateRequired = function(data, requiredFields) {
+        const errors = [];
+        requiredFields.forEach(field => {
+            if (!data[field] || data[field].toString().trim() === '') {
+                errors.push(`${field} အား ဖြည့်သွင်းရန် လိုအပ်ပါသည်။`);
+            }
+        });
+        return { valid: errors.length === 0, errors };
+    };
+
+    // ==========================================================
+    // ၉။ Error Handling & Retry Utilities
+    // ==========================================================
+
+    /**
+     * retryOperation - လုပ်ဆောင်ချက်တစ်ခုကို အကြိမ်ကြိမ်ပြန်ကြိုးစားခြင်း
+     * @param {Function} operation - () => Promise
+     * @param {number} maxAttempts 
+     * @param {number} delayMs 
+     * @returns {Promise<any>}
+     */
+    window.retryOperation = async function(operation, maxAttempts = 3, delayMs = 1000) {
+        let lastError = null;
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                return await operation();
+            } catch (error) {
+                lastError = error;
+                console.warn(`Retry attempt ${attempt}/${maxAttempts} failed:`, error.message);
+                if (attempt < maxAttempts) {
+                    await new Promise(resolve => setTimeout(resolve, delayMs * attempt));
+                }
+            }
+        }
+        throw lastError || new Error('Operation failed after all retries');
+    };
+
+    /**
+     * handleFirestoreError - Firestore အမှားများကို လွယ်ကူစွာ ကိုင်တွယ်ခြင်း
+     * @param {Error} error 
+     * @param {string} fallbackMessage 
+     * @returns {string} - user-friendly error message
+     */
+    window.handleFirestoreError = function(error, fallbackMessage = 'ဒေတာများ ဖွင့်ရာတွင် အမှားအယွင်း ဖြစ်ပွားခဲ့သည်။') {
+        if (!error) return fallbackMessage;
+        const code = error.code || '';
+        if (code === 'permission-denied') {
+            return '🔥 ခွင့်ပြုချက် မရှိပါ။ စနစ်အက်ဒမင်ကို ဆက်သွယ်ပါ။ (Firestore Rules ကို စစ်ဆေးပါ)';
+        } else if (code === 'unavailable') {
+            return '📶 အင်တာနက်ချိတ်ဆက်မှု အားနည်းနေသည်။ ထပ်မံကြိုးစားပါ။';
+        } else if (code === 'not-found') {
+            return '📄 တောင်းဆိုထားသော ဒေတာ မတွေ့ပါ။';
+        } else if (code === 'invalid-argument') {
+            return '⚠️ တောင်းဆိုချက်မှာ မှားယွင်းနေသည်။ ထပ်မံစစ်ဆေးပါ။';
+        } else if (code === 'deadline-exceeded') {
+            return '⏱️ အချိန်ကုန်သွားသည်။ အင်တာနက်အခြေအနေ စစ်ဆေးပြီး ပြန်ကြိုးစားပါ။';
+        } else if (error.message && error.message.includes('Failed to fetch')) {
+            return '📶 အင်တာနက်ချိတ်ဆက်မှု ပြတ်တောက်နေသည်။';
+        }
+        return error.message || fallbackMessage;
+    };
+
+    // ==========================================================
+    // ၁၀။ ပြင်ဆင်မှုအားလုံး ပြီးဆုံးကြောင်း အချက်ပြခြင်း
+    // ==========================================================
+    console.log('✅ firebase-config.js Part 4 အားလုံး အဆင်သင့်ဖြစ်ပါပြီ။');
+    console.log(`📦 စုစုပေါင်း Helper Functions များ အားလုံး ပြီးစီးပါပြီ။`);
+
+    document.dispatchEvent(new CustomEvent('firebasePart4Ready'));
+
+})();
+
+// ============================================================
+// firebase-config.js - Part 4 (Lines 1 to 300) ပြီးဆုံးပါပြီ။
+// firebase-config.js ဖိုင်သည် ယခုအခါ အပြည့်အစုံ ဖြစ်ပါသည်။
+// နောက်ထပ် ဖိုင် (user.js သို့မဟုတ် admin.js) အတွက်
+// ဆက်လက်တောင်းခံနိုင်ပါသည်။
+// ============================================================
+```
