@@ -699,3 +699,643 @@
 // နောက်ထပ် အပိုင်း (user.js Part 2) အတွက်
 // ဆက်လက်တောင်းခံနိုင်ပါသည်။
 // ============================================================
+
+// ============================================================
+// user.js - Part 2 (Lines 1 to 300)
+// ဖိုင်: user.js ၏ ဒုတိယအပိုင်း
+// - User Profile Edit (Modal/Form)
+// - Address Management (CRUD)
+// - Review Submission (သုံးသပ်ချက်များ)
+// - Password Change
+// - User Preferences Sync (Theme, Slow Mode)
+// - Guest Checkout Integration
+// - Account Deletion
+// ============================================================
+
+(function() {
+    'use strict';
+
+    console.log('👤 user.js Part 2 စတင်နေပါပြီ...');
+
+    // ==========================================================
+    // ၁။ Review Submission (သုံးသပ်ချက် တင်ခြင်း)
+    // ==========================================================
+
+    /**
+     * attachReviewHandler - Product Detail ရှိ Review Form ကို စီမံခြင်း
+     * main.js က renderProductDetail လုပ်ပြီးတိုင်း ဒီ function ကို ခေါ်ရန်
+     */
+    window.attachReviewHandler = function(productId) {
+        const submitBtn = document.getElementById('submitReviewBtn');
+        if (!submitBtn) return;
+
+        // Remove existing listener to avoid duplicates
+        const newBtn = submitBtn.cloneNode(true);
+        submitBtn.parentNode.replaceChild(newBtn, submitBtn);
+
+        newBtn.addEventListener('click', async function() {
+            // Get rating from stars
+            const stars = document.querySelectorAll('#starRating .star.active');
+            let rating = 0;
+            stars.forEach(star => {
+                const val = parseInt(star.getAttribute('data-val'));
+                if (val > rating) rating = val;
+            });
+
+            const text = document.getElementById('reviewText')?.value?.trim();
+            if (!rating) {
+                alert('⭐ ကျေးဇူးပြု၍ ကြယ်ပွင့် ရွေးပါ။');
+                return;
+            }
+            if (!text) {
+                alert('✍️ ကျေးဇူးပြု၍ သုံးသပ်ချက် ရေးပါ။');
+                return;
+            }
+
+            if (!window.currentUser) {
+                alert('👤 ကျေးဇူးပြု၍ အကောင့်ဝင်ပါ။');
+                return;
+            }
+
+            try {
+                newBtn.disabled = true;
+                newBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> တင်နေသည်...';
+
+                const reviewData = {
+                    userId: window.currentUser.uid,
+                    userName: window.currentUser.displayName || window.currentUser.email || 'ဧည့်သည်',
+                    rating: rating,
+                    text: text
+                };
+
+                const reviewId = await window.addReview(productId, reviewData);
+                console.log(`✅ Review ${reviewId} submitted for product ${productId}`);
+
+                // Clear form
+                document.getElementById('reviewText').value = '';
+                document.querySelectorAll('#starRating .star').forEach(s => s.classList.remove('active'));
+                alert('✅ သုံးသပ်ချက် အောင်မြင်စွာ တင်နိုင်ခဲ့ပါပြီ။');
+                
+                // Reload reviews (will be done via re-render or manual update)
+                // For now, we can just re-render the product detail
+                const currentHash = window.location.hash;
+                if (currentHash.startsWith('#product/')) {
+                    const id = currentHash.split('/')[1];
+                    window.renderProductDetail(id);
+                }
+
+            } catch (error) {
+                console.error('❌ Review submit error:', error);
+                alert(window.handleFirestoreError(error, 'သုံးသပ်ချက် တင်ရာတွင် အမှားအယွင်း ဖြစ်ပွားခဲ့သည်။'));
+            } finally {
+                newBtn.disabled = false;
+                newBtn.innerHTML = '<i class="fas fa-paper-plane"></i> တင်မည်';
+            }
+        });
+    };
+
+    // Patch renderProductDetail to call our handler
+    if (window.renderProductDetail) {
+        const originalRenderDetail = window.renderProductDetail;
+        window.renderProductDetail = function(productId) {
+            originalRenderDetail(productId);
+            // Attach review handler after rendering
+            setTimeout(() => {
+                window.attachReviewHandler(productId);
+            }, 100);
+        };
+    }
+
+    // ==========================================================
+    // ၂။ Address Management
+    // ==========================================================
+
+    let userAddresses = [];
+
+    /**
+     * loadAddresses - သုံးစွဲသူ၏ သိမ်းထားသော လိပ်စာများကို ဆွဲထုတ်ခြင်း
+     */
+    async function loadAddresses() {
+        if (!window.currentUser) return;
+        try {
+            const profile = await window.getUserProfile(window.currentUser.uid);
+            userAddresses = profile?.addresses || [];
+            renderAddresses();
+        } catch (error) {
+            console.error('❌ loadAddresses error:', error);
+        }
+    }
+
+    /**
+     * renderAddresses - လိပ်စာများကို UI တွင် ပြသခြင်း
+     */
+    function renderAddresses() {
+        const container = document.getElementById('addressList');
+        if (!container) return;
+
+        if (!userAddresses || userAddresses.length === 0) {
+            container.innerHTML = `
+                <p style="color:var(--text-muted);text-align:center;padding:20px 0;">လိပ်စာ မရှိသေးပါ။</p>
+                <button class="btn-primary" id="addAddressBtn"><i class="fas fa-plus"></i> လိပ်စာအသစ်ထည့်ရန်</button>
+            `;
+            document.getElementById('addAddressBtn')?.addEventListener('click', showAddAddressForm);
+            return;
+        }
+
+        let html = '';
+        userAddresses.forEach((addr, index) => {
+            const isDefault = addr.isDefault ? '✅ ပင်မ' : '';
+            html += `
+                <div style="background:var(--glass-bg);padding:14px;border-radius:14px;border:1px solid var(--glass-border);">
+                    <div style="display:flex;justify-content:space-between;align-items:start;">
+                        <div>
+                            <div style="font-weight:600;">${addr.name || 'အမည်မသိ'}</div>
+                            <div style="font-size:0.85rem;color:var(--text-secondary);">${addr.phone || ''}</div>
+                            <div style="font-size:0.85rem;color:var(--text-secondary);">${addr.address || ''}</div>
+                            ${isDefault ? `<span style="font-size:0.7rem;color:var(--stock-instock);">${isDefault}</span>` : ''}
+                        </div>
+                        <div style="display:flex;gap:6px;">
+                            <button class="edit-address-btn" data-index="${index}" style="background:var(--primary);color:#fff;padding:4px 12px;border-radius:20px;font-size:0.7rem;">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="delete-address-btn" data-index="${index}" style="background:var(--stock-out);color:#fff;padding:4px 12px;border-radius:20px;font-size:0.7rem;">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += `
+            <button class="btn-primary" id="addAddressBtn" style="margin-top:8px;">
+                <i class="fas fa-plus"></i> လိပ်စာအသစ်ထည့်ရန်
+            </button>
+        `;
+        container.innerHTML = html;
+
+        // Event listeners
+        container.querySelectorAll('.edit-address-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const index = parseInt(this.getAttribute('data-index'));
+                showEditAddressForm(index);
+            });
+        });
+        container.querySelectorAll('.delete-address-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const index = parseInt(this.getAttribute('data-index'));
+                deleteAddress(index);
+            });
+        });
+        document.getElementById('addAddressBtn')?.addEventListener('click', showAddAddressForm);
+    }
+
+    /**
+     * showAddressFormModal - လိပ်စာ Form Modal ကို ပြသခြင်း (သို့) Inline Form
+     */
+    function showAddressForm(addressData = null, index = -1) {
+        const container = document.getElementById('addressList');
+        if (!container) return;
+
+        const isEdit = index >= 0;
+        const data = isEdit ? userAddresses[index] : { name: '', phone: '', address: '', isDefault: false };
+
+        const formHtml = `
+            <div style="background:var(--glass-bg);padding:16px;border-radius:16px;border:1px solid var(--glass-border);margin-top:8px;">
+                <h4 style="font-weight:600;margin-bottom:12px;">${isEdit ? 'လိပ်စာ ပြင်မည်' : 'လိပ်စာအသစ် ထည့်မည်'}</h4>
+                <div class="form-group">
+                    <label>အမည်</label>
+                    <input type="text" id="addrName" value="${data.name || ''}" placeholder="အမည်">
+                </div>
+                <div class="form-group">
+                    <label>ဖုန်းနံပါတ်</label>
+                    <input type="tel" id="addrPhone" value="${data.phone || ''}" placeholder="09-xxx-xxx-xxx">
+                </div>
+                <div class="form-group">
+                    <label>လိပ်စာ</label>
+                    <textarea id="addrAddress" placeholder="အိမ်အမှတ်၊ လမ်း၊ ရပ်ကွက်၊ မြို့...">${data.address || ''}</textarea>
+                </div>
+                <div class="form-group" style="display:flex;align-items:center;gap:10px;">
+                    <input type="checkbox" id="addrDefault" ${data.isDefault ? 'checked' : ''}>
+                    <label for="addrDefault" style="margin:0;">ပင်မလိပ်စာအဖြစ် သတ်မှတ်မည်</label>
+                </div>
+                <div style="display:flex;gap:10px;">
+                    <button class="btn-primary" id="saveAddressBtn" style="flex:1;">
+                        <i class="fas fa-save"></i> သိမ်းမည်
+                    </button>
+                    <button class="btn-outline" id="cancelAddressBtn" style="flex:0.5;">
+                        မလုပ်တော့ပါ
+                    </button>
+                </div>
+            </div>
+        `;
+
+        // Insert form
+        const existingForm = container.querySelector('.address-form-container');
+        if (existingForm) existingForm.remove();
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'address-form-container';
+        wrapper.innerHTML = formHtml;
+        container.prepend(wrapper);
+
+        // Cancel
+        document.getElementById('cancelAddressBtn')?.addEventListener('click', function() {
+            wrapper.remove();
+        });
+
+        // Save
+        document.getElementById('saveAddressBtn')?.addEventListener('click', async function() {
+            const name = document.getElementById('addrName').value.trim();
+            const phone = document.getElementById('addrPhone').value.trim();
+            const address = document.getElementById('addrAddress').value.trim();
+            const isDefault = document.getElementById('addrDefault').checked;
+
+            if (!name || !address) {
+                alert('ကျေးဇူးပြု၍ အမည်နှင့် လိပ်စာ ဖြည့်ပါ။');
+                return;
+            }
+
+            const newData = { name, phone, address, isDefault };
+
+            try {
+                if (isEdit) {
+                    userAddresses[index] = newData;
+                } else {
+                    userAddresses.push(newData);
+                }
+                // Save to Firestore
+                await window.updateUserProfile(window.currentUser.uid, { addresses: userAddresses });
+                renderAddresses();
+                alert('✅ လိပ်စာ အောင်မြင်စွာ သိမ်းနိုင်ခဲ့ပါပြီ။');
+            } catch (error) {
+                console.error('❌ Save address error:', error);
+                alert(window.handleFirestoreError(error, 'လိပ်စာ သိမ်းရာတွင် အမှားအယွင်း ဖြစ်ပွားခဲ့သည်။'));
+            }
+        });
+    }
+
+    function showAddAddressForm() { showAddressForm(null, -1); }
+    function showEditAddressForm(index) { showAddressForm(userAddresses[index], index); }
+
+    async function deleteAddress(index) {
+        if (!confirm('ဤလိပ်စာကို ဖျက်ရန် သေချာပါသလား။')) return;
+        try {
+            userAddresses.splice(index, 1);
+            await window.updateUserProfile(window.currentUser.uid, { addresses: userAddresses });
+            renderAddresses();
+            alert('✅ လိပ်စာ ဖျက်ပြီးပါပြီ။');
+        } catch (error) {
+            console.error('❌ Delete address error:', error);
+            alert(window.handleFirestoreError(error, 'လိပ်စာ ဖျက်ရာတွင် အမှားအယွင်း ဖြစ်ပွားခဲ့သည်။'));
+        }
+    }
+
+    // ==========================================================
+    // ၃။ Password Change
+    // ==========================================================
+
+    /**
+     * changeUserPassword - သုံးစွဲသူ၏ စကားဝှက်ကို ပြောင်းခြင်း
+     * @param {string} currentPassword 
+     * @param {string} newPassword 
+     * @returns {Promise<boolean>}
+     */
+    window.changeUserPassword = async function(currentPassword, newPassword) {
+        try {
+            const auth = window.auth;
+            if (!auth) throw new Error('Auth မရှိပါ။');
+            const user = auth.currentUser;
+            if (!user) throw new Error('အကောင့်မဝင်ရသေးပါ။');
+
+            // Re-authenticate user
+            const credential = firebase.auth.EmailAuthProvider.credential(user.email, currentPassword);
+            await user.reauthenticateWithCredential(credential);
+            await user.updatePassword(newPassword);
+            console.log('✅ Password changed successfully');
+            return true;
+        } catch (error) {
+            console.error('❌ changeUserPassword error:', error);
+            alert(window.handleFirestoreError(error, 'စကားဝှက် ပြောင်းရာတွင် အမှားအယွင်း ဖြစ်ပွားခဲ့သည်။'));
+            return false;
+        }
+    };
+
+    // ==========================================================
+    // ၄။ User Preferences Sync (Theme, Slow Mode to Firestore)
+    // ==========================================================
+
+    /**
+     * saveUserPreference - သုံးစွဲသူ၏ စိတ်ကြိုက်ဆက်တင်ကို Firestore တွင် သိမ်းခြင်း
+     */
+    window.saveUserPreference = async function(key, value) {
+        if (!window.currentUser) return;
+        try {
+            const updates = {};
+            updates[`preferences.${key}`] = value;
+            await window.updateUserProfile(window.currentUser.uid, updates);
+            console.log(`✅ Preference ${key} saved:`, value);
+        } catch (error) {
+            console.error('❌ saveUserPreference error:', error);
+        }
+    };
+
+    /**
+     * loadUserPreferences - Firestore မှ သုံးစွဲသူ၏ စိတ်ကြိုက်ဆက်တင်ကို ဖတ်ပြီး ကျင့်သုံးခြင်း
+     */
+    async function loadUserPreferences() {
+        if (!window.currentUser) return;
+        try {
+            const profile = await window.getUserProfile(window.currentUser.uid);
+            const prefs = profile?.preferences || {};
+            // Theme
+            if (prefs.theme) {
+                const html = document.documentElement;
+                html.setAttribute('data-theme', prefs.theme);
+                localStorage.setItem('theme', prefs.theme);
+                const toggle = document.getElementById('themeToggle');
+                if (toggle) {
+                    toggle.innerHTML = prefs.theme === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+                }
+            }
+            // Slow mode
+            if (prefs.slowModeEnabled !== undefined && typeof window.setSlowModeEnabled === 'function') {
+                window.setSlowModeEnabled(prefs.slowModeEnabled);
+                const settingsBtn = document.getElementById('settingsSlowToggle');
+                if (settingsBtn) {
+                    settingsBtn.textContent = prefs.slowModeEnabled ? 'Disable' : 'Enable';
+                }
+            }
+            console.log('✅ User preferences loaded and applied');
+        } catch (error) {
+            console.error('❌ loadUserPreferences error:', error);
+        }
+    }
+
+    // Sync theme toggle to Firestore
+    document.addEventListener('DOMContentLoaded', function() {
+        const themeToggle = document.getElementById('themeToggle');
+        if (themeToggle) {
+            const origClick = themeToggle.onclick;
+            themeToggle.addEventListener('click', function() {
+                const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                window.saveUserPreference('theme', isDark ? 'light' : 'dark');
+            });
+        }
+
+        const settingsSlowBtn = document.getElementById('settingsSlowToggle');
+        if (settingsSlowBtn) {
+            settingsSlowBtn.addEventListener('click', function() {
+                const enabled = this.textContent === 'Disable';
+                window.saveUserPreference('slowModeEnabled', !enabled);
+            });
+        }
+    });
+
+    // ==========================================================
+    // ၅။ Guest Checkout Integration
+    // ==========================================================
+
+    /**
+     * handleGuestCheckout - Guest user အတွက် checkout လုပ်နိုင်ရန်
+     * အကောင့်မဝင်ရသေးသော သုံးစွဲသူများအား မေးမြန်းခြင်း
+     */
+    window.handleGuestCheckout = function() {
+        if (window.currentUser) return true;
+        const choice = confirm(
+            '👤 သင်သည် အကောင့်မဝင်ရသေးပါ။\n\n' +
+            '• "OK" နှိပ်ပါက ဧည့်သည်အဖြစ် ဆက်လက်ဝယ်ယူမည်။\n' +
+            '• "Cancel" နှိပ်ပါက အကောင့်ဝင်ရန် သွားမည်။'
+        );
+        if (!choice) {
+            window.navigateTo('#profile');
+            return false;
+        }
+        return true;
+    };
+
+    // Override checkout button to check guest
+    document.addEventListener('DOMContentLoaded', function() {
+        const checkoutBtn = document.getElementById('checkoutBtn');
+        if (checkoutBtn) {
+            const origClick = checkoutBtn.onclick;
+            checkoutBtn.addEventListener('click', function(e) {
+                if (!window.handleGuestCheckout()) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+            });
+        }
+    });
+
+    // ==========================================================
+    // ၆။ Account Deletion (User self-service)
+    // ==========================================================
+
+    /**
+     * deleteUserAccount - သုံးစွဲသူ၏ အကောင့်ကို ဖျက်ခြင်း (Auth + Firestore)
+     */
+    window.deleteUserAccount = async function(password) {
+        try {
+            const auth = window.auth;
+            if (!auth) throw new Error('Auth မရှိပါ။');
+            const user = auth.currentUser;
+            if (!user) throw new Error('အကောင့်မဝင်ရသေးပါ။');
+
+            // Re-authenticate
+            const credential = firebase.auth.EmailAuthProvider.credential(user.email, password);
+            await user.reauthenticateWithCredential(credential);
+
+            // Delete Firestore data
+            const uid = user.uid;
+            await window.deleteDocument('users', uid);
+            await window.deleteDocument('wishlists', uid);
+            // Delete orders (optional - keep for audit, or delete all)
+            // Here we can just delete user-specific collections
+
+            // Delete Auth account
+            await user.delete();
+            console.log('✅ Account deleted successfully');
+            alert('✅ သင့်အကောင့်ကို အောင်မြင်စွာ ဖျက်ပြီးပါပြီ။');
+            window.navigateTo('#home');
+            return true;
+        } catch (error) {
+            console.error('❌ deleteUserAccount error:', error);
+            alert(window.handleFirestoreError(error, 'အကောင့်ဖျက်ရာတွင် အမှားအယွင်း ဖြစ်ပွားခဲ့သည်။'));
+            return false;
+        }
+    };
+
+    // ==========================================================
+        // ၇။ Profile Page - Inject Edit Profile Button
+    // ==========================================================
+
+    /**
+     * addProfileEditButton - Profile Page ထဲသို့ Edit Profile ခလုတ် ထည့်ခြင်း
+     */
+    function addProfileEditButton() {
+        const profilePage = document.getElementById('page-profile');
+        if (!profilePage) return;
+
+        const nameContainer = profilePage.querySelector('h3')?.parentNode;
+        if (!nameContainer) return;
+
+        // Check if button already exists
+        if (document.getElementById('editProfileBtn')) return;
+
+        const btn = document.createElement('button');
+        btn.id = 'editProfileBtn';
+        btn.className = 'btn-outline';
+        btn.style.cssText = 'margin-top:8px;padding:4px 16px;font-size:0.7rem;width:auto;';
+        btn.innerHTML = '<i class="fas fa-user-edit"></i> ပရိုဖိုင် ပြင်မည်';
+        btn.addEventListener('click', showEditProfileForm);
+        nameContainer.appendChild(btn);
+    }
+
+    /**
+     * showEditProfileForm - ပရိုဖိုင် ပြင်ဆင်ရန် Form ကို ပြသခြင်း
+     */
+    function showEditProfileForm() {
+        if (!window.currentUser) {
+            alert('ကျေးဇူးပြု၍ အကောင့်ဝင်ပါ။');
+            return;
+        }
+
+        const container = document.querySelector('#page-profile .profile-menu-item')?.parentNode || document.getElementById('page-profile');
+        if (!container) return;
+
+        // Remove existing form if any
+        const existing = document.getElementById('editProfileForm');
+        if (existing) existing.remove();
+
+        const form = document.createElement('div');
+        form.id = 'editProfileForm';
+        form.style.cssText = `
+            background: var(--glass-bg);
+            padding: 16px;
+            border-radius: 16px;
+            border: 1px solid var(--glass-border);
+            margin: 12px 0;
+            width: 100%;
+        `;
+        form.innerHTML = `
+            <h4 style="font-weight:600;margin-bottom:12px;">ပရိုဖိုင် ပြင်ဆင်ရန်</h4>
+            <div class="form-group">
+                <label>အမည်</label>
+                <input type="text" id="editDisplayName" value="${window.currentUser.displayName || ''}" placeholder="အမည်">
+            </div>
+            <div class="form-group">
+                <label>ဖုန်းနံပါတ်</label>
+                <input type="tel" id="editPhoneNumber" value="${window.currentUser.phoneNumber || ''}" placeholder="09-xxx-xxx-xxx">
+            </div>
+            <div style="display:flex;gap:10px;">
+                <button class="btn-primary" id="saveProfileBtn" style="flex:1;">
+                    <i class="fas fa-save"></i> သိမ်းမည်
+                </button>
+                <button class="btn-outline" id="cancelProfileBtn" style="flex:0.5;">
+                    မလုပ်တော့ပါ
+                </button>
+            </div>
+            <hr style="margin:12px 0;border-color:var(--glass-border);">
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                <button class="btn-outline" id="changePasswordBtn" style="flex:1;border-color:var(--secondary);color:var(--secondary);">
+                    <i class="fas fa-key"></i> စကားဝှက်ပြောင်းမည်
+                </button>
+                <button class="btn-outline" id="deleteAccountBtn" style="flex:1;border-color:var(--stock-out);color:var(--stock-out);">
+                    <i class="fas fa-user-slash"></i> အကောင့်ဖျက်မည်
+                </button>
+            </div>
+        `;
+        container.prepend(form);
+
+        // Save
+        document.getElementById('saveProfileBtn').addEventListener('click', async function() {
+            const displayName = document.getElementById('editDisplayName').value.trim();
+            const phoneNumber = document.getElementById('editPhoneNumber').value.trim();
+            try {
+                await window.updateProfile({ displayName, phoneNumber });
+                form.remove();
+                // Reload user UI
+                window.loadUserProfile(window.currentUser.uid);
+            } catch (e) {
+                console.error(e);
+            }
+        });
+
+        // Cancel
+        document.getElementById('cancelProfileBtn').addEventListener('click', function() {
+            form.remove();
+        });
+
+        // Change Password
+        document.getElementById('changePasswordBtn').addEventListener('click', function() {
+            const currentPass = prompt('လက်ရှိ စကားဝှက် ထည့်ပါ:');
+            if (!currentPass) return;
+            const newPass = prompt('စကားဝှက်အသစ် ထည့်ပါ (အနည်းဆုံး 6 လုံး):');
+            if (!newPass || newPass.length < 6) {
+                alert('စကားဝှက်သည် အနည်းဆုံး 6 လုံး ရှိရပါမည်။');
+                return;
+            }
+            window.changeUserPassword(currentPass, newPass).then(success => {
+                if (success) form.remove();
+            });
+        });
+
+        // Delete Account
+        document.getElementById('deleteAccountBtn').addEventListener('click', function() {
+            if (!confirm('သင့်အကောင့်ကို ဖျက်ရန် သေချာပါသလား။ ဤအချက်ကို ပြန်လည်၍ မရနိုင်ပါ။')) return;
+            const pass = prompt('အတည်ပြုရန် သင့်စကားဝှက် ထည့်ပါ:');
+            if (!pass) return;
+            window.deleteUserAccount(pass).then(success => {
+                if (success) form.remove();
+            });
+        });
+    }
+
+    // ==========================================================
+    // ၈။ Initialize & Hook Events
+    // ==========================================================
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add profile edit button
+        setTimeout(addProfileEditButton, 500);
+
+        // Load addresses when user logs in
+        document.addEventListener('authStateChanged', function(e) {
+            if (e.detail.user) {
+                setTimeout(() => {
+                    loadAddresses();
+                    loadUserPreferences();
+                    addProfileEditButton();
+                }, 300);
+            }
+        });
+
+        // If user already logged in
+        if (window.currentUser) {
+            setTimeout(() => {
+                loadAddresses();
+                loadUserPreferences();
+                addProfileEditButton();
+            }, 300);
+        }
+    });
+
+    // ==========================================================
+    // ၉။ Expose Functions for Global Access
+    // ==========================================================
+
+    window.loadAddresses = loadAddresses;
+    window.renderAddresses = renderAddresses;
+    window.loadUserPreferences = loadUserPreferences;
+    window.addProfileEditButton = addProfileEditButton;
+
+    console.log('✅ user.js Part 2 ပြီးဆုံးပါပြီ။');
+
+})();
+
+// ============================================================
+// user.js - Part 2 (Lines 1 to 300) ပြီးဆုံးပါပြီ။
+// user.js ဖိုင်သည် ယခုအခါ အပြည့်အစုံ ဖြစ်ပါသည်။
+// နောက်ထပ် ဖိုင် (admin.js) အတွက် ဆက်လက်တောင်းခံနိုင်ပါသည်။
+// ============================================================
