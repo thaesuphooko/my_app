@@ -1002,3 +1002,946 @@
     index.html - Part 1 (Lines 1 to 300) ပြီးဆုံးပါပြီ။
     နောက်ထပ် အပိုင်း (Part 2) အတွက် ဆက်လက်တောင်းခံနိုင်ပါသည်။
     ========================================================== -->
+
+<!-- ============================================================
+index.html - Part 2 (Lines 301 to 600)
+ဆက်လက်ရေးသားခြင်း - ကျန်ရှိနေသော Page များ၊ Additional CSS နှင့် Routing/UI Logic
+============================================================ -->
+
+<!-- ========== ADDITIONAL CSS (Product Detail, Checkout, Admin, Tracking, etc.) ========== -->
+<style>
+    /* ----- Product Detail Zoom ----- */
+    .product-detail-zoom {
+        position: relative;
+        overflow: hidden;
+        cursor: zoom-in;
+        border-radius: 16px;
+        background: var(--glass-bg);
+    }
+    .product-detail-zoom img {
+        transition: transform 0.4s ease;
+        width: 100%;
+        display: block;
+    }
+    .product-detail-zoom:hover img {
+        transform: scale(1.6);
+    }
+
+    /* ----- Checkout Wizard Steps ----- */
+    .checkout-step {
+        display: none;
+        animation: fadeSlideUp 0.3s ease;
+    }
+    .checkout-step.active {
+        display: block;
+    }
+    .checkout-progress {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 20px;
+        padding: 0 4px;
+        gap: 4px;
+    }
+    .checkout-progress .step-dot {
+        flex: 1;
+        height: 4px;
+        border-radius: 10px;
+        background: var(--glass-border);
+        transition: background var(--transition-fast);
+    }
+    .checkout-progress .step-dot.active {
+        background: var(--primary);
+    }
+    .checkout-progress .step-dot.done {
+        background: var(--secondary);
+    }
+
+    /* ----- Form Elements ----- */
+    .form-group {
+        margin-bottom: 16px;
+    }
+    .form-group label {
+        display: block;
+        font-size: 0.78rem;
+        font-weight: 600;
+        margin-bottom: 4px;
+        color: var(--text-secondary);
+    }
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+        width: 100%;
+        padding: 12px 16px;
+        border-radius: 12px;
+        background: var(--input-bg);
+        border: 1px solid var(--input-border);
+        color: var(--text-primary);
+        font-size: 0.95rem;
+        transition: border var(--transition-fast), box-shadow var(--transition-fast);
+        -webkit-appearance: none;
+        appearance: none;
+    }
+    .form-group input:focus,
+    .form-group textarea:focus {
+        border-color: var(--input-focus);
+        box-shadow: 0 0 0 3px rgba(225, 27, 27, 0.12);
+    }
+    .form-group textarea {
+        min-height: 80px;
+        resize: vertical;
+    }
+
+    .btn-primary {
+        width: 100%;
+        padding: 14px;
+        border-radius: 30px;
+        background: var(--primary);
+        color: #fff;
+        font-weight: 700;
+        font-size: 1rem;
+        transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+        box-shadow: 0 4px 16px rgba(225, 27, 27, 0.25);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+    .btn-primary:active {
+        transform: scale(0.97);
+    }
+    .btn-primary:disabled {
+        opacity: 0.6;
+        pointer-events: none;
+    }
+    .btn-outline {
+        padding: 10px 20px;
+        border-radius: 30px;
+        background: transparent;
+        border: 2px solid var(--primary);
+        color: var(--primary);
+        font-weight: 600;
+        transition: all var(--transition-fast);
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .btn-outline:active {
+        transform: scale(0.95);
+    }
+
+    /* ----- Payment Copy Box ----- */
+    .payment-detail {
+        background: var(--glass-bg);
+        padding: 14px 16px;
+        border-radius: 14px;
+        border: 1px solid var(--glass-border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    .payment-detail .label {
+        font-weight: 500;
+        color: var(--text-secondary);
+        font-size: 0.85rem;
+    }
+    .payment-detail .value {
+        font-weight: 700;
+        color: var(--text-primary);
+        font-size: 1rem;
+        word-break: break-all;
+    }
+    .copy-btn {
+        background: var(--primary);
+        color: #fff;
+        padding: 4px 14px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        border: none;
+        transition: transform var(--transition-fast);
+    }
+    .copy-btn:active {
+        transform: scale(0.92);
+    }
+
+    /* ----- Countdown Timer ----- */
+    .countdown-timer {
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: var(--primary);
+        text-align: center;
+        padding: 12px;
+        background: var(--glass-bg);
+        border-radius: 16px;
+        border: 1px solid var(--glass-border);
+        margin: 12px 0;
+        font-variant-numeric: tabular-nums;
+    }
+    .countdown-timer.warning {
+        color: var(--secondary);
+        animation: pulse-clock 1s infinite;
+    }
+
+    /* ----- Drag & Drop Upload Zone ----- */
+    .drop-zone {
+        border: 2px dashed var(--input-border);
+        border-radius: 16px;
+        padding: 40px 16px;
+        text-align: center;
+        color: var(--text-muted);
+        transition: border var(--transition-fast), background var(--transition-fast);
+        background: var(--input-bg);
+        cursor: pointer;
+        margin: 12px 0;
+    }
+    .drop-zone.dragover {
+        border-color: var(--primary);
+        background: rgba(225, 27, 27, 0.06);
+    }
+    .drop-zone i {
+        font-size: 2.2rem;
+        display: block;
+        margin-bottom: 8px;
+        color: var(--primary);
+    }
+    .drop-zone .file-name {
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-top: 6px;
+    }
+
+    /* ----- Admin Panel (hidden by default) ----- */
+    .admin-panel {
+        background: var(--glass-bg);
+        border-radius: 16px;
+        padding: 20px 16px;
+        border: 1px solid var(--glass-border);
+        backdrop-filter: blur(8px);
+    }
+    .admin-panel input[type="password"] {
+        padding: 12px 16px;
+        border-radius: 12px;
+        border: 1px solid var(--input-border);
+        background: var(--input-bg);
+        color: var(--text-primary);
+        width: 100%;
+        font-size: 1rem;
+        margin-bottom: 12px;
+    }
+    .admin-panel .admin-section {
+        display: none;
+        margin-top: 16px;
+        border-top: 1px solid var(--glass-border);
+        padding-top: 16px;
+    }
+    .admin-panel .admin-section.open {
+        display: block;
+    }
+
+    /* ----- Tracking Timeline ----- */
+    .timeline-item {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+        padding: 8px 0;
+    }
+    .timeline-item .dot {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: var(--text-muted);
+        flex-shrink: 0;
+        margin-top: 4px;
+        border: 2px solid var(--glass-bg);
+        box-shadow: 0 0 0 2px var(--text-muted);
+    }
+    .timeline-item .dot.active {
+        background: var(--primary);
+        box-shadow: 0 0 0 2px var(--primary);
+    }
+    .timeline-item .dot.done {
+        background: var(--secondary);
+        box-shadow: 0 0 0 2px var(--secondary);
+    }
+    .timeline-item .content {
+        flex: 1;
+        border-bottom: 1px solid var(--glass-border);
+        padding-bottom: 8px;
+    }
+    .timeline-item .content .title {
+        font-weight: 600;
+        font-size: 0.85rem;
+        color: var(--text-primary);
+    }
+    .timeline-item .content .desc {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+    }
+    .timeline-item .content .time {
+        font-size: 0.65rem;
+        color: var(--text-muted);
+        margin-top: 2px;
+    }
+
+    /* ----- Profile Menu Hover Effects ----- */
+    .profile-menu-item:active {
+        transform: scale(0.96);
+        background: var(--primary);
+        color: #fff;
+        border-color: var(--primary);
+    }
+    .profile-menu-item:active div {
+        background: rgba(255, 255, 255, 0.2) !important;
+        color: #fff !important;
+    }
+
+    /* ----- Review Form (Product Detail) ----- */
+    .review-form {
+        background: var(--glass-bg);
+        padding: 16px;
+        border-radius: 16px;
+        border: 1px solid var(--glass-border);
+        margin-top: 16px;
+    }
+    .review-form .star-rating {
+        display: flex;
+        gap: 8px;
+        font-size: 1.6rem;
+        color: var(--star-empty);
+        margin: 8px 0;
+    }
+    .review-form .star-rating .star {
+        cursor: pointer;
+        transition: color var(--transition-fast), transform var(--transition-fast);
+    }
+    .review-form .star-rating .star.active {
+        color: var(--star-color);
+    }
+    .review-form .star-rating .star:active {
+        transform: scale(0.8);
+    }
+
+    /* ----- Confetti / Celebration (placeholder) ----- */
+    .celebration-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        pointer-events: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(4px);
+        opacity: 0;
+        transition: opacity 0.5s ease;
+    }
+    .celebration-overlay.show {
+        opacity: 1;
+        pointer-events: all;
+    }
+    .celebration-overlay .content {
+        background: var(--glass-bg);
+        padding: 30px 24px;
+        border-radius: 24px;
+        text-align: center;
+        max-width: 300px;
+        border: 1px solid var(--glass-border);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    }
+    .celebration-overlay .content i {
+        font-size: 3.6rem;
+        color: var(--secondary);
+        margin-bottom: 12px;
+    }
+    .celebration-overlay .content h3 {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+    .celebration-overlay .content p {
+        color: var(--text-muted);
+        font-size: 0.9rem;
+        margin-top: 4px;
+    }
+</style>
+
+<!-- ========== MISSING PAGE SECTIONS (inside .container) ========== -->
+
+<!-- Product Detail Page -->
+<section class="page-section" id="page-product">
+    <div id="productDetailContainer">
+        <!-- Rendered by main.js -->
+        <div class="text-center" style="padding:30px 0;color:var(--text-muted);">
+            <i class="fas fa-spinner fa-spin"></i> ပစ္စည်းအချက်အလက် ဖွင့်နေသည်...
+        </div>
+    </div>
+</section>
+
+<!-- Wishlist Page -->
+<section class="page-section" id="page-wishlist">
+    <h2 style="font-size:1.2rem;font-weight:600;margin-bottom:12px;">
+        <i class="fas fa-heart" style="color:var(--primary);"></i> သိမ်းထားသော ပစ္စည်းများ
+    </h2>
+    <div id="wishlistGrid" class="product-grid">
+        <p style="grid-column:1/-1;text-align:center;color:var(--text-muted);padding:30px 0;">
+            <i class="fas fa-heart-broken"></i> သိမ်းထားသည့် ပစ္စည်းမရှိသေးပါ။
+        </p>
+    </div>
+</section>
+
+<!-- Address Book Page -->
+<section class="page-section" id="page-address">
+    <h2 style="font-size:1.2rem;font-weight:600;margin-bottom:12px;">
+        <i class="fas fa-map-pin" style="color:var(--primary);"></i> ပို့ဆောင်ရန် လိပ်စာများ
+    </h2>
+    <div id="addressList" style="display:flex;flex-direction:column;gap:12px;">
+        <p style="color:var(--text-muted);text-align:center;padding:20px 0;">လိပ်စာ မရှိသေးပါ။</p>
+        <button class="btn-primary" id="addAddressBtn"><i class="fas fa-plus"></i> လိပ်စာအသစ်ထည့်ရန်</button>
+    </div>
+</section>
+
+<!-- Settings Page -->
+<section class="page-section" id="page-settings">
+    <h2 style="font-size:1.2rem;font-weight:600;margin-bottom:12px;">
+        <i class="fas fa-cog" style="color:var(--primary);"></i> ဆက်တင်များ
+    </h2>
+    <div style="background:var(--glass-bg);border-radius:16px;padding:16px;border:1px solid var(--glass-border);">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--glass-border);">
+            <span><i class="fas fa-moon" style="width:24px;"></i> Dark Mode</span>
+            <button id="settingsThemeToggle" class="btn-outline" style="padding:4px 16px;font-size:0.8rem;">Toggle</button>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--glass-border);">
+            <span><i class="fas fa-clock" style="width:24px;"></i> Slow Mode</span>
+            <button id="settingsSlowToggle" class="btn-outline" style="padding:4px 16px;font-size:0.8rem;">Disable</button>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;">
+            <span><i class="fas fa-language" style="width:24px;"></i> ဘာသာစကား</span>
+            <select style="padding:6px 12px;border-radius:20px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text-primary);">
+                <option value="my">မြန်မာ</option>
+                <option value="en">English</option>
+            </select>
+        </div>
+    </div>
+</section>
+
+<!-- Admin Panel (accessed via #step) -->
+<section class="page-section" id="page-step">
+    <div class="admin-panel">
+        <h2 style="font-size:1.2rem;font-weight:600;margin-bottom:12px;">
+            <i class="fas fa-user-shield" style="color:var(--primary);"></i> Admin ဝင်ရောက်ရန်
+        </h2>
+        <div id="adminLogin">
+            <div class="form-group">
+                <label>လျှို့ဝှက်နံပါတ်</label>
+                <input type="password" id="adminPassword" placeholder="ကျေးဇူးပြု၍ ရိုက်ထည့်ပါ..." autocomplete="off">
+            </div>
+            <button class="btn-primary" id="adminLoginBtn"><i class="fas fa-unlock"></i> ဝင်မည်</button>
+            <div id="adminError" style="color:var(--stock-out);font-size:0.85rem;margin-top:8px;display:none;">မှားယွင်းနေသည်။ ထပ်ကြိုးစားပါ။</div>
+        </div>
+        <div id="adminDashboard" class="admin-section">
+            <p style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:12px;">
+                <i class="fas fa-check-circle" style="color:var(--stock-instock);"></i> Admin အကောင့်ဝင်ပြီးပါပြီ။
+            </p>
+            <!-- Admin content will be rendered by admin.js -->
+            <div id="adminContentPlaceholder">
+                <p style="color:var(--text-muted);text-align:center;padding:20px 0;">
+                    <i class="fas fa-spinner fa-spin"></i> Admin Panel ဖွင့်နေသည်...
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Checkout Address (Full Form) -->
+<section class="page-section" id="page-checkout-address">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+        <button id="checkoutBackBtn" class="btn-outline" style="padding:6px 14px;font-size:0.8rem;">
+            <i class="fas fa-arrow-left"></i> နောက်သို့
+        </button>
+        <h2 style="font-size:1.1rem;font-weight:600;flex:1;text-align:center;">အဆင့် ၁ / ၃</h2>
+    </div>
+    <div class="checkout-progress">
+        <span class="step-dot active"></span>
+        <span class="step-dot"></span>
+        <span class="step-dot"></span>
+    </div>
+    <form id="checkoutAddressForm">
+        <div class="form-group">
+            <label>အမည်</label>
+            <input type="text" id="checkoutName" placeholder="သင့်အမည်" required>
+        </div>
+        <div class="form-group">
+            <label>ဖုန်းနံပါတ်</label>
+            <input type="tel" id="checkoutPhone" placeholder="09-xxx-xxx-xxx" required>
+        </div>
+        <div class="form-group">
+            <label>နေရပ်လိပ်စာ</label>
+            <textarea id="checkoutAddress" placeholder="အိမ်အမှတ်၊ လမ်း၊ ရပ်ကွက်၊ မြို့..." required></textarea>
+        </div>
+        <button type="submit" class="btn-primary"><i class="fas fa-arrow-right"></i> နောက်အဆင့်</button>
+    </form>
+</section>
+
+<!-- Checkout Payment -->
+<section class="page-section" id="page-checkout-payment">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+        <button id="paymentBackBtn" class="btn-outline" style="padding:6px 14px;font-size:0.8rem;">
+            <i class="fas fa-arrow-left"></i> နောက်သို့
+        </button>
+        <h2 style="font-size:1.1rem;font-weight:600;flex:1;text-align:center;">အဆင့် ၂ / ၃</h2>
+    </div>
+    <div class="checkout-progress">
+        <span class="step-dot done"></span>
+        <span class="step-dot active"></span>
+        <span class="step-dot"></span>
+    </div>
+    <div style="background:var(--glass-bg);border-radius:16px;padding:16px;border:1px solid var(--glass-border);">
+        <p style="font-weight:600;margin-bottom:8px;"><i class="fas fa-university" style="color:var(--primary);"></i> ငွေလွှဲအချက်အလက်</p>
+        <div class="payment-detail">
+            <span class="label">ဘဏ်</span>
+            <span class="value">Wave Pay</span>
+        </div>
+        <div class="payment-detail">
+            <span class="label">အကောင့်အမည်</span>
+            <span class="value">Thae Su Phuo Ko</span>
+        </div>
+        <div class="payment-detail">
+            <span class="label">ဖုန်းနံပါတ်</span>
+            <span class="value" id="wavePhone">09 781 145 573</span>
+            <button class="copy-btn" id="copyPhoneBtn"><i class="fas fa-copy"></i> Copy</button>
+        </div>
+        <div class="countdown-timer" id="paymentCountdown">60:00</div>
+        <button class="btn-primary" id="paymentNextBtn"><i class="fas fa-check"></i> ငွေလွှဲပြီးပါပြီ</button>
+    </div>
+</section>
+
+<!-- Checkout Screenshot -->
+<section class="page-section" id="page-checkout-screenshot">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+        <button id="screenshotBackBtn" class="btn-outline" style="padding:6px 14px;font-size:0.8rem;">
+            <i class="fas fa-arrow-left"></i> နောက်သို့
+        </button>
+        <h2 style="font-size:1.1rem;font-weight:600;flex:1;text-align:center;">အဆင့် ၃ / ၃</h2>
+    </div>
+    <div class="checkout-progress">
+        <span class="step-dot done"></span>
+        <span class="step-dot done"></span>
+        <span class="step-dot active"></span>
+    </div>
+    <div style="background:var(--glass-bg);border-radius:16px;padding:16px;border:1px solid var(--glass-border);">
+        <p style="font-weight:500;margin-bottom:8px;"><i class="fas fa-image" style="color:var(--primary);"></i> ငွေလွှဲပုံသေစာတမ်း (Screenshot) တင်ပါ</p>
+        <div class="drop-zone" id="screenshotDropZone">
+            <i class="fas fa-cloud-upload-alt"></i>
+            <p>ဓာတ်ပုံကို ဆွဲချပါ သို့မဟုတ် နှိပ်၍ ရွေးပါ</p>
+            <div class="file-name hidden" id="uploadedFileName"></div>
+            <input type="file" id="screenshotInput" accept="image/*" style="display:none;">
+        </div>
+        <button class="btn-primary" id="confirmOrderBtn"><i class="fas fa-check-circle"></i> အော်ဒါအတည်ပြုမည်</button>
+    </div>
+</section>
+
+<!-- ========== CELEBRATION OVERLAY ========== -->
+<div class="celebration-overlay" id="celebrationOverlay">
+    <div class="content">
+        <i class="fas fa-trophy"></i>
+        <h3>အော်ဒါ အောင်မြင်ပါပြီ!</h3>
+        <p>ကျေးဇူးတင်ပါတယ်။ သင့်အော်ဒါကို စီမံဆောင်ရွက်နေပါပြီ။</p>
+        <button class="btn-primary" id="celebrationCloseBtn" style="margin-top:12px;">ဆက်လက်ဝယ်ရန်</button>
+    </div>
+</div>
+
+<!-- ========== JAVASCRIPT: Routing, Clock, Theme, Placeholders ========== -->
+<script>
+    (function() {
+        'use strict';
+
+        // ---- GLOBAL PLACEHOLDERS (Prevent ReferenceError) ----
+        window.allProducts = [];
+        window.cart = JSON.parse(localStorage.getItem('cart')) || [];
+        window.updateCartUI = function() {
+            console.log('🛒 updateCartUI called (placeholder) – will be replaced by main.js');
+                        // Basic badge update
+            const count = window.cart.reduce((acc, item) => acc + (item.quantity || 1), 0);
+            const badge = document.getElementById('cartBadge');
+            if (count > 0) {
+                badge.textContent = count;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+            localStorage.setItem('cart', JSON.stringify(window.cart));
+        };
+        // Call once to initialize badge
+        window.updateCartUI();
+
+        // ---- THEME TOGGLE ----
+        const themeToggle = document.getElementById('themeToggle');
+        const html = document.documentElement;
+        let currentTheme = localStorage.getItem('theme') || 'light';
+        html.setAttribute('data-theme', currentTheme);
+        themeToggle.innerHTML = currentTheme === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+
+        function setTheme(theme) {
+            html.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+            themeToggle.innerHTML = theme === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+            // Sync settings page toggle if exists
+            const settingsBtn = document.getElementById('settingsThemeToggle');
+            if (settingsBtn) settingsBtn.textContent = theme === 'dark' ? 'Light' : 'Dark';
+        }
+        themeToggle.addEventListener('click', function() {
+            const isDark = html.getAttribute('data-theme') === 'dark';
+            setTheme(isDark ? 'light' : 'dark');
+        });
+
+        // ---- SMART CLOCK (with Slow Mode after 60s) ----
+        const clockEl = document.getElementById('smartClock');
+        let clockStartTime = Date.now();
+        let slowModeEnabled = true; // can be toggled from admin
+        let slowModeActivated = false;
+        let slowModeActive = false;
+        const SLOW_ACTIVATE_AFTER = 60; // seconds
+        const SLOW_FACTOR = 6;
+        let clockDisplayOffset = 0; // for persistence across refreshes
+
+        // Try to restore clock state from localStorage
+        try {
+            const saved = localStorage.getItem('clockState');
+            if (saved) {
+                const state = JSON.parse(saved);
+                if (state && state.startTime) {
+                    clockStartTime = state.startTime;
+                    slowModeActivated = state.slowActivated || false;
+                    slowModeActive = state.slowActive || false;
+                    clockDisplayOffset = state.offset || 0;
+                }
+            }
+        } catch (e) {}
+
+        function updateClock() {
+            const now = Date.now();
+            let elapsed = (now - clockStartTime) / 1000;
+
+            // Activate slow mode after 60 seconds of real time (if enabled)
+            if (slowModeEnabled && !slowModeActivated && elapsed >= SLOW_ACTIVATE_AFTER) {
+                slowModeActive = true;
+                slowModeActivated = true;
+                clockEl.classList.add('slow-mode');
+                // Recalculate offset to maintain continuity
+                clockDisplayOffset = elapsed; // store real elapsed at activation
+                console.log('🐢 Slow Mode activated!');
+            }
+
+            let displaySeconds;
+            if (slowModeActive && slowModeEnabled) {
+                // Display speed: 1/6 of real time since activation
+                let slowElapsed = (elapsed - clockDisplayOffset) / SLOW_FACTOR;
+                displaySeconds = Math.floor(clockDisplayOffset + slowElapsed);
+            } else {
+                displaySeconds = Math.floor(elapsed);
+            }
+
+            const hours = String(Math.floor(displaySeconds / 3600) % 24).padStart(2, '0');
+            const mins = String(Math.floor((displaySeconds % 3600) / 60)).padStart(2, '0');
+            const secs = String(displaySeconds % 60).padStart(2, '0');
+            clockEl.textContent = `${hours}:${mins}:${secs}`;
+
+            // Persist state every 5 seconds
+            if (displaySeconds % 5 === 0) {
+                try {
+                    localStorage.setItem('clockState', JSON.stringify({
+                        startTime: clockStartTime,
+                        slowActivated: slowModeActivated,
+                        slowActive: slowModeActive,
+                        offset: clockDisplayOffset
+                    }));
+                } catch (e) {}
+            }
+        }
+        updateClock();
+        setInterval(updateClock, 1000);
+
+        // Expose slow mode toggle for admin
+        window.setSlowModeEnabled = function(enabled) {
+            slowModeEnabled = enabled;
+            if (!enabled) {
+                slowModeActive = false;
+                clockEl.classList.remove('slow-mode');
+                // Reset clock to real time
+                clockStartTime = Date.now();
+                slowModeActivated = false;
+                clockDisplayOffset = 0;
+                localStorage.removeItem('clockState');
+            } else {
+                // Re-enable: restart the clock
+                clockStartTime = Date.now();
+                slowModeActivated = false;
+                slowModeActive = false;
+                clockDisplayOffset = 0;
+                localStorage.removeItem('clockState');
+                clockEl.classList.remove('slow-mode');
+            }
+        };
+
+        // ---- MUSIC TOGGLE (placeholder) ----
+        const musicToggle = document.getElementById('musicToggle');
+        let musicPlaying = false;
+        musicToggle.addEventListener('click', function() {
+            musicPlaying = !musicPlaying;
+            musicToggle.classList.toggle('playing', musicPlaying);
+            musicToggle.innerHTML = musicPlaying ? '<i class="fas fa-stop"></i>' : '<i class="fas fa-music"></i>';
+            // main.js will override this with YouTube player logic
+            console.log('🎵 Music toggle:', musicPlaying ? 'Play' : 'Stop');
+        });
+
+        // ---- HASH ROUTING ----
+        function navigateTo(hash) {
+            if (!hash || hash === '#') hash = '#home';
+            const pageId = hash.replace('#', '');
+
+            // Special: product detail
+            if (pageId.startsWith('product/')) {
+                window.location.hash = hash;
+                // The actual rendering will be done by main.js
+                // Just show the product page section
+                document.querySelectorAll('.page-section').forEach(el => el.classList.remove('active'));
+                const target = document.getElementById('page-product');
+                if (target) target.classList.add('active');
+                // Update nav (deactivate all)
+                document.querySelectorAll('.bottom-nav .nav-item').forEach(el => el.classList.remove('active'));
+                // Hide chat widget
+                document.getElementById('chatWidget').classList.add('hidden');
+                localStorage.setItem('lastPage', 'product');
+                return;
+            }
+
+            // Hide all pages
+            document.querySelectorAll('.page-section').forEach(el => el.classList.remove('active'));
+
+            const target = document.getElementById(`page-${pageId}`);
+            if (target) {
+                target.classList.add('active');
+            } else {
+                // Fallback to home
+                const home = document.getElementById('page-home');
+                if (home) home.classList.add('active');
+                window.location.hash = '#home';
+            }
+
+            // Update nav active states
+            document.querySelectorAll('.bottom-nav .nav-item').forEach(el => {
+                const isActive = el.getAttribute('data-page') === pageId;
+                el.classList.toggle('active', isActive);
+            });
+
+            // Chat widget visibility (hide on messages page)
+            const chatWidget = document.getElementById('chatWidget');
+            if (pageId === 'messages') {
+                chatWidget.classList.add('hidden');
+            } else {
+                chatWidget.classList.remove('hidden');
+            }
+
+            // Save last page
+            localStorage.setItem('lastPage', pageId);
+        }
+
+        // ---- NAV CLICK LISTENERS ----
+        document.querySelectorAll('.bottom-nav .nav-item').forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                const hash = this.getAttribute('href');
+                window.location.hash = hash;
+                navigateTo(hash);
+            });
+        });
+
+        // ---- PROFILE MENU CLICKS ----
+        document.querySelectorAll('.profile-menu-item').forEach(item => {
+            item.addEventListener('click', function() {
+                const hash = this.getAttribute('data-hash');
+                if (hash === '#logout') {
+                    console.log('🚪 Logout clicked');
+                    // Firebase logout will be handled in user.js
+                    return;
+                }
+                window.location.hash = hash;
+                navigateTo(hash);
+            });
+        });
+
+               // ---- CHAT WIDGET CLICK ----
+        document.getElementById('chatWidget').addEventListener('click', function() {
+            window.location.hash = '#messages';
+            navigateTo('#messages');
+        });
+
+        // ---- HASH CHANGE LISTENER ----
+        window.addEventListener('hashchange', function() {
+            navigateTo(window.location.hash);
+        });
+
+        // ---- INITIAL NAVIGATION ----
+        const initialHash = window.location.hash || '#home';
+        navigateTo(initialHash);
+
+        // Expose navigateTo globally
+        window.navigateTo = navigateTo;
+
+        // ---- SETTINGS PAGE: Sync theme toggle ----
+        const settingsThemeBtn = document.getElementById('settingsThemeToggle');
+        if (settingsThemeBtn) {
+            settingsThemeBtn.textContent = currentTheme === 'dark' ? 'Light' : 'Dark';
+            settingsThemeBtn.addEventListener('click', function() {
+                const isDark = html.getAttribute('data-theme') === 'dark';
+                setTheme(isDark ? 'light' : 'dark');
+            });
+        }
+
+        // ---- SETTINGS PAGE: Slow mode toggle ----
+        const settingsSlowBtn = document.getElementById('settingsSlowToggle');
+        if (settingsSlowBtn) {
+            settingsSlowBtn.textContent = slowModeEnabled ? 'Disable' : 'Enable';
+            settingsSlowBtn.addEventListener('click', function() {
+                slowModeEnabled = !slowModeEnabled;
+                window.setSlowModeEnabled(slowModeEnabled);
+                settingsSlowBtn.textContent = slowModeEnabled ? 'Disable' : 'Enable';
+                console.log('🐢 Slow mode toggled:', slowModeEnabled ? 'ON' : 'OFF');
+            });
+        }
+
+        // ---- CHECKOUT BACK BUTTONS ----
+        document.getElementById('checkoutBackBtn')?.addEventListener('click', function() {
+            window.location.hash = '#cart';
+            navigateTo('#cart');
+        });
+        document.getElementById('paymentBackBtn')?.addEventListener('click', function() {
+            window.location.hash = '#checkout-address';
+            navigateTo('#checkout-address');
+        });
+        document.getElementById('screenshotBackBtn')?.addEventListener('click', function() {
+            window.location.hash = '#checkout-payment';
+            navigateTo('#checkout-payment');
+        });
+
+        // ---- COPY PHONE BUTTON ----
+        document.getElementById('copyPhoneBtn')?.addEventListener('click', function() {
+            const phone = document.getElementById('wavePhone')?.textContent || '09 781 145 573';
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(phone).then(() => {
+                    this.textContent = '✅ Copied';
+                    setTimeout(() => { this.textContent = '<i class="fas fa-copy"></i> Copy'; }, 2000);
+                }).catch(() => {
+                    alert('Phone: ' + phone);
+                });
+            } else {
+                alert('Phone: ' + phone);
+            }
+        });
+
+        // ---- CELEBRATION OVERLAY ----
+        const celebration = document.getElementById('celebrationOverlay');
+        document.getElementById('celebrationCloseBtn')?.addEventListener('click', function() {
+            celebration.classList.remove('show');
+            window.location.hash = '#home';
+            navigateTo('#home');
+        });
+        // Expose celebration function for main.js
+        window.showCelebration = function() {
+            celebration.classList.add('show');
+        };
+
+        // ---- SCREENSHOT DROP ZONE ----
+        const dropZone = document.getElementById('screenshotDropZone');
+        const fileInput = document.getElementById('screenshotInput');
+        const fileName = document.getElementById('uploadedFileName');
+
+        if (dropZone && fileInput) {
+            dropZone.addEventListener('click', function() { fileInput.click(); });
+            dropZone.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                this.classList.add('dragover');
+            });
+            dropZone.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                this.classList.remove('dragover');
+            });
+            dropZone.addEventListener('drop', function(e) {
+                e.preventDefault();
+                this.classList.remove('dragover');
+                if (e.dataTransfer.files.length) {
+                    fileInput.files = e.dataTransfer.files;
+                    handleFile(e.dataTransfer.files[0]);
+                }
+            });
+            fileInput.addEventListener('change', function() {
+                if (this.files.length) handleFile(this.files[0]);
+            });
+
+            function handleFile(file) {
+                if (file && file.type.startsWith('image/')) {
+                    fileName.textContent = '📎 ' + file.name;
+                    fileName.classList.remove('hidden');
+                    // Store file for later upload (main.js will handle)
+                    window._screenshotFile = file;
+                    console.log('📸 Screenshot ready:', file.name);
+                } else {
+                    alert('ဓာတ်ပုံဖိုင်သာ တင်နိုင်ပါသည်။');
+                }
+            }
+        }
+
+        // ---- CONFIRM ORDER (placeholder) ----
+        document.getElementById('confirmOrderBtn')?.addEventListener('click', function() {
+            console.log('📦 Order confirmed!');
+            // main.js will handle actual order submission
+            window.showCelebration();
+        });
+
+        // ---- ADMIN LOGIN (basic) ----
+        const adminPassword = document.getElementById('adminPassword');
+        const adminLoginBtn = document.getElementById('adminLoginBtn');
+        const adminError = document.getElementById('adminError');
+        const adminDashboard = document.getElementById('adminDashboard');
+        const adminLoginDiv = document.getElementById('adminLogin');
+
+        if (adminLoginBtn) {
+            adminLoginBtn.addEventListener('click', function() {
+                const pass = adminPassword.value.trim();
+                if (pass === '2003') {
+                    adminError.style.display = 'none';
+                    adminLoginDiv.style.display = 'none';
+                    adminDashboard.classList.add('open');
+                    // Load admin content via admin.js
+                    if (typeof window.loadAdminPanel === 'function') {
+                        window.loadAdminPanel();
+                    } else {
+                        document.getElementById('adminContentPlaceholder').innerHTML =
+                            '<p style="color:var(--text-muted);">Admin Panel ကို admin.js မှ ထည့်သွင်းပေးပါမည်။</p>';
+                    }
+                } else {
+                    adminError.style.display = 'block';
+                    adminPassword.value = '';
+                    adminPassword.focus();
+                }
+            });
+            adminPassword.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') adminLoginBtn.click();
+            });
+        }
+
+        console.log('✅ Index Part 2: Routing, Clock, Theme, Checkout UI initialized.');
+        console.log('📦 Part 2 ပြီးဆုံးပါပြီ။ နောက်ထပ် အပိုင်း (main.js, user.js, admin.js) အတွက် ဆက်လက်တောင်းခံနိုင်ပါသည်။');
+    })();
+</script>
+
+<!-- ========== CLOSE BODY & HTML ========== -->
+</body>
+</html>
+<!-- ============================================================
+index.html - Part 2 (Lines 301 to 600) ပြီးဆုံးပါပြီ။
+စုစုပေါင်း index.html ဖိုင်သည် Part 1 နှင့် Part 2 ပေါင်း၍ လိုင်း ၆၀၀ ပြည့်ပါပြီ။
+============================================================ -->
