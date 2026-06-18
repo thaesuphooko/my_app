@@ -1339,3 +1339,521 @@
 // user.js ဖိုင်သည် ယခုအခါ အပြည့်အစုံ ဖြစ်ပါသည်။
 // နောက်ထပ် ဖိုင် (admin.js) အတွက် ဆက်လက်တောင်းခံနိုင်ပါသည်။
 // ============================================================
+
+// ============================================================
+// user.js - Part 3 (Lines 1 to 300)
+// ဖိုင်: user.js ၏ တတိယအပိုင်း (နောက်ဆုံးအပိုင်း)
+// - Order Cancellation & Reorder
+// - User Notifications (Preference settings)
+// - Recent Viewed Products
+// - Chat Auto-reply (Simulated AI)
+// - Profile Menu Extra Items (Help, Terms, About)
+// - User Analytics (Order History Statistics)
+// - Additional UI enhancements
+// ============================================================
+
+(function() {
+    'use strict';
+
+    console.log('👤 user.js Part 3 စတင်နေပါပြီ...');
+
+    // ==========================================================
+    // ၁။ Order Cancellation & Reorder
+    // ==========================================================
+
+    /**
+     * cancelOrder - အော်ဒါတစ်ခုကို ဖျက်သိမ်းခြင်း (သတ်မှတ်အခြေအနေများဖြင့်)
+     * @param {string} orderId 
+     * @param {string} reason 
+     * @returns {Promise<boolean>}
+     */
+    window.cancelOrder = async function(orderId, reason = '') {
+        try {
+            const order = await window.getOrderById(orderId);
+            if (!order) throw new Error('အော်ဒါ မတွေ့ပါ။');
+            // Only allow cancellation if status is 'pending' or 'processing'
+            if (!['pending', 'processing'].includes(order.status)) {
+                alert('ဤအော်ဒါကို ဖျက်သိမ်း၍ မရတော့ပါ။');
+                return false;
+            }
+            await window.updateOrderStatus(orderId, 'cancelled', reason || 'သုံးစွဲသူမှ ဖျက်သိမ်းခြင်း');
+            // Update UI
+            if (window.location.hash.includes('orders')) {
+                window.loadUserOrders(window.currentUser?.uid);
+            }
+            alert('✅ အော်ဒါကို အောင်မြင်စွာ ဖျက်သိမ်းနိုင်ခဲ့ပါပြီ။');
+            return true;
+        } catch (error) {
+            console.error('❌ cancelOrder error:', error);
+            alert(window.handleFirestoreError(error, 'အော်ဒါဖျက်ရာတွင် အမှားအယွင်း ဖြစ်ပွားခဲ့သည်။'));
+            return false;
+        }
+    };
+
+    /**
+     * reorder - အော်ဒါဟောင်းကို ပြန်လည်မှာယူခြင်း (cart ထဲထည့်ခြင်း)
+     * @param {string} orderId 
+     * @returns {Promise<boolean>}
+     */
+    window.reorder = async function(orderId) {
+        try {
+            const order = await window.getOrderById(orderId);
+            if (!order) throw new Error('အော်ဒါ မတွေ့ပါ။');
+            if (!order.items || order.items.length === 0) {
+                alert('ဤအော်ဒါတွင် ပစ္စည်းများ မရှိပါ။');
+                return false;
+            }
+            // Add items to cart
+            const cart = window.cart || [];
+            order.items.forEach(item => {
+                const existing = cart.find(c => c.id === item.id);
+                if (existing) {
+                    existing.quantity = (existing.quantity || 1) + (item.quantity || 1);
+                } else {
+                    cart.push({
+                        id: item.id,
+                        name: item.name,
+                        price: item.price,
+                        image: item.image || '',
+                        quantity: item.quantity || 1
+                    });
+                }
+            });
+            window.cart = cart;
+            window.updateCartUI();
+            alert('✅ ပစ္စည်းများကို ဈေးဝယ်တောင်းထဲသို့ ထည့်ပြီးပါပြီ။');
+            window.navigateTo('#cart');
+            return true;
+        } catch (error) {
+            console.error('❌ reorder error:', error);
+            alert(window.handleFirestoreError(error, 'ပြန်လည်မှာယူရာတွင် အမှားအယွင်း ဖြစ်ပွားခဲ့သည်။'));
+            return false;
+        }
+    };
+
+    // ==========================================================
+    // ၂။ User Notifications Preferences
+    // ==========================================================
+
+    let notificationPrefs = {
+        orderUpdates: true,
+        promotions: false,
+        messages: true,
+        email: true,
+        push: false
+    };
+
+    /**
+     * loadNotificationPrefs - Firestore မှ အသိပေးချက် စိတ်ကြိုက်များကို ဆွဲထုတ်ခြင်း
+     */
+    async function loadNotificationPrefs() {
+        if (!window.currentUser) return;
+        try {
+            const profile = await window.getUserProfile(window.currentUser.uid);
+            if (profile?.notificationPrefs) {
+                notificationPrefs = { ...notificationPrefs, ...profile.notificationPrefs };
+            }
+            renderNotificationSettings();
+        } catch (error) {
+            console.error('❌ loadNotificationPrefs error:', error);
+        }
+    }
+
+    /**
+     * renderNotificationSettings - အသိပေးချက် ဆက်တင်များကို UI တွင် ပြသခြင်း
+     */
+    function renderNotificationSettings() {
+        const container = document.querySelector('#page-settings');
+        if (!container) return;
+        // Find or create settings section
+        let section = container.querySelector('.notification-settings');
+        if (!section) {
+            section = document.createElement('div');
+            section.className = 'notification-settings';
+            section.style.cssText = `
+                background: var(--glass-bg);
+                border-radius: 16px;
+                padding: 16px;
+                border: 1px solid var(--glass-border);
+                margin-top: 12px;
+            `;
+            container.appendChild(section);
+        }
+        section.innerHTML = `
+            <h4 style="font-weight:600;margin-bottom:10px;"><i class="fas fa-bell" style="color:var(--primary);"></i> အသိပေးချက် ဆက်တင်များ</h4>
+            ${Object.entries(notificationPrefs).map(([key, value]) => `
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--glass-border);">
+                    <span style="font-size:0.85rem;">${key === 'orderUpdates' ? '📦 အော်ဒါ အခြေအနေ' :
+                            key === 'promotions' ? '🎉 ပရိုမိုးရှင်း' :
+                            key === 'messages' ? '💬 စာများ' :
+                            key === 'email' ? '📧 အီးမေးလ်' :
+                            key === 'push' ? '📱 Push' : key}</span>
+                    <label style="position:relative;display:inline-block;width:40px;height:22px;">
+                        <input type="checkbox" ${value ? 'checked' : ''} data-pref="${key}" style="opacity:0;width:0;height:0;">
+                        <span style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:${value ? 'var(--primary)' : 'var(--text-muted)'};border-radius:22px;transition:0.3s;"></span>
+                    </label>
+                </div>
+            `).join('')}
+            <button class="btn-primary" id="saveNotificationPrefs" style="margin-top:10px;padding:8px;font-size:0.85rem;">
+                <i class="fas fa-save"></i> သိမ်းမည်
+            </button>
+        `;
+
+        // Toggle switch styling
+        section.querySelectorAll('input[type="checkbox"]').forEach(input => {
+            const span = input.nextElementSibling;
+            input.addEventListener('change', function() {
+                span.style.background = this.checked ? 'var(--primary)' : 'var(--text-muted)';
+                notificationPrefs[this.dataset.pref] = this.checked;
+            });
+        });
+
+        // Save button
+        section.querySelector('#saveNotificationPrefs').addEventListener('click', async function() {
+            try {
+                await window.updateUserProfile(window.currentUser.uid, { notificationPrefs: notificationPrefs });
+                alert('✅ အသိပေးချက် ဆက်တင်များ သိမ်းပြီးပါပြီ။');
+            } catch (error) {
+                console.error('❌ Save notification prefs error:', error);
+                alert(window.handleFirestoreError(error, 'ဆက်တင်များ သိမ်းရာတွင် အမှားအယွင်း ဖြစ်ပွားခဲ့သည်။'));
+            }
+        });
+    }
+
+    // ==========================================================
+    // ၃။ Recent Viewed Products (Saved in localStorage)
+    // ==========================================================
+
+    const MAX_RECENT = 10;
+    let recentProducts = [];
+
+    /**
+     * addRecentProduct - ကြည့်ရှုခဲ့သော ပစ္စည်းကို သိမ်းဆည်းခြင်း
+     * @param {string} productId 
+     */
+    window.addRecentProduct = function(productId) {
+        try {
+            const stored = localStorage.getItem('recentProducts');
+            let list = stored ? JSON.parse(stored) : [];
+            // Remove if exists
+            list = list.filter(id => id !== productId);
+            list.unshift(productId);
+            if (list.length > MAX_RECENT) list.pop();
+            localStorage.setItem('recentProducts', JSON.stringify(list));
+            recentProducts = list;
+        } catch (e) {}
+    };
+
+    /**
+     * getRecentProducts - ကြည့်ရှုခဲ့သော ပစ္စည်းစာရင်းကို ရယူခြင်း
+     * @returns {Array} productIds
+     */
+    window.getRecentProducts = function() {
+        try {
+            const stored = localStorage.getItem('recentProducts');
+            return stored ? JSON.parse(stored) : [];
+        } catch (e) { return []; }
+    };
+
+    /**
+     * renderRecentProducts - ကြည့်ရှုခဲ့သော ပစ္စည်းများကို UI တွင် ပြသခြင်း
+     */
+    function renderRecentProducts() {
+        const container = document.querySelector('#page-profile .recent-products');
+        if (!container) return;
+        const ids = window.getRecentProducts();
+        if (ids.length === 0) {
+            container.innerHTML = `<p style="color:var(--text-muted);font-size:0.8rem;text-align:center;">မကြာသေးမီက ကြည့်ရှုထားသော ပစ္စည်းမရှိပါ။</p>`;
+            return;
+        }
+        const products = (window.allProducts || []).filter(p => ids.includes(p.id));
+        if (products.length === 0) {
+            container.innerHTML = `<p style="color:var(--text-muted);font-size:0.8rem;text-align:center;">ပစ္စည်းများ မတွေ့ပါ။</p>`;
+            return;
+        }
+        let html = `<div style="display:flex;gap:8px;overflow-x:auto;padding:4px 0;">`;
+        products.slice(0, 5).forEach(p => {
+            html += `
+                <div style="flex:0 0 70px;text-align:center;cursor:pointer;" onclick="window.navigateTo('#product/${p.id}')">
+                    <img src="${p.image || 'https://via.placeholder.com/70x70/eeeeee/cccccc?text=No+Img'}" 
+                         style="width:70px;height:70px;border-radius:12px;object-fit:cover;border:1px solid var(--glass-border);"
+                         onerror="this.src='https://via.placeholder.com/70x70/eeeeee/cccccc?text=Error'">
+                    <div style="font-size:0.6rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70px;margin-top:2px;">${p.name || ''}</div>
+                </div>
+            `;
+        });
+        html += `</div>`;
+        container.innerHTML = html;
+    }
+
+    // ==========================================================
+    // ၄။ Chat Auto-reply (Simulated AI)
+    // ==========================================================
+
+    let chatAutoReplyEnabled = true;
+
+    /**
+     * simulateAutoReply - သုံးစွဲသူပို့သော စာကို အလိုအလျောက် ပြန်ကြားခြင်း
+     * @param {string} userId 
+     * @param {string} userMessage 
+     */
+    window.simulateAutoReply = async function(userId, userMessage) {
+        if (!chatAutoReplyEnabled) return;
+        // Simple keyword-based reply
+        let reply = 'ကျေးဇူးတင်ပါတယ်။ သင့်စာကို ကျွန်ုပ်တို့ လက်ခံရရှိပါပြီ။ မကြာမီ ပြန်လည်ဆက်သွယ်ပါမည်။';
+        const lower = userMessage.toLowerCase();
+        if (lower.includes('ဈေး') || lower.includes('price')) {
+            reply = 'ဈေးနှုန်းများကို ကုန်ပစ္စည်းစာမျက်နှာတွင် ကြည့်ရှုနိုင်ပါသည်။ အထူးပရိုမိုးရှင်းများလည်း ရှိပါသည်။';
+        } else if (lower.includes('ပို့') || lower.includes('delivery')) {
+            reply = 'ပစ္စည်းများကို အော်ဒါတင်ပြီး ၂-၃ ရက်အတွင်း ပို့ဆောင်ပေးပါသည်။ သင့်အော်ဒါကို Tracking မှ စစ်ဆေးနိုင်ပါသည်။';
+        } else if (lower.includes('ပြန်') || lower.includes('return')) {
+            reply = 'ပစ္စည်းပြန်လည်ပေးပို့ရန် ကျွန်ုပ်တို့၏ ဝန်ဆောင်မှု ၇ ရက်အတွင်း ဆောင်ရွက်ပေးပါသည်။ အသေးစိတ်ကို Support သို့ ဆက်သွယ်ပါ။';
+        } else if (lower.includes('ကူပွန်') || lower.includes('coupon')) {
+            reply = 'လက်ရှိ ကူပွန်ကုဒ်များကို Admin မှ ထုတ်ပြန်ပေးထားပါသည်။ ဝယ်ယူရာတွင် ထည့်သွင်းအသုံးပြုနိုင်ပါသည်။';
+        }
+        // Send auto-reply after 1-3 seconds
+        setTimeout(async () => {
+            try {
+                await window.sendMessage(userId, reply, 'admin');
+                console.log('🤖 Auto-reply sent:', reply);
+            } catch (e) {
+                console.error('Auto-reply failed:', e);
+            }
+        }, 1000 + Math.random() * 2000);
+    };
+
+    // Hook into sendMessage function to trigger auto-reply
+    const origSendMessage = window.sendMessage;
+    if (origSendMessage) {
+        window.sendMessage = async function(userId, text, sender = 'user') {
+            const result = await origSendMessage(userId, text, sender);
+            if (sender === 'user' && window.currentUser && window.currentUser.uid === userId) {
+                // Auto-reply only if the message is from the current user
+                window.simulateAutoReply(userId, text);
+            }
+            return result;
+        };
+    }
+
+    // ==========================================================
+    // ၅။ Profile Menu Extra Items (Help, Terms, About)
+    // ==========================================================
+
+    /**
+     * addExtraMenuItems - Profile Page ထဲသို့ နောက်ထပ် Menu Items များ ထည့်ခြင်း
+     */
+    function addExtraMenuItems() {
+        const container = document.querySelector('#page-profile .profile-menu-item:last-child')?.parentNode;
+        if (!container) return;
+        // Check if already added
+        if (container.querySelector('.extra-menu-item')) return;
+
+        const extraItems = [
+            { icon: 'fa-question-circle', label: 'အကူအညီ', color: '#2196f3', hash: '#help' },
+            { icon: 'fa-file-alt', label: 'စည်းမျဉ်းများ', color: '#9c27b0', hash: '#terms' },
+            { icon: 'fa-info-circle', label: 'အကြောင်းအရာ', color: '#4caf50', hash: '#about' }
+        ];
+
+        extraItems.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'profile-menu-item extra-menu-item';
+            div.style.cssText = `
+                background: var(--glass-bg);
+                backdrop-filter: blur(6px);
+                border-radius: 16px;
+                padding: 12px 8px;
+                text-align: center;
+                border: 1px solid var(--glass-border);
+                transition: all var(--transition-fast);
+                cursor: pointer;
+                grid-column: span 1;
+            `;
+            div.setAttribute('data-hash', item.hash);
+            div.innerHTML = `
+                <div style="width:44px;height:44px;border-radius:50%;background:${item.color}22;color:${item.color};display:flex;align-items:center;justify-content:center;font-size:1.2rem;margin:0 auto 6px;">
+                    <i class="fas ${item.icon}"></i>
+                </div>
+                <span style="font-size:0.7rem;font-weight:500;">${item.label}</span>
+            `;
+            div.addEventListener('click', function() {
+                alert(`📄 ${item.label} စာမျက်နှာ ဖွင့်ရန် ပြင်ဆင်နေပါသည်။`);
+                // Could navigate to a page or show a modal
+            });
+            container.appendChild(div);
+        });
+    }
+
+    // ==========================================================
+    // ၆။ User Order Analytics (Summary)
+    // ==========================================================
+
+    /**
+     * renderOrderSummary - အော်ဒါ စာရင်းအင်း အကျဉ်းချုပ်ကို ပြသခြင်း
+     */
+    async function renderOrderSummary() {
+        const container = document.querySelector('#page-orders .order-summary');
+        if (!container) return;
+        if (!window.currentUser) {
+            container.innerHTML = '<p style="color:var(--text-muted);font-size:0.8rem;">အကောင့်ဝင်ရန် လိုအပ်သည်။</p>';
+            return;
+        }
+        try {
+            const orders = await window.getOrdersByUser(window.currentUser.uid);
+            const total = orders.length;
+            const pending = orders.filter(o => o.status === 'pending').length;
+            const delivered = orders.filter(o => o.status === 'delivered').length;
+            const cancelled = orders.filter(o => o.status === 'cancelled').length;
+            const totalSpent = orders.reduce((sum, o) => sum + (o.total || 0), 0);
+            container.innerHTML = `
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;background:var(--glass-bg);padding:12px;border-radius:14px;border:1px solid var(--glass-border);margin-bottom:12px;">
+                    <div style="text-align:center;">
+                        <div style="font-weight:700;font-size:1.1rem;">${total}</div>
+                        <div style="font-size:0.6rem;color:var(--text-muted);">စုစုပေါင်း</div>
+                    </div>
+                    <div style="text-align:center;">
+                        <div style="font-weight:700;font-size:1.1rem;color:var(--secondary);">${pending}</div>
+                        <div style="font-size:0.6rem;color:var(--text-muted);">ဆောင်ရွက်နေဆဲ</div>
+                    </div>
+                    <div style="text-align:center;">
+                        <div style="font-weight:700;font-size:1.1rem;color:var(--stock-instock);">${delivered}</div>
+                        <div style="font-size:0.6rem;color:var(--text-muted);">ပို့ပြီး</div>
+                    </div>
+                    <div style="text-align:center;">
+                        <div style="font-weight:700;font-size:1.1rem;color:var(--stock-out);">${cancelled}</div>
+                        <div style="font-size:0.6rem;color:var(--text-muted);">ဖျက်သိမ်း</div>
+                    </div>
+                </div>
+                <div style="text-align:right;font-size:0.85rem;color:var(--text-secondary);">
+                    စုစုပေါင်း သုံးစွဲမှု: <strong>Ks ${totalSpent.toLocaleString()}</strong>
+                </div>
+            `;
+        } catch (error) {
+            console.error('renderOrderSummary error:', error);
+        }
+    }
+
+    // ==========================================================
+    // ၇။ Override loadUserOrders to include summary & action buttons
+    // ==========================================================
+
+    const origLoadUserOrders = window.loadUserOrders;
+    if (origLoadUserOrders) {
+        window.loadUserOrders = async function(userId) {
+            await origLoadUserOrders(userId);
+            // After rendering orders, add cancel/reorder buttons
+            const container = document.getElementById('page-orders');
+            if (!container) return;
+            // Add order summary if not exists
+            let summary = container.querySelector('.order-summary');
+            if (!summary) {
+                summary = document.createElement('div');
+                summary.className = 'order-summary';
+                container.prepend(summary);
+                await renderOrderSummary();
+            }
+                        // Add action buttons to each order card
+            const cards = container.querySelectorAll('#page-orders > div:not(.order-summary) > div');
+            cards.forEach(card => {
+                const orderId = card.querySelector('span:first-child')?.textContent?.replace('#', '')?.trim();
+                if (!orderId) return;
+                const statusText = card.querySelector('span:last-child')?.textContent?.trim()?.toLowerCase();
+                // Add cancel button if pending/processing
+                if (statusText && (statusText.includes('pending') || statusText.includes('processing'))) {
+                    const cancelBtn = document.createElement('button');
+                    cancelBtn.className = 'btn-outline';
+                    cancelBtn.style.cssText = 'margin-right:6px;padding:4px 12px;font-size:0.7rem;border-color:var(--stock-out);color:var(--stock-out);';
+                    cancelBtn.innerHTML = '<i class="fas fa-times"></i> ဖျက်မည်';
+                    cancelBtn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        const reason = prompt('ဖျက်သိမ်းရသည့် အကြောင်းအရင်း (optional):');
+                        window.cancelOrder(orderId, reason || '');
+                    });
+                    card.querySelector('.btn-outline')?.after(cancelBtn);
+                }
+                // Add reorder button
+                const reorderBtn = document.createElement('button');
+                reorderBtn.className = 'btn-outline';
+                reorderBtn.style.cssText = 'padding:4px 12px;font-size:0.7rem;';
+                reorderBtn.innerHTML = '<i class="fas fa-redo"></i> ပြန်မှာမည်';
+                reorderBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    window.reorder(orderId);
+                });
+                const trackingBtn = card.querySelector('.btn-outline');
+                if (trackingBtn) {
+                    trackingBtn.after(reorderBtn);
+                } else {
+                    card.appendChild(reorderBtn);
+                }
+            });
+        };
+    }
+
+    // ==========================================================
+    // ၈။ Initialize all features
+    // ==========================================================
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add extra menu items
+        setTimeout(addExtraMenuItems, 800);
+        // Render recent products if on profile page
+        setTimeout(() => {
+            const profilePage = document.getElementById('page-profile');
+            if (profilePage) {
+                // Add recent products section
+                let recentSection = profilePage.querySelector('.recent-products');
+                if (!recentSection) {
+                    recentSection = document.createElement('div');
+                    recentSection.className = 'recent-products';
+                    recentSection.style.cssText = `
+                        margin-top: 16px;
+                        padding: 12px;
+                        background: var(--glass-bg);
+                        border-radius: 16px;
+                        border: 1px solid var(--glass-border);
+                        width: 100%;
+                    `;
+                    recentSection.innerHTML = `<h4 style="font-size:0.9rem;font-weight:600;margin-bottom:8px;">🕒 မကြာသေးမီက ကြည့်ရှုခဲ့သည်</h4>`;
+                    const menuContainer = profilePage.querySelector('.profile-menu-item:last-child')?.parentNode;
+                    if (menuContainer) {
+                        menuContainer.parentNode.insertBefore(recentSection, menuContainer);
+                    } else {
+                        profilePage.appendChild(recentSection);
+                    }
+                    renderRecentProducts();
+                }
+            }
+        }, 600);
+
+        // Load notification preferences
+        if (window.currentUser) {
+            loadNotificationPrefs();
+        } else {
+            document.addEventListener('authStateChanged', function(e) {
+                if (e.detail.user) {
+                    loadNotificationPrefs();
+                }
+            });
+        }
+    });
+
+    // ==========================================================
+    // ၉။ Expose new functions globally
+    // ==========================================================
+
+    window.cancelOrder = window.cancelOrder;
+    window.reorder = window.reorder;
+    window.addRecentProduct = window.addRecentProduct;
+    window.simulateAutoReply = window.simulateAutoReply;
+    window.renderRecentProducts = renderRecentProducts;
+
+    console.log('✅ user.js Part 3 ပြီးဆုံးပါပြီ။');
+    console.log('📦 user.js ဖိုင် အပြည့်အစုံ ပြီးစီးပါပြီ။');
+
+})();
+
+// ============================================================
+// user.js - Part 3 (Lines 1 to 300) ပြီးဆုံးပါပြီ။
+// user.js ဖိုင်သည် ယခုအခါ အပြည့်အစုံ ဖြစ်ပါသည်။
+// နောက်ထပ် ဖိုင် (admin.js) အတွက် ဆက်လက်တောင်းခံနိုင်ပါသည်။
+// ============================================================
