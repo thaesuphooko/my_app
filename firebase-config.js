@@ -1006,4 +1006,637 @@
 // အထက်ပါ Helper Functions များကို အသုံးပြု၍
 // ဆက်လက်ရေးသားနိုင်ပါပြီ။
 // ============================================================
-```
+
+// ============================================================
+// firebase-config.js - Part 3 (Lines 1 to 300)
+// ဖိုင်: firebase-config.js ၏ တတိယအပိုင်း
+// နောက်ထပ် အဆင့်မြင့် Helper Functions များ
+// - Batch Operations, Product Management, Order Management,
+// - Review, DeepSeek AI, RapidAPI, Utilities, Offline Cache
+// ============================================================
+
+(function() {
+    'use strict';
+
+    console.log('🔥 firebase-config.js Part 3 စတင်နေပါပြီ...');
+
+    // ==========================================================
+    // ၁။ Batch Operations (အစုလိုက် လုပ်ဆောင်ချက်များ)
+    // ==========================================================
+
+    /**
+     * bulkAddDocuments - Collection တစ်ခုထဲသို့ Documents များစွာ တစ်ပြိုင်နက် ထည့်သွင်းခြင်း
+     * @param {string} collectionName 
+     * @param {Array<Object>} dataArray - [{...}, {...}]
+     * @returns {Promise<Array<string>>} - Document IDs များ
+     */
+    window.bulkAddDocuments = async function(collectionName, dataArray) {
+        try {
+            const db = window.db;
+            if (!db) throw new Error('Firestore မရှိပါ။');
+            const batch = db.batch();
+            const ids = [];
+            const refs = [];
+            dataArray.forEach(data => {
+                const docRef = db.collection(collectionName).doc(); // auto-generate ID
+                const docData = {
+                    ...data,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                batch.set(docRef, docData);
+                ids.push(docRef.id);
+                refs.push(docRef);
+            });
+            await batch.commit();
+            console.log(`✅ Bulk add: ${ids.length} documents added to ${collectionName}`);
+            return ids;
+        } catch (error) {
+            console.error(`❌ bulkAddDocuments (${collectionName}) error:`, error);
+            throw error;
+        }
+    };
+
+    /**
+     * bulkUpdateDocuments - Documents များစွာကို တစ်ပြိုင်နက် ပြင်ဆင်ခြင်း
+     * @param {string} collectionName 
+     * @param {Array<{id: string, data: Object}>} updates - [{id, data}, ...]
+     * @returns {Promise<void>}
+     */
+    window.bulkUpdateDocuments = async function(collectionName, updates) {
+        try {
+            const db = window.db;
+            if (!db) throw new Error('Firestore မရှိပါ။');
+            const batch = db.batch();
+            updates.forEach(({ id, data }) => {
+                const docRef = db.collection(collectionName).doc(id);
+                const updateData = {
+                    ...data,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                batch.update(docRef, updateData);
+            });
+            await batch.commit();
+            console.log(`✅ Bulk update: ${updates.length} documents updated in ${collectionName}`);
+        } catch (error) {
+            console.error(`❌ bulkUpdateDocuments (${collectionName}) error:`, error);
+            throw error;
+        }
+    };
+
+    /**
+     * bulkDeleteDocuments - Documents များစွာကို တစ်ပြိုင်နက် ဖျက်ခြင်း
+     * @param {string} collectionName 
+     * @param {Array<string>} docIds 
+     * @returns {Promise<void>}
+     */
+    window.bulkDeleteDocuments = async function(collectionName, docIds) {
+        try {
+            const db = window.db;
+            if (!db) throw new Error('Firestore မရှိပါ။');
+            const batch = db.batch();
+            docIds.forEach(id => {
+                const docRef = db.collection(collectionName).doc(id);
+                batch.delete(docRef);
+            });
+            await batch.commit();
+            console.log(`✅ Bulk delete: ${docIds.length} documents deleted from ${collectionName}`);
+        } catch (error) {
+            console.error(`❌ bulkDeleteDocuments (${collectionName}) error:`, error);
+            throw error;
+        }
+    };
+
+    // ==========================================================
+    // ၂။ Product Management Helpers
+    // ==========================================================
+
+    /**
+     * addProduct - ကုန်ပစ္စည်းအသစ် ထည့်သွင်းခြင်း
+     * @param {Object} productData - {name, price, originalPrice, category, image, description, stock, ...}
+     * @returns {Promise<string>} - Product ID
+     */
+    window.addProduct = async function(productData) {
+        try {
+            const data = {
+                ...productData,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                sold: productData.sold || 0,
+                rating: productData.rating || 0,
+                reviewsCount: productData.reviewsCount || 0
+            };
+            const id = await window.addDocument('products', data);
+            return id;
+        } catch (error) {
+            console.error('❌ addProduct error:', error);
+            throw error;
+        }
+    };
+
+    /**
+     * updateProduct - ကုန်ပစ္စည်းတစ်ခုကို ပြင်ဆင်ခြင်း
+     * @param {string} productId 
+     * @param {Object} updateData 
+     * @returns {Promise<void>}
+     */
+    window.updateProduct = async function(productId, updateData) {
+        try {
+            await window.updateDocument('products', productId, updateData);
+        } catch (error) {
+            console.error(`❌ updateProduct (${productId}) error:`, error);
+            throw error;
+        }
+    };
+
+    /**
+     * deleteProduct - ကုန်ပစ္စည်းတစ်ခုကို ဖျက်ခြင်း
+     * @param {string} productId 
+     * @returns {Promise<void>}
+     */
+    window.deleteProduct = async function(productId) {
+        try {
+            await window.deleteDocument('products', productId);
+        } catch (error) {
+            console.error(`❌ deleteProduct (${productId}) error:`, error);
+            throw error;
+        }
+    };
+
+    /**
+     * bulkUpdateProductPrices - ကုန်ပစ္စည်းများ၏ ဈေးနှုန်းကို အစုလိုက် ပြင်ဆင်ခြင်း
+     * @param {Array<string>} productIds 
+     * @param {number} percentageChange - အပေါင်း (+) သို့မဟုတ် အနုတ် (-) ရာခိုင်နှုန်း
+     * @param {string} priceField - 'price' သို့မဟုတ် 'originalPrice'
+     * @returns {Promise<void>}
+     */
+    window.bulkUpdateProductPrices = async function(productIds, percentageChange, priceField = 'price') {
+        try {
+            const db = window.db;
+            if (!db) throw new Error('Firestore မရှိပါ။');
+            const batch = db.batch();
+            for (const id of productIds) {
+                const docRef = db.collection('products').doc(id);
+                const doc = await docRef.get();
+                if (!doc.exists) continue;
+                const currentPrice = doc.data()[priceField] || 0;
+                const newPrice = Math.round(currentPrice * (1 + percentageChange / 100));
+                batch.update(docRef, {
+                    [priceField]: newPrice,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            }
+            await batch.commit();
+            console.log(`✅ Bulk price update: ${productIds.length} products updated`);
+        } catch (error) {
+            console.error('❌ bulkUpdateProductPrices error:', error);
+            throw error;
+        }
+    };
+
+    /**
+     * bulkDeleteProducts - ကုန်ပစ္စည်းများစွာကို တစ်ပြိုင်နက် ဖျက်ခြင်း
+     * @param {Array<string>} productIds 
+     * @returns {Promise<void>}
+     */
+    window.bulkDeleteProducts = async function(productIds) {
+        try {
+            await window.bulkDeleteDocuments('products', productIds);
+        } catch (error) {
+            console.error('❌ bulkDeleteProducts error:', error);
+            throw error;
+        }
+    };
+
+    // ==========================================================
+    // ၃။ Order Management Helpers
+    // ==========================================================
+
+    /**
+     * createOrder - အော်ဒါအသစ် ဖန်တီးခြင်း
+     * @param {Object} orderData - {userId, items, total, address, phone, name, paymentMethod, ...}
+     * @returns {Promise<string>} - Order ID
+     */
+    window.createOrder = async function(orderData) {
+        try {
+            const db = window.db;
+            if (!db) throw new Error('Firestore မရှိပါ။');
+            const orderId = await window.addDocument('orders', {
+                ...orderData,
+                status: 'pending',
+                statusHistory: [{
+                    status: 'pending',
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    note: 'အော်ဒါ အသစ် တင်ထားသည်။'
+                }],
+                tracking: {
+                    currentLocation: { lat: 16.8409, lng: 96.1735 }, // ရန်ကုန်
+                    destination: null,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                }
+            });
+            // Send Telegram notification
+            const message = `🆕 <b>အော်ဒါအသစ် #${orderId}</b>\n` +
+                `👤 ${orderData.name || 'ဧည့်သည်'}\n` +
+                `📞 ${orderData.phone || '-'}\n` +
+                `💰 စုစုပေါင်း: Ks ${orderData.total?.toLocaleString() || 0}\n` +
+                `📦 ပစ္စည်းအရေအတွက်: ${orderData.items?.length || 0}`;
+            window.sendTelegramNotification(message);
+            return orderId;
+        } catch (error) {
+            console.error('❌ createOrder error:', error);
+            throw error;
+        }
+    };
+
+    /**
+     * getOrderById - အော်ဒါတစ်ခုကို ID ဖြင့် ဆွဲထုတ်ခြင်း
+     * @param {string} orderId 
+     * @returns {Promise<Object|null>}
+     */
+    window.getOrderById = async function(orderId) {
+        try {
+            return await window.getDocument('orders', orderId);
+        } catch (error) {
+            console.error(`❌ getOrderById (${orderId}) error:`, error);
+            return null;
+        }
+    };
+
+    /**
+     * updateOrderStatus - အော်ဒါ status ကို ပြင်ဆင်ပြီး timeline ထည့်သွင်းခြင်း
+     * @param {string} orderId 
+     * @param {string} newStatus 
+     * @param {string} note - optional note
+     * @param {Object} additionalData 
+     * @returns {Promise<void>}
+     */
+    window.updateOrderStatus = async function(orderId, newStatus, note = '', additionalData = {}) {
+        try {
+            const db = window.db;
+            if (!db) throw new Error('Firestore မရှိပါ။');
+            const orderRef = db.collection('orders').doc(orderId);
+            const order = await orderRef.get();
+            if (!order.exists) throw new Error('Order not found');
+            const currentStatusHistory = order.data().statusHistory || [];
+            const newHistory = [
+                ...currentStatusHistory,
+                {
+                    status: newStatus,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    note: note || `Status changed to ${newStatus}`
+                }
+            ];
+            await orderRef.update({
+                status: newStatus,
+                statusHistory: newHistory,
+                ...additionalData,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            console.log(`✅ Order ${orderId} status updated to ${newStatus}`);
+            // Send Telegram notification for status change
+            const msg = `📦 <b>အော်ဒါ #${orderId}</b> အခြေအနေ ပြောင်းလဲသွားသည်။\n` +
+                `📌 ${newStatus}\n` +
+                (note ? `📝 ${note}` : '');
+            window.sendTelegramNotification(msg);
+        } catch (error) {
+            console.error(`❌ updateOrderStatus (${orderId}) error:`, error);
+            throw error;
+        }
+    };
+
+    /**
+     * addTrackingUpdate - အော်ဒါအတွက် ပို့ဆောင်မှု အခြေအနေ အသစ်ထည့်ခြင်း
+     * @param {string} orderId 
+     * @param {Object} location - {lat, lng}
+     * @param {string} statusText 
+     * @param {string} note 
+     * @returns {Promise<void>}
+     */
+    window.addTrackingUpdate = async function(orderId, location, statusText, note = '') {
+        try {
+            const db = window.db;
+            if (!db) throw new Error('Firestore မရှိပါ။');
+            const orderRef = db.collection('orders').doc(orderId);
+            const order = await orderRef.get();
+            if (!order.exists) throw new Error('Order not found');
+            const trackingHistory = order.data().trackingHistory || [];
+            const newEntry = {
+                location: location,
+                status: statusText,
+                note: note,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            };
+            await orderRef.update({
+                'tracking.currentLocation': location,
+                'tracking.updatedAt': firebase.firestore.FieldValue.serverTimestamp(),
+                trackingHistory: [...trackingHistory, newEntry]
+            });
+            console.log(`✅ Tracking update added for order ${orderId}`);
+        } catch (error) {
+            console.error(`❌ addTrackingUpdate (${orderId}) error:`, error);
+            throw error;
+        }
+    };
+
+    // ==========================================================
+    // ၄။ Review Helpers
+    // ==========================================================
+
+    /**
+     * addReview - သုံးသပ်ချက်အသစ် ထည့်သွင်းခြင်း (productId အတွက်)
+     * @param {string} productId 
+     * @param {Object} reviewData - {userId, userName, rating, text, ...}
+     * @returns {Promise<string>} - Review ID
+     */
+    window.addReview = async function(productId, reviewData) {
+        try {
+            const db = window.db;
+            if (!db) throw new Error('Firestore မရှိပါ။');
+            const reviewId = await window.addDocument('reviews', {
+                ...reviewData,
+                productId: productId,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            // Update product's rating and reviewsCount
+            const productRef = db.collection('products').doc(productId);
+            const product = await productRef.get();
+            if (product.exists) {
+                const currentReviews = product.data().reviewsCount || 0;
+                const currentRating = product.data().rating || 0;
+                const newRating = ((currentRating * currentReviews) + reviewData.rating) / (currentReviews + 1);
+                await productRef.update({
+                    rating: Math.round(newRating * 10) / 10,
+                    reviewsCount: currentReviews + 1,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            }
+            console.log(`✅ Review added for product ${productId}`);
+            return reviewId;
+        } catch (error) {
+            console.error('❌ addReview error:', error);
+            throw error;
+        }
+    };
+
+    /**
+     * getReviewsForProduct - ကုန်ပစ္စည်းတစ်ခုအတွက် သုံးသပ်ချက်များကို ဆွဲထုတ်ခြင်း
+     * @param {string} productId 
+     * @param {number} limit 
+     * @returns {Promise<Array>}
+     */
+    window.getReviewsForProduct = async function(productId, limit = 20) {
+        try {
+            return await window.queryCollection(
+                'reviews',
+                [{ field: 'productId', operator: '==', value: productId }],
+                'createdAt',
+                'desc',
+                limit
+            );
+        } catch (error) {
+            console.error(`❌ getReviewsForProduct (${productId}) error:`, error);
+            return [];
+        }
+    };
+
+    // ==========================================================
+    // ၅။ DeepSeek AI Helper
+    // ==========================================================
+
+    /**
+     * askDeepSeek - DeepSeek AI API ကို ခေါ်ပြီး အဖြေရယူခြင်း
+     * @param {string} prompt - မေးခွန်း သို့မဟုတ် ညွှန်ကြားချက်
+     * @param {Object} options - {temperature, maxTokens, ...}
+     * @returns {Promise<string>} - AI response
+     */
+    window.askDeepSeek = async function(prompt, options = {}) {
+        try {
+            const apiKey = window.DEEPSEEK_API_KEY || 'sk-0958bf018f8e4e048cf61d5cde979b86';
+            const url = 'https://api.deepseek.com/v1/chat/completions';
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`
+                },
+                body: JSON.stringify({
+                    model: 'deepseek-chat',
+                    messages: [{ role: 'user', content: prompt }],
+                    temperature: options.temperature || 0.7,
+                    max_tokens: options.maxTokens || 2048
+                })
+            });
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`API error: ${response.status} - ${errorText}`);
+            }
+            const data = await response.json();
+            const result = data.choices[0].message.content;
+            console.log('✅ DeepSeek response received');
+            return result;
+        } catch (error) {
+            console.error('❌ askDeepSeek error:', error);
+            return `Error: ${error.message}`;
+        }
+    };
+
+    /**
+     * generateCodeWithDeepSeek - DeepSeek ကို သုံး၍ ကုဒ်ထုတ်ပေးခြင်း (Code Injector အတွက်)
+     * @param {string} instruction - သဘာဝဘာသာစကားဖြင့် ညွှန်ကြားချက်
+     * @param {string} context - လက်ရှိကုဒ် (optional)
+     * @returns {Promise<string>} - ထွက်လာသော ကုဒ်
+     */
+    window.generateCodeWithDeepSeek = async function(instruction, context = '') {
+        const prompt = `You are a code assistant for an e-commerce website built with pure HTML, CSS, JavaScript, and Firebase. 
+        The user wants to modify the code. Here is the instruction: "${instruction}". 
+        ${context ? 'Current code context:\n' + context : ''}
+        Provide only the code that needs to be changed or added, with clear comments.`;
+        return await window.askDeepSeek(prompt, { temperature: 0.4, maxTokens: 3000 });
+    };
+
+    // ==========================================================
+    // ၆။ RapidAPI (Amazon Data Sync) Helper
+    // ==========================================================
+
+    /**
+     * fetchAmazonProduct - RapidAPI မှ Amazon product data ကို ဆွဲထုတ်ခြင်း
+     * @param {string} asin - Amazon ASIN code
+     * @returns {Promise<Object>} - Product data
+     */
+    window.fetchAmazonProduct = async function(asin) {
+        try {
+            const apiKey = window.RAPIDAPI_KEY || '1852a28efamsh993c0fa32ed6003p1072dbjsnd07318e9d120';
+            const host = window.RAPIDAPI_HOST || 'real-time-amazon-data.p.rapidapi.com';
+            const url = `https://${host}/product?asin=${asin}`;
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'X-RapidAPI-Key': apiKey,
+                    'X-RapidAPI-Host': host
+                }
+            });
+            if (!response.ok) {
+                throw new Error(`RapidAPI error: ${response.status}`);
+            }
+            const data = await response.json();
+            console.log(`✅ Amazon product fetched for ASIN ${asin}`);
+            return data;
+        } catch (error) {
+            console.error('❌ fetchAmazonProduct error:', error);
+            return null;
+        }
+    };
+
+    /**
+          * searchAmazonProducts - RapidAPI မှ Amazon ပစ္စည်းများကို ရှာဖွေခြင်း
+     * @param {string} keyword 
+     * @param {number} limit 
+     * @returns {Promise<Array>}
+     */
+    window.searchAmazonProducts = async function(keyword, limit = 10) {
+        try {
+            const apiKey = window.RAPIDAPI_KEY || '1852a28efamsh993c0fa32ed6003p1072dbjsnd07318e9d120';
+            const host = window.RAPIDAPI_HOST || 'real-time-amazon-data.p.rapidapi.com';
+            const url = `https://${host}/search?keyword=${encodeURIComponent(keyword)}&limit=${limit}`;
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'X-RapidAPI-Key': apiKey,
+                    'X-RapidAPI-Host': host
+                }
+            });
+            if (!response.ok) {
+                throw new Error(`RapidAPI error: ${response.status}`);
+            }
+            const data = await response.json();
+            console.log(`✅ Amazon search results for "${keyword}"`);
+            return data.products || [];
+        } catch (error) {
+            console.error('❌ searchAmazonProducts error:', error);
+            return [];
+        }
+    };
+
+    // ==========================================================
+    // ၇။ Utility Functions
+    // ==========================================================
+
+    /**
+     * formatPrice - ဈေးနှုန်းကို မြန်မာကျပ် (Ks) ပုံစံဖြင့် ပြောင်းခြင်း
+     * @param {number} price 
+     * @param {string} currency - 'Ks' or '$'
+     * @returns {string}
+     */
+    window.formatPrice = function(price, currency = 'Ks') {
+        if (isNaN(price)) return '0';
+        return `${currency} ${price.toLocaleString()}`;
+    };
+
+    /**
+     * generateOrderId - အော်ဒါ ID အလိုအလျောက် ထုတ်ပေးခြင်း
+     * @param {string} prefix - ရှေ့ဆက် (ဥပမာ 'ORD')
+     * @returns {string}
+     */
+    window.generateOrderId = function(prefix = 'ORD') {
+        const timestamp = Date.now().toString(36).toUpperCase();
+        const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+        return `${prefix}-${timestamp}-${random}`;
+    };
+
+    /**
+     * getProductById - ကုန်ပစ္စည်းတစ်ခုကို ID ဖြင့် ဆွဲထုတ်ခြင်း (cached version)
+     * @param {string} productId 
+     * @returns {Promise<Object|null>}
+     */
+    window.getProductById = async function(productId) {
+        try {
+            // First try to find in cached allProducts
+            if (window.allProducts && Array.isArray(window.allProducts)) {
+                const cached = window.allProducts.find(p => p.id === productId);
+                if (cached) return cached;
+            }
+            // Otherwise fetch from Firestore
+            return await window.getDocument('products', productId);
+        } catch (error) {
+            console.error(`❌ getProductById (${productId}) error:`, error);
+            return null;
+        }
+    };
+
+    // ==========================================================
+    // ၈။ Offline Data Caching Helpers (localStorage)
+    // ==========================================================
+
+    /**
+     * cacheData - ဒေတာကို localStorage တွင် သိမ်းဆည်းခြင်း
+     * @param {string} key 
+     * @param {any} data 
+     * @param {number} ttl - seconds (optional)
+     */
+    window.cacheData = function(key, data, ttl = 3600) {
+        try {
+            const cacheItem = {
+                data: data,
+                expiry: Date.now() + ttl * 1000
+            };
+            localStorage.setItem(`cache_${key}`, JSON.stringify(cacheItem));
+        } catch (e) {
+            console.warn('Cache save error:', e);
+        }
+    };
+
+    /**
+     * getCachedData - localStorage မှ ဒေတာကို ပြန်လည်ရယူခြင်း
+     * @param {string} key 
+     * @returns {any|null} - ဒေတာ သို့မဟုတ် expired ဖြစ်ပါက null
+     */
+    window.getCachedData = function(key) {
+        try {
+            const item = localStorage.getItem(`cache_${key}`);
+            if (!item) return null;
+            const parsed = JSON.parse(item);
+            if (Date.now() > parsed.expiry) {
+                localStorage.removeItem(`cache_${key}`);
+                return null;
+            }
+            return parsed.data;
+        } catch (e) {
+            return null;
+        }
+    };
+
+    /**
+     * clearCache - သိမ်းထားသော Cache အားလုံးကို ရှင်းခြင်း
+     */
+    window.clearCache = function() {
+        try {
+            const keys = Object.keys(localStorage);
+            keys.forEach(k => {
+                if (k.startsWith('cache_')) {
+                    localStorage.removeItem(k);
+                }
+            });
+            console.log('🗑️ Cache cleared');
+        } catch (e) {
+            console.warn('Clear cache error:', e);
+        }
+    };
+
+    // ==========================================================
+    // ၉။ ပြင်ဆင်မှုအားလုံး ပြီးဆုံးကြောင်း အချက်ပြခြင်း
+    // ==========================================================
+    console.log('✅ firebase-config.js Part 3 အားလုံး အဆင်သင့်ဖြစ်ပါပြီ။');
+    console.log(`📦 Helper functions စုစုပေါင်း ${Object.keys(window).filter(k => typeof window[k] === 'function' && !['firebase','db','auth','storage'].includes(k) && !k.startsWith('_')).length} ခု ရရှိပါပြီ။`);
+
+    document.dispatchEvent(new CustomEvent('firebasePart3Ready'));
+
+})();
+
+// ============================================================
+// firebase-config.js - Part 3 (Lines 1 to 300) ပြီးဆုံးပါပြီ။
+// ယခုအခါ main.js, user.js, admin.js တို့တွင်
+// အထက်ပါ အဆင့်မြင့် Helper Functions များကို
+// အသုံးပြု၍ ဆက်လက်ရေးသားနိုင်ပါပြီ။
+// ============================================================
