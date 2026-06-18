@@ -1,1851 +1,456 @@
-<!DOCTYPE html>
-<html lang="my">
-<head>
+<script>
+// =============================================================
+// ပထမဆုံး - ALL GLOBAL VARIABLES ကို window ပေါ်တင်ပါ
+// =============================================================
+window.allProducts = [];
+window.cart = JSON.parse(localStorage.getItem('premiumCart') || '[]');
+window.messages = [];
+window.filteredProducts = [];
+window.currentPageNum = 1;
+const PAGE_SIZE = 20;
 
+// =============================================================
+// FIREBASE INIT
+// =============================================================
+const firebaseConfig = {
+    apiKey: "AIzaSyDSu2XksfUZ6mAfktUpBqFtNxrgj96h1l4",
+    authDomain: "app-my-caee3.firebaseapp.com",
+    projectId: "app-my-caee3",
+    storageBucket: "app-my-caee3.firebasestorage.app",
+    messagingSenderId: "169669907659",
+    appId: "1:169669907659:web:8fba75e7aed449e3ffb74e"
+};
 
-<script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-<script>eruda.init();</script>
+let db, auth, storage;
+try {
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+    auth = firebase.auth();
+    storage = firebase.storage();
+    window.db = db;
+    window.auth = auth;
+    window.storage = storage;
+    console.log('✅ Firebase initialized');
+} catch(e) {
+    console.error('❌ Firebase error:', e);
+}
 
-    <!-- ============================================================
-    PART 1 (LINES 1-300) – INDEX.HTML
-    ဤအပိုင်းတွင် HTML ဖွဲ့စည်းပုံ၊ Meta, CDN, CSS အားလုံး၊
-    နှင့် စာမျက်နှာ အပိုင်းအစများ (Home, Messages, Cart, Profile)
-    ပါဝင်သည်။
-    ============================================================ -->
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover" />
-    <meta name="theme-color" content="#e11b1b" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="format-detection" content="telephone=yes" />
-    <title>Premium Shop – Myanmar E-Commerce</title>
+// =============================================================
+// ROUTING
+// =============================================================
+window.navigateTo = function(hash) {
+    const pageId = hash.replace('#', '').split('/')[0] || 'home';
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    const target = document.getElementById(`page-${pageId}`);
+    if (target) target.classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.toggle('active', item.dataset.hash === `#${pageId}`);
+    });
+    if (pageId === 'cart') window.updateCartUI();
+    if (pageId === 'messages') window.renderMessages();
+    window.location.hash = hash;
+};
 
-    <!-- Font Awesome 6 (Free) -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
-    <!-- Leaflet.js CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <!-- Papa Parse (CSV) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js">
-    </script>
+// Navigation clicks
+document.querySelectorAll('.nav-item, .profile-menu-item[data-hash]').forEach(el => {
+    el.addEventListener('click', () => {
+        if (el.dataset.hash) window.navigateTo(el.dataset.hash);
+    });
+});
 
-    <!-- Firebase v9 Compat (modular) -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js">
-    </script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js">
-    </script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js">
-    </script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js">
-    </script>
-
-    <!-- Leaflet.js JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
-    </script>
-
-    <!-- ===== GLOBAL STYLES ===== -->
-    <style>
-        /* ---------- RESET & ROOT VARIABLES ---------- */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        :root {
-            --primary: #e11b1b;
-            --primary-dark: #b71c1c;
-            --secondary: #ff6b00;
-            --bg-start: #fce4ec;
-            --bg-end: #f3e5f5;
-            --card-bg: rgba(255, 255, 255, 0.70);
-            --card-border: rgba(255, 255, 255, 0.30);
-            --text-primary: #1a1a2e;
-            --text-secondary: #4a4a6a;
-            --text-light: #8888aa;
-            --shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-            --radius: 18px;
-            --nav-height: 68px;
-            --header-height: 60px;
-            --safe-bottom: env(safe-area-inset-bottom, 0px);
-            --glass-blur: blur(12px);
-            --transition: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        /* Dark Theme */
-        [data-theme="dark"] {
-            --bg-start: #0f0f1a;
-            --bg-end: #1a1a2e;
-            --card-bg: rgba(30, 30, 50, 0.75);
-            --card-border: rgba(255, 255, 255, 0.08);
-            --text-primary: #f0f0f5;
-            --text-secondary: #b0b0cc;
-            --text-light: #6a6a8a;
-            --shadow: 0 8px 32px rgba(0, 0, 0, 0.40);
-        }
-
-        /* ---------- BASE ---------- */
-        html,
-        body {
-            height: 100%;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background: linear-gradient(145deg, var(--bg-start), var(--bg-end));
-            color: var(--text-primary);
-            transition: background var(--transition), color var(--transition);
-            overflow: hidden;
-        }
-
-        /* ---------- APP SHELL ---------- */
-        #app {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-            max-width: 480px;
-            margin: 0 auto;
-            background: transparent;
-            position: relative;
-            overflow: hidden;
-        }
-
-        /* ---------- HEADER ---------- */
-        .app-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 8px 16px;
-            height: var(--header-height);
-            background: var(--card-bg);
-            backdrop-filter: var(--glass-blur);
-            -webkit-backdrop-filter: var(--glass-blur);
-            border-bottom: 1px solid var(--card-border);
-            flex-shrink: 0;
-            z-index: 30;
-            gap: 8px;
-        }
-
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex: 1;
-            min-width: 0;
-        }
-
-        .logo {
-            font-size: 20px;
-            font-weight: 800;
-            color: var(--primary);
-            letter-spacing: -0.5px;
-            white-space: nowrap;
-        }
-        .logo i {
-            margin-right: 4px;
-            color: var(--secondary);
-        }
-
-        .header-clock {
-            font-size: 13px;
-            font-weight: 600;
-            font-variant-numeric: tabular-nums;
-            background: rgba(0, 0, 0, 0.05);
-            padding: 4px 10px;
-            border-radius: 30px;
-            color: var(--text-secondary);
-            white-space: nowrap;
-            transition: color var(--transition);
-            letter-spacing: 0.3px;
-        }
-        [data-theme="dark"] .header-clock {
-            background: rgba(255, 255, 255, 0.06);
-        }
-
-        .header-actions {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            flex-shrink: 0;
-        }
-
-        .header-actions button {
-            background: rgba(0, 0, 0, 0.04);
-            border: none;
-            width: 38px;
-            height: 38px;
-            border-radius: 50%;
-            font-size: 17px;
-            color: var(--text-secondary);
-            cursor: pointer;
-            transition: all var(--transition);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        [data-theme="dark"] .header-actions button {
-            background: rgba(255, 255, 255, 0.06);
-        }
-        .header-actions button:hover,
-        .header-actions button:active {
-            background: var(--primary);
-            color: #fff;
-            transform: scale(0.94);
-        }
-
-        /* Music toggle dot */
-        .music-toggle .badge-dot {
-            position: absolute;
-            top: 2px;
-            right: 2px;
-            width: 10px;
-            height: 10px;
-            background: #22c55e;
-            border-radius: 50%;
-            border: 2px solid var(--card-bg);
-            animation: pulse-dot 2s infinite;
-        }
-        @keyframes pulse-dot {
-            0%,
-            100% {
-                opacity: 1;
-                transform: scale(1);
-            }
-            50% {
-                opacity: 0.5;
-                transform: scale(0.8);
-            }
-        }
-
-        /* ---------- MAIN CONTENT (scrollable) ---------- */
-        .main-content {
-            flex: 1;
-            overflow-y: auto;
-            overflow-x: hidden;
-            padding: 12px 12px calc(var(--nav-height) + 20px + var(--safe-bottom));
-            scroll-behavior: smooth;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        /* ---------- PAGES (hash routing) ---------- */
-        .page {
-            display: none;
-            animation: fadeSlide 0.30s ease forwards;
-        }
-        .page.active {
-            display: block;
-        }
-
-        @keyframes fadeSlide {
-            0% {
-                opacity: 0;
-                transform: translateY(12px);
-            }
-            100% {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* ---------- BOTTOM NAVIGATION ---------- */
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 100%;
-            max-width: 480px;
-            height: calc(var(--nav-height) + var(--safe-bottom));
-            padding-bottom: var(--safe-bottom);
-            background: var(--card-bg);
-            backdrop-filter: var(--glass-blur);
-            -webkit-backdrop-filter: var(--glass-blur);
-            border-top: 1px solid var(--card-border);
-            display: flex;
-            align-items: stretch;
-            justify-content: space-around;
-            z-index: 50;
-            box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.06);
-        }
-        [data-theme="dark"] .bottom-nav {
-            box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.30);
-        }
-
-        .nav-item {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 2px;
-            font-size: 10px;
-            font-weight: 500;
-            color: var(--text-light);
-            text-decoration: none;
-            transition: all var(--transition);
-            cursor: pointer;
-            position: relative;
-            padding: 4px 0;
-            border: none;
-            background: transparent;
-            font-family: inherit;
-        }
-        .nav-item i {
-            font-size: 20px;
-            transition: transform var(--transition);
-        }
-        .nav-item span {
-            line-height: 1.2;
-            font-size: 9px;
-            letter-spacing: 0.2px;
-        }
-        .nav-item.active {
-            color: var(--primary);
-        }
-        .nav-item.active i {
-            transform: scale(1.05);
-        }
-        .nav-item .badge {
-            position: absolute;
-            top: 2px;
-            right: 50%;
-            transform: translateX(calc(50% + 14px));
-            background: var(--primary);
-            color: #fff;
-            font-size: 9px;
-            font-weight: 700;
-            min-width: 18px;
-            height: 18px;
-            border-radius: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0 5px;
-            border: 2px solid var(--card-bg);
-            box-shadow: 0 2px 8px rgba(225, 27, 27, 0.30);
-        }
-        .nav-item .badge.hidden {
-            display: none;
-        }
-
-        /* ---------- GLASS CARD ---------- */
-        .glass-card {
-            background: var(--card-bg);
-            backdrop-filter: var(--glass-blur);
-            -webkit-backdrop-filter: var(--glass-blur);
-            border: 1px solid var(--card-border);
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            transition: all var(--transition);
-            padding: 16px;
-        }
-        .glass-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.10);
-        }
-
-        /* ---------- PRODUCT GRID (2-column) ---------- */
-        .product-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-top: 12px;
-        }
-
-        /* ---------- CATEGORY BAR ---------- */
-        .category-bar {
-            display: flex;
-            gap: 8px;
-            overflow-x: auto;
-            padding: 8px 0 12px 0;
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: none;
-            flex-shrink: 0;
-        }
-        .category-bar::-webkit-scrollbar {
-            display: none;
-        }
-        .category-chip {
-            flex-shrink: 0;
-            padding: 8px 18px;
-            border-radius: 40px;
-            background: var(--card-bg);
-            backdrop-filter: var(--glass-blur);
-            -webkit-backdrop-filter: var(--glass-blur);
-            border: 1px solid var(--card-border);
-            font-size: 13px;
-            font-weight: 500;
-            color: var(--text-secondary);
-            cursor: pointer;
-            transition: all var(--transition);
-            white-space: nowrap;
-        }
-        .category-chip.active {
-            background: var(--primary);
-            color: #fff;
-            border-color: var(--primary);
-            box-shadow: 0 4px 16px rgba(225, 27, 27, 0.25);
-        }
-        .category-chip:active {
-            transform: scale(0.94);
-        }
-
-        /* ---------- UTILITY CLASSES ---------- */
-        .text-muted {
-            color: var(--text-light);
-            font-size: 13px;
-        }
-        .text-primary {
-            color: var(--primary);
-        }
-        .text-secondary {
-            color: var(--secondary);
-        }
-        .fw-700 {
-            font-weight: 700;
-        }
-        .mt-8 {
-            margin-top: 8px;
-        }
-        .mt-12 {
-            margin-top: 12px;
-        }
-        .mb-8 {
-            margin-bottom: 8px;
-        }
-        .flex-between {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .flex-center {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        /* ---------- SCROLLBAR ---------- */
-        .main-content::-webkit-scrollbar {
-            width: 3px;
-        }
-        .main-content::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        .main-content::-webkit-scrollbar-thumb {
-            background: var(--primary);
-            border-radius: 30px;
-        }
-
-        /* ---------- FLOATING CHAT FAB ---------- */
-        .chat-fab {
-            position: fixed;
-            bottom: calc(var(--nav-height) + 20px + var(--safe-bottom));
-            right: 16px;
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            background: var(--primary);
-            color: #fff;
-            border: none;
-            font-size: 26px;
-            box-shadow: 0 8px 32px rgba(225, 27, 27, 0.35);
-            cursor: pointer;
-            z-index: 40;
-            transition: all var(--transition);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .chat-fab:active {
-            transform: scale(0.88);
-        }
-        .chat-fab.hidden {
-            transform: scale(0);
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        /* ---------- RESPONSIVE ---------- */
-        @media (min-width: 600px) {
-            #app {
-                max-width: 600px;
-            }
-            .product-grid {
-                grid-template-columns: repeat(3, 1fr);
-            }
-            .bottom-nav {
-                max-width: 600px;
-            }
-        }
-        @media (min-width: 900px) {
-            #app {
-                max-width: 960px;
-            }
-            .product-grid {
-                grid-template-columns: repeat(4, 1fr);
-            }
-            .bottom-nav {
-                max-width: 960px;
-            }
-        }
-
-        /* ---------- PAGE PLACEHOLDER ---------- */
-        .page-placeholder {
-            text-align: center;
-            padding: 40px 20px;
-            color: var(--text-secondary);
-        }
-        .page-placeholder i {
-            font-size: 48px;
-            color: var(--text-light);
-            margin-bottom: 16px;
-            display: block;
-        }
-        .page-placeholder h3 {
-            font-size: 18px;
-            margin-bottom: 8px;
-            color: var(--text-primary);
-        }
-
-        /* ---------- LOAD MORE BTN ---------- */
-        .load-more-btn {
-            display: block;
-            width: 100%;
-            padding: 14px;
-            border: 1px solid var(--card-border);
-            border-radius: 40px;
-            background: var(--card-bg);
-            color: var(--text-secondary);
-            font-weight: 600;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all var(--transition);
-            margin-top: 20px;
-            text-align: center;
-        }
-        .load-more-btn:active {
-            transform: scale(0.96);
-            background: var(--primary);
-            color: #fff;
-        }
-
-        /* ---------- PROFILE MENU ITEM (Viber style) ---------- */
-        .profile-menu-item {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            padding: 14px 18px;
-            background: var(--card-bg);
-            backdrop-filter: var(--glass-blur);
-            -webkit-backdrop-filter: var(--glass-blur);
-            border: 1px solid var(--card-border);
-            border-radius: 14px;
-            font-size: 15px;
-            font-weight: 500;
-            color: var(--text-primary);
-            cursor: pointer;
-            transition: all var(--transition);
-            width: 100%;
-            text-align: left;
-            font-family: inherit;
-        }
-        .profile-menu-item i:first-child {
-            width: 28px;
-            font-size: 18px;
-            text-align: center;
-        }
-        .profile-menu-item:active {
-            transform: scale(0.97);
-            background: var(--primary);
-            color: #fff;
-        }
-        .profile-menu-item:active i {
-            color: #fff !important;
-        }
-
-        /* ---------- CONFETTI (success) ---------- */
-        @keyframes confetti-fall {
-            0% {
-                transform: translateY(-100px) rotate(0deg);
-                opacity: 1;
-            }
-            100% {
-                transform: translateY(100vh) rotate(720deg);
-                opacity: 0;
-            }
-        }
-        .confetti-piece {
-            position: fixed;
-            width: 10px;
-            height: 10px;
-            border-radius: 2px;
-            animation: confetti-fall 3s linear forwards;
-            z-index: 100;
-            pointer-events: none;
-        }
-    </style>
-</head>
-<body>
-
-    <!-- ============================================================ -->
-    <!-- APP ROOT -->
-    <!-- ============================================================ -->
-    <div id="app">
-
-        <!-- ===== HEADER ===== -->
-        <header class="app-header" id="appHeader">
-            <div class="header-left">
-                <span class="logo"><i class="fas fa-store-alt"></i>Shop</span>
-                <span class="header-clock" id="smartClock">--:--:--</span>
+// =============================================================
+// CART UI (Globally Exposed)
+// =============================================================
+window.updateCartUI = function() {
+    const container = document.getElementById('cartItems');
+    const summary = document.getElementById('cartSummary');
+    const totalEl = document.getElementById('cartTotal');
+    const badge = document.getElementById('cartBadge');
+    const totalItems = window.cart.reduce((sum, i) => sum + (i.quantity || 0), 0);
+    
+    if (badge) {
+        badge.textContent = totalItems;
+        badge.style.display = totalItems > 0 ? 'inline' : 'none';
+    }
+    
+    if (window.cart.length === 0) {
+        if (container) container.innerHTML = `<div style="text-align:center;padding:30px;color:#888;"><i class="fas fa-cart-plus" style="font-size:36px;opacity:0.3;"></i><p>စျေးဝယ်တောင်း ဗလာဖြစ်နေသည်</p></div>`;
+        if (summary) summary.style.display = 'none';
+        return;
+    }
+    
+    let html = '';
+    let total = 0;
+    window.cart.forEach(item => {
+        const qty = item.quantity || 1;
+        const subtotal = (item.price || 0) * qty;
+        total += subtotal;
+        html += `
+            <div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid #eee;align-items:center;">
+                <img src="${item.image || 'https://picsum.photos/seed/'+item.id+'/50/50'}" style="width:50px;height:50px;object-fit:cover;border-radius:8px;">
+                <div style="flex:1;">
+                    <div style="font-weight:600;font-size:14px;">${item.name || 'N/A'}</div>
+                    <div style="color:#e11b1b;font-weight:700;">Ks ${Number(item.price).toLocaleString()}</div>
+                    <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
+                        <button onclick="window.updateQuantity('${item.id}', -1)" style="width:28px;height:28px;border-radius:50%;border:1px solid #ddd;background:transparent;cursor:pointer;">-</button>
+                        <span>${qty}</span>
+                        <button onclick="window.updateQuantity('${item.id}', 1)" style="width:28px;height:28px;border-radius:50%;border:1px solid #ddd;background:transparent;cursor:pointer;">+</button>
+                    </div>
+                </div>
+                <div style="font-weight:700;">Ks ${subtotal.toLocaleString()}</div>
+                <button onclick="window.removeFromCart('${item.id}')" style="background:none;border:none;color:#e11b1b;font-size:18px;cursor:pointer;">✕</button>
             </div>
-            <div class="header-actions">
-                <button class="music-toggle" id="musicToggle" title="သီချင်းဖွင့်စက်">
-                    <i class="fas fa-music"></i>
-                    <span class="badge-dot" id="musicDot"></span>
-                </button>
-                <button class="theme-toggle" id="themeToggle" title="အလင်းအမှောင် ပြောင်းရန်">
-                    <i class="fas fa-moon"></i>
-                </button>
+        `;
+    });
+    if (container) container.innerHTML = html;
+    if (summary) {
+        summary.style.display = 'block';
+        if (totalEl) totalEl.textContent = `Ks ${total.toLocaleString()}`;
+    }
+};
+
+window.addToCartById = function(productId) {
+    const product = window.allProducts.find(p => p.id === productId);
+    if (!product) return;
+    const existing = window.cart.find(item => item.id === productId);
+    if (existing) existing.quantity += 1;
+    else window.cart.push({ ...product, quantity: 1 });
+    localStorage.setItem('premiumCart', JSON.stringify(window.cart));
+    window.updateCartUI();
+    window.showToast(`${product.name} ကို စျေးဝယ်တောင်းထဲ ထည့်လိုက်ပါပြီ။`);
+};
+
+window.removeFromCart = function(productId) {
+    window.cart = window.cart.filter(item => item.id !== productId);
+    localStorage.setItem('premiumCart', JSON.stringify(window.cart));
+    window.updateCartUI();
+};
+
+window.updateQuantity = function(productId, delta) {
+    const item = window.cart.find(p => p.id === productId);
+    if (item) {
+        item.quantity += delta;
+        if (item.quantity <= 0) { window.removeFromCart(productId); return; }
+        localStorage.setItem('premiumCart', JSON.stringify(window.cart));
+        window.updateCartUI();
+    }
+};
+
+// =============================================================
+// PRODUCTS (Globally Exposed)
+// =============================================================
+window.renderProductGrid = function() {
+    const grid = document.getElementById('productGrid');
+    if (!grid) return;
+    const start = 0;
+    const end = window.currentPageNum * PAGE_SIZE;
+    const items = window.filteredProducts.slice(start, end);
+    
+    if (items.length === 0 && window.currentPageNum === 1) {
+        grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:#888;">ပစ္စည်းများ မရှိသေးပါ</div>`;
+        document.getElementById('loadMoreBtn').style.display = 'none';
+        return;
+    }
+    
+    let html = '';
+    items.forEach(p => {
+        html += `
+            <div class="product-item" onclick="window.addToCartById('${p.id}')">
+                <img src="${p.image || 'https://picsum.photos/seed/'+p.id+'/300/300'}" alt="${p.name}" loading="lazy">
+                <div class="product-name">${p.name || 'N/A'}</div>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <span style="text-decoration:line-through;font-size:12px;color:#888;">Ks ${Number(p.originalPrice || p.price * 1.2).toLocaleString()}</span>
+                    <span class="product-price">Ks ${Number(p.price).toLocaleString()}</span>
+                </div>
+                <div style="font-size:12px;color:#888;">⭐ ${p.rating || 0} (${p.reviews || 0})</div>
+                <button onclick="event.stopPropagation();window.addToCartById('${p.id}')" style="width:100%;padding:6px;background:#ff6b00;color:#fff;border:none;border-radius:20px;margin-top:6px;cursor:pointer;font-weight:600;">Add to Cart</button>
             </div>
-        </header> 
+        `;
+    });
+    grid.innerHTML = html;
+    document.getElementById('loadMoreBtn').style.display = (end < window.filteredProducts.length) ? 'block' : 'none';
+};
 
-                    <!-- ===== MAIN CONTENT ===== -->
-        <main class="main-content" id="mainContent">
-
-            <!-- ===== HOME PAGE ===== -->
-            <section class="page active" id="page-home">
-                <div class="category-bar" id="categoryBar">
-                    <span class="category-chip active" data-cat="all">အားလုံး</span>
-                    <span class="category-chip" data-cat="electronics">အီလက်ထရွန်း</span>
-                    <span class="category-chip" data-cat="fashion">ဖက်ရှင်</span>
-                    <span class="category-chip" data-cat="food">အစားအသောက်</span>
-                    <span class="category-chip" data-cat="books">စာအုပ်</span>
-                    <span class="category-chip" data-cat="home">အိမ်သုံး</span>
-                </div>
-                <div class="product-grid" id="productGrid">
-                    <!-- JS မှ ပစ္စည်းများ ဖွင့်ပြမည် -->
-                    <div class="glass-card" style="padding:20px; text-align:center; grid-column:1/-1;">
-                        <i class="fas fa-spinner fa-pulse" style="font-size:28px; color:var(--primary);"></i>
-                        <p class="text-muted mt-8">ကုန်ပစ္စည်းများ ဖွင့်နေသည်...</p>
-                    </div>
-                </div>
-                <button class="load-more-btn" id="loadMoreBtn">နောက်ထပ် ပစ္စည်းများ <i class="fas fa-chevron-down"></i></button>
-            </section>
-
-            <!-- ===== MESSAGES PAGE ===== -->
-            <section class="page" id="page-messages">
-                <div class="glass-card" style="min-height:300px;">
-                    <h3><i class="fas fa-comment-dots text-primary"></i> စကားဝိုင်းများ</h3>
-                    <div id="messageList" style="margin-top:16px;">
-                        <div class="text-muted" style="text-align:center; padding:30px 0;">
-                            <i class="fas fa-inbox" style="font-size:36px; opacity:0.3;"></i>
-                            <p>စာများ မရှိသေးပါ</p>
-                        </div>
-                    </div>
-                    <div style="margin-top:16px; display:flex; gap:10px;">
-                        <input type="text" id="msgInput" placeholder="စာရိုက်ပါ..." style="flex:1; padding:12px 16px; border-radius:40px; border:1px solid var(--card-border); background:var(--card-bg); color:var(--text-primary); outline:none; font-size:14px;" />
-                        <button id="msgSendBtn" style="background:var(--primary); color:#fff; border:none; border-radius:40px; padding:12px 20px; font-weight:600; cursor:pointer;">ပို့မည်</button>
-                    </div>
-                </div>
-            </section>
-
-            <!-- ===== CART PAGE ===== -->
-            <section class="page" id="page-cart">
-                <div class="glass-card" style="min-height:200px;">
-                    <h3><i class="fas fa-shopping-cart text-primary"></i> စျေးဝယ်တောင်း</h3>
-                    <div id="cartItems" style="margin-top:16px;">
-                        <div class="text-muted" style="text-align:center; padding:30px 0;">
-                            <i class="fas fa-cart-plus" style="font-size:36px; opacity:0.3;"></i>
-                            <p>စျေးဝယ်တောင်း ဗလာဖြစ်နေသည်</p>
-                        </div>
-                    </div>
-                    <div id="cartSummary" style="display:none; margin-top:16px; border-top:1px solid var(--card-border); padding-top:16px;">
-                        <div class="flex-between">
-                            <span class="fw-700">စုစုပေါင်း</span>
-                            <span class="fw-700 text-primary" id="cartTotal">Ks 0</span>
-                        </div>
-                        <button id="checkoutBtn" style="width:100%; margin-top:12px; padding:14px; background:var(--primary); color:#fff; border:none; border-radius:40px; font-weight:700; font-size:16px; cursor:pointer; transition:all var(--transition);">ဝယ်မည် <i class="fas fa-arrow-right"></i></button>
-                    </div>
-                </div>
-            </section>
-
-            <!-- ===== PROFILE PAGE ===== -->
-            <section class="page" id="page-profile">
-                <div class="glass-card" style="text-align:center; padding:24px;">
-                    <div style="width:80px; height:80px; border-radius:50%; background:var(--primary); margin:0 auto 12px; display:flex; align-items:center; justify-content:center; font-size:36px; color:#fff; box-shadow:0 8px 24px rgba(225,27,27,0.25);">
-                        <i class="fas fa-user"></i>
-                    </div>
-                    <h3 id="profileName">ဝယ်သူ</h3>
-                    <p class="text-muted" id="profilePhone">09-XXX-XXX-XXX</p>
-                </div>
-
-                <!-- Viber-style Profile Menu -->
-                <div style="margin-top:12px; display:flex; flex-direction:column; gap:6px;">
-                    <button class="profile-menu-item" data-hash="#orders"><i class="fas fa-box" style="color:#e11b1b;"></i> ကျွန်ုပ်၏ အော်ဒါများ <i class="fas fa-chevron-right" style="margin-left:auto; opacity:0.3;"></i></button>
-                    <button class="profile-menu-item" data-hash="#tracking"><i class="fas fa-map-marked-alt" style="color:#ff6b00;"></i> ခြေရာခံခြင်း <i class="fas fa-chevron-right" style="margin-left:auto; opacity:0.3;"></i></button>
-                    <button class="profile-menu-item" data-hash="#wishlist"><i class="fas fa-heart" style="color:#e11b1b;"></i> သိမ်းဆည်းထားသော ပစ္စည်းများ <i class="fas fa-chevron-right" style="margin-left:auto; opacity:0.3;"></i></button>
-                    <button class="profile-menu-item" data-hash="#address"><i class="fas fa-map-pin" style="color:#22c55e;"></i> ပို့ရန်လိပ်စာ <i class="fas fa-chevron-right" style="margin-left:auto; opacity:0.3;"></i></button>
-                    <button class="profile-menu-item" data-hash="#messages"><i class="fas fa-headset" style="color:#3b82f6;"></i> အကူအညီ <i class="fas fa-chevron-right" style="margin-left:auto; opacity:0.3;"></i></button>
-                    <button class="profile-menu-item" data-hash="#settings"><i class="fas fa-cog" style="color:#6b7280;"></i> ဆက်တင်များ <i class="fas fa-chevron-right" style="margin-left:auto; opacity:0.3;"></i></button>
-                    <button class="profile-menu-item" id="logoutBtn" style="color:var(--primary);"><i class="fas fa-sign-out-alt" style="color:var(--primary);"></i> အကောင့်ထွက်ရန် <i class="fas fa-chevron-right" style="margin-left:auto; opacity:0.3;"></i></button>
-                </div>
-            </section>
-
-            <!-- ===== OTHER PAGES (placeholders for routing) ===== -->
-            <section class="page" id="page-orders">
-                <div class="glass-card page-placeholder">
-                    <i class="fas fa-box-open"></i>
-                    <h3>ကျွန်ုပ်၏ အော်ဒါများ</h3>
-                    <p>သင်၏ အော်ဒါမှတ်တမ်းများကို ဤနေရာတွင် ကြည့်ရှုနိုင်သည်။</p>
-                </div>
-            </section>
-            <section class="page" id="page-tracking">
-                <div class="glass-card page-placeholder">
-                    <i class="fas fa-map-marked-alt"></i>
-                    <h3>ခြေရာခံခြင်း</h3>
-                    <p>မြေပုံပေါ်တွင် အော်ဒါတိုးတက်မှုကို ကြည့်ရှုပါ။</p>
-                    <div id="trackingMap" style="height:200px; border-radius:12px; margin-top:12px; background:#e5e7eb;"></div>
-                </div>
-            </section>
-            <section class="page" id="page-wishlist">
-                <div class="glass-card page-placeholder">
-                    <i class="fas fa-heart" style="color:var(--primary);"></i>
-                    <h3>သိမ်းဆည်းထားသော ပစ္စည်းများ</h3>
-                    <p>သင် နှစ်သက်သော ပစ္စည်းများစာရင်း</p>
-                </div>
-            </section>
-            <section class="page" id="page-address">
-                <div class="glass-card page-placeholder">
-                    <i class="fas fa-map-pin" style="color:#22c55e;"></i>
-                    <h3>ပို့ရန်လိပ်စာ</h3>
-                    <p>သင်၏ ပို့ရန်လိပ်စာနှင့် ဖုန်းနံပါတ် ဖြည့်သွင်းပါ။</p>
-                </div>
-            </section>
-            <section class="page" id="page-settings">
-                <div class="glass-card page-placeholder">
-                    <i class="fas fa-cog"></i>
-                    <h3>ဆက်တင်များ</h3>
-                    <p>Website ဆက်တင်များ ပြင်ဆင်ပါ။</p>
-                </div>
-            </section>
-            <section class="page" id="page-product">
-                <!-- Product detail will be rendered by JS -->
-                <div class="glass-card" id="productDetailContainer">
-                    <div class="text-muted" style="text-align:center; padding:30px 0;">
-                        <i class="fas fa-spinner fa-pulse" style="font-size:28px;"></i>
-                        <p>ပစ္စည်းအချက်အလက် ဖွင့်နေသည်...</p>
-                    </div>
-                </div>
-            </section>
-
-            <!-- ===== CHECKOUT PAGES (step by step) ===== -->
-            <section class="page" id="page-checkout-address">
-                <div class="glass-card">
-                    <h3><i class="fas fa-map-pin text-primary"></i> လိပ်စာနှင့် အချက်အလက်</h3>
-                    <form id="checkoutForm1" style="margin-top:16px;">
-                        <input type="text" placeholder="အမည်" id="chkName" style="width:100%; padding:14px; border-radius:12px; border:1px solid var(--card-border); background:var(--card-bg); color:var(--text-primary); margin-bottom:12px; font-size:15px;" required />
-                        <input type="tel" placeholder="ဖုန်းနံပါတ်" id="chkPhone" style="width:100%; padding:14px; border-radius:12px; border:1px solid var(--card-border); background:var(--card-bg); color:var(--text-primary); margin-bottom:12px; font-size:15px;" required />
-                        <textarea placeholder="နေရပ်လိပ်စာ အပြည့်အစုံ" id="chkAddress" rows="3" style="width:100%; padding:14px; border-radius:12px; border:1px solid var(--card-border); background:var(--card-bg); color:var(--text-primary); margin-bottom:12px; font-size:15px; resize:vertical;" required></textarea>
-                        <button type="submit" style="width:100%; padding:14px; background:var(--primary); color:#fff; border:none; border-radius:40px; font-weight:700; font-size:16px; cursor:pointer;">ရှေ့ဆက်မည် <i class="fas fa-arrow-right"></i></button>
-                    </form>
-                </div>
-            </section>
-            <section class="page" id="page-checkout-payment">
-                <div class="glass-card" style="text-align:center;">
-                    <h3><i class="fas fa-credit-card text-secondary"></i> ငွေလွှဲပါ (Wave Pay)</h3>
-                    <p style="margin:12px 0 8px; font-size:15px;">အကောင့်အမည်: <strong>Thae Su Phuo Ko</strong></p>
-                    <p style="font-size:18px; font-weight:700; color:var(--primary);">09 781 145 573</p>
-                    <button id="copyWaveBtn" style="padding:10px 24px; border:none; background:var(--secondary); color:#fff; border-radius:40px; font-weight:600; cursor:pointer; margin-top:8px;"><i class="fas fa-copy"></i> ကူးယူမည်</button>
-                    <div style="margin-top:16px; font-size:14px; color:var(--text-secondary);">ငွေလွှဲရန် ကျန်အချိန်: <span id="countdownTimer" style="font-weight:700; color:var(--primary);">60:00</span></div>
-                    <button id="paidBtn" style="margin-top:16px; padding:14px 32px; background:var(--primary); color:#fff; border:none; border-radius:40px; font-weight:700; font-size:16px; cursor:pointer;">ငွေလွှဲပြီးပါပြီ (Paid)</button>
-                </div>
-            </section>
-            <section class="page" id="page-checkout-screenshot">
-                <div class="glass-card" style="text-align:center;">
-                    <h3><i class="fas fa-image text-primary"></i> Screenshot တင်ရန်</h3>
-                    <div id="dropZone" style="border:2px dashed var(--card-border); border-radius:16px; padding:30px 20px; margin-top:16px; background:var(--card-bg); cursor:pointer;">
-                        <i class="fas fa-cloud-upload-alt" style="font-size:40px; color:var(--text-light);"></i>
-                        <p class="text-muted mt-8">ဓာတ်ပုံဆွဲချ သို့မဟုတ် နှိပ်၍ တင်ရန်</p>
-                        <input type="file" id="screenshotInput" accept="image/*" style="display:none;" />
-                    </div>
-                    <button id="confirmOrderBtn" style="margin-top:16px; padding:14px 32px; background:var(--primary); color:#fff; border:none; border-radius:40px; font-weight:700; font-size:16px; cursor:pointer;">အော်ဒါအပြီးသတ်မည်</button>
-                </div>
-            </section>
-
-            <!-- ===== SUCCESS PAGE ===== -->
-            <section class="page" id="page-success">
-                <div class="glass-card" style="text-align:center; padding:40px 20px;">
-                    <i class="fas fa-check-circle" style="font-size:64px; color:#22c55e;"></i>
-                    <h3 class="mt-8">အော်ဒါ အောင်မြင်ပါသည်!</h3>
-                    <p class="text-muted">ကျေးဇူးတင်ပါတယ်။ သင့်အော်ဒါကို စီမံဆောင်ရွက်နေပါပြီ။</p>
-                    <button id="backHomeBtn" style="margin-top:16px; padding:12px 32px; background:var(--primary); color:#fff; border:none; border-radius:40px; font-weight:600; cursor:pointer;">မူလစာမျက်နှာသို့</button>
-                </div>
-            </section>
-
-        </main>
-
-        <!-- ===== BOTTOM NAVIGATION ===== -->
-        <nav class="bottom-nav" id="bottomNav">
-            <button class="nav-item active" data-hash="#home"><i class="fas fa-home"></i><span>Home</span></button>
-            <button class="nav-item" data-hash="#messages"><i class="fas fa-comment-dots"></i><span>Messages</span><span class="badge hidden" id="msgBadge">0</span></button>
-            <button class="nav-item" data-hash="#cart"><i class="fas fa-shopping-cart"></i><span>Cart</span><span class="badge hidden" id="cartBadge">0</span></button>
-            <button class="nav-item" data-hash="#profile"><i class="fas fa-user"></i><span>Profile</span></button>
-        </nav>
-
-        <!-- ===== FLOATING CHAT WIDGET ===== -->
-        <button class="chat-fab" id="chatFab"><i class="fas fa-comment"></i></button>
-
-    </div>
-    <!-- END #app -->
-
-    <!-- ============================================================ -->
-    <!-- FIREBASE CONFIG (ဤနေရာတွင် ထည့်သွင်းထားသည်) -->
-    <!-- ============================================================ -->
-    <script>
-        // Firebase config object (သတ်မှတ်ထားသော credentials)
-        const firebaseConfig = {
-            apiKey: "AIzaSyDSu2XksfUZ6mAfktUpBqFtNxrgj96h1l4",
-            authDomain: "app-my-caee3.firebaseapp.com",
-            projectId: "app-my-caee3",
-            storageBucket: "app-my-caee3.firebasestorage.app",
-            messagingSenderId: "169669907659",
-            appId: "1:169669907659:web:8fba75e7aed449e3ffb74e",
-            measurementId: "G-RTM9J8L6R1"
-        };
-
-        // Firebase ကို Initialize လုပ်ခြင်း
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-        const auth = firebase.auth();
-        const storage = firebase.storage();
-
-        // သိမ်းဆည်းထားသော Theme ကို ဖတ်ရန်
-        const savedTheme = localStorage.getItem('theme') || 'light';
-        if (savedTheme === 'dark') {
-            document.documentElement.setAttribute('data-theme', 'dark');
-            document.getElementById('themeToggle').innerHTML = '<i class="fas fa-sun"></i>';
-        }
-
-        console.log('✅ Firebase initialized. Part 1 (Lines 1-300) complete.');
-    </script>
-
-    <!-- ============================================================ -->
-    <!-- ဤနေရာတွင် Part 1 ပြီးဆုံးပါသည်။ လိုင်း ၃၀၀ အတိအကျ -->
-    <!-- ============================================================ -->
-        // Admin မှ multiplier ကို ပြောင်းလဲနိုင်ရန် (ဒီနေရာတွင် သတ်မှတ်မည်)
-        let slowModeMultiplier = 6; // ပုံမှန် 6 ဆ နှေး (Admin မှ ပြောင်းနိုင်)
-        let isSlowModeActive = false;
-        let clockIntervalId = null;
-
-        // နာရီပြသရန် အချိန်တွက်နည်း
-        function updateClockDisplay() {
-            if (!smartClockEl) return;
-
-            // Virtual time calculation
-            const now = Date.now();
-            const realElapsed = (now - clockState.startTime) / 1000; // real seconds
-
-            let displaySeconds;
-            if (clockState.isSlowMode) {
-                // Slow Mode: actual real time passed * (1 / multiplier)
-                const slowStart = clockState.slowModeActivatedAt || now;
-                const slowRealElapsed = (now - slowStart) / 1000;
-                const normalElapsed = (slowStart - clockState.startTime) / 1000;
-                displaySeconds = normalElapsed + (slowRealElapsed / slowModeMultiplier);
-            } else {
-                displaySeconds = realElapsed;
-            }
-
-            // စက္ကန့် ၆၀ (၁ မိနစ်) ပြည့်ပြီဆိုရင် Slow Mode စတင်ရန် စစ်ဆေးခြင်း
-            if (!clockState.isSlowMode && realElapsed >= 60) {
-                clockState.isSlowMode = true;
-                clockState.slowModeActivatedAt = now;
-                saveClockState(clockState);
-                isSlowModeActive = true;
-                console.log('🐢 Slow Mode activated!');
-            }
-
-            // နာရီ၊ မိနစ်၊ စက္ကန့် ပြောင်းလဲတွက်ချက်ခြင်း
-            const totalSec = Math.floor(displaySeconds);
-            const hours = Math.floor(totalSec / 3600) % 24;
-            const minutes = Math.floor((totalSec % 3600) / 60);
-            const seconds = totalSec % 60;
-
-            // ပုံစံကျအောင်ပြသခြင်း (HH:MM:SS)
-            const pad = (n) => String(n).padStart(2, '0');
-            smartClockEl.textContent = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
-
-            // Slow Mode ဖြစ်နေလျှင် နာရီအရောင် ပြောင်းရန် (optional)
-            if (clockState.isSlowMode) {
-                smartClockEl.style.color = 'var(--secondary)';
-            } else {
-                smartClockEl.style.color = '';
-            }
-        }
-
-        // နာရီကို စတင်ဖွင့်ခြင်း (Interval 1 sec)
-        function startClock() {
-            if (clockIntervalId) clearInterval(clockIntervalId);
-            updateClockDisplay(); // ချက်ချင်းပြသရန်
-            clockIntervalId = setInterval(updateClockDisplay, 1000);
-        }
-
-        // Page ပြန်လည် load ချိန်တွင် နာရီကို ဆက်တိုင်းရန်
-        startClock();
-
-        // =============================================================
-        // ၅။ PRODUCT RENDERING (Mock Data + Firebase Real-time Sync)
-        // =============================================================
-        // လက်ရှိတွင် Mock Data ဖြင့် စမ်းသပ်ပြီး၊ နောက်ပိုင်း Firebase နှင့် ချိတ်ဆက်မည်
-        let allProducts = [];
-        let filteredProducts = [];
-        let currentPageNum = 1;
-        const PAGE_SIZE = 20;
-
-        // Mock Product Data (ပုံများအတွက် placeholder images)
-        function generateMockProducts(count = 50) {
-            const categories = ['electronics', 'fashion', 'food', 'books', 'home'];
-            const names = ['Smartphone X', 'Laptop Pro', 'T-Shirt Cotton', 'Coffee Beans', 'Novel Book', 'Desk Lamp', 'Headphones', 'Sneakers', 'Watch', 'Backpack'];
+window.loadProducts = function() {
+    if (!db) {
+        console.error('❌ Firestore not initialized');
+        return;
+    }
+    console.log('📦 Loading products...');
+    db.collection('products')
+        .get()
+        .then((snapshot) => {
             const products = [];
-            for (let i = 1; i <= count; i++) {
-                const cat = categories[i % categories.length];
-                const name = names[i % names.length] + ' ' + i;
-                const price = Math.floor(Math.random() * 100) + 10;
-                const discount = Math.floor(Math.random() * 30) + 5;
-                const finalPrice = Math.floor(price * (1 - discount / 100));
-                products.push({
-                    id: 'prod_' + i,
-                    name: name,
-                    category: cat,
-                    originalPrice: price * 1000, // Ks
-                    price: finalPrice * 1000,
-                    discount: discount,
-                    rating: (3 + Math.random() * 2).toFixed(1),
-                    reviews: Math.floor(Math.random() * 200) + 5,
-                    stock: Math.floor(Math.random() * 50) + 1,
-                    sold: Math.floor(Math.random() * 100) + 1,
-                    image: `https://picsum.photos/seed/${i}/300/300`,
-                    location: 'Myanmar [Burma]'
-                });
-            }
-            return products;
-        }
-
-        allProducts = generateMockProducts(100);
-        filteredProducts = [...allProducts];
-
-        // Category Filter
-        function filterProducts(category) {
-            if (category === 'all') {
-                filteredProducts = [...allProducts];
-            } else {
-                filteredProducts = allProducts.filter(p => p.category === category);
-            }
-            currentPageNum = 1;
-            renderProductGrid();
-        }
-
-        // Category bar event listeners
-        categoryBar.querySelectorAll('.category-chip').forEach(chip => {
-            chip.addEventListener('click', function() {
-                categoryBar.querySelectorAll('.category-chip').forEach(c => c.classList.remove('active'));
-                this.classList.add('active');
-                const cat = this.dataset.cat;
-                filterProducts(cat);
+            snapshot.forEach(doc => {
+                products.push({ id: doc.id, ...doc.data() });
             });
-        });
-
-        // Render Product Grid
-        function renderProductGrid() {
-            const start = 0;
-            const end = currentPageNum * PAGE_SIZE;
-            const pageItems = filteredProducts.slice(start, end);
-
-            if (pageItems.length === 0 && currentPageNum === 1) {
-                productGrid.innerHTML = `<div class="glass-card" style="padding:30px; text-align:center; grid-column:1/-1;">
-                    <i class="fas fa-box-open" style="font-size:32px; color:var(--text-light);"></i>
-                    <p class="text-muted mt-8">ပစ္စည်းများ မရှိသေးပါ</p>
-                </div>`;
-                loadMoreBtn.style.display = 'none';
-                return;
-            }
-
-            let html = '';
-            pageItems.forEach(p => {
-                html += `
-                    <div class="glass-card" style="padding:12px; position:relative; cursor:pointer;" onclick="window.navigateToProduct('${p.id}')">
-                        <div style="position:relative; width:100%; aspect-ratio:1/1; border-radius:12px; overflow:hidden; background:#f0f0f0;">
-                            <img src="${p.image}" alt="${p.name}" style="width:100%; height:100%; object-fit:cover;" loading="lazy" />
-                            <span class="discount-badge">-${p.discount}%</span>
-                        </div>
-                        <div style="margin-top:8px;">
-                            <div style="font-weight:600; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.name}</div>
-                            <div style="display:flex; gap:8px; align-items:center; margin-top:4px; flex-wrap:wrap;">
-                                <span style="font-size:12px; color:var(--text-light); text-decoration:line-through;">Ks ${p.originalPrice.toLocaleString()}</span>
-                                <span style="font-size:16px; font-weight:700; color:var(--primary);">Ks ${p.price.toLocaleString()}</span>
-                            </div>
-                            <div style="display:flex; align-items:center; gap:4px; margin-top:4px; font-size:12px; color:var(--text-secondary);">
-                                <span>${'★'.repeat(Math.floor(p.rating))}${p.rating % 1 >= 0.5 ? '☆' : ''}</span>
-                                <span>(${p.reviews})</span>
-                                <span style="margin-left:auto; font-size:11px; color:var(--text-light);">🔥 ${p.sold} sold</span>
-                            </div>
-                            <div style="display:flex; justify-content:space-between; margin-top:6px; font-size:11px; color:var(--text-light);">
-                                <span><i class="fas fa-map-pin"></i> ${p.location}</span>
-                                <span style="color:${p.stock > 0 ? '#22c55e' : 'var(--primary)'};">${p.stock > 0 ? '✅ In Stock' : 'Out of Stock'}</span>
-                            </div>
-                            <button class="add-to-cart-btn" data-id="${p.id}" style="margin-top:8px; width:100%; padding:6px; background:var(--secondary); color:#fff; border:none; border-radius:30px; font-weight:600; font-size:13px; cursor:pointer;">Add to Cart</button>
-                        </div>
-                    </div>
-                `;
-            });
-
-            productGrid.innerHTML = html;
-            loadMoreBtn.style.display = (end < filteredProducts.length) ? 'block' : 'none';
-
-            // Add to Cart buttons
-            productGrid.querySelectorAll('.add-to-cart-btn').forEach(btn => {
-                btn.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    const id = this.dataset.id;
-                    const product = allProducts.find(p => p.id === id);
-                    if (product) addToCart(product);
-                });
-            });
-        }
-
-        // Load more
-        loadMoreBtn.addEventListener('click', function() {
-            currentPageNum++;
-            renderProductGrid();
-        });
-
-        // Navigate to product detail (hash routing)
-        window.navigateToProduct = function(id) {
-            navigateTo(`#product/${id}`);
-        };
-
-        // Product Detail Render
-        function renderProductDetail(id) {
-            const container = document.getElementById('productDetailContainer');
-            const product = allProducts.find(p => p.id === id);
-            if (!product) {
-                container.innerHTML = `<div class="text-muted" style="text-align:center; padding:30px;"><i class="fas fa-exclamation-triangle"></i> ပစ္စည်းမတွေ့ပါ</div>`;
-                return;
-            }
-            container.innerHTML = `
-                <div style="display:flex; flex-direction:column; gap:16px;">
-                    <img src="${product.image}" alt="${product.name}" style="width:100%; border-radius:16px; aspect-ratio:1/1; object-fit:cover; transition:transform 0.3s;" onmouseenter="this.style.transform='scale(1.05)'" onmouseleave="this.style.transform='scale(1)'" />
-                    <h2>${product.name}</h2>
-                    <div><span style="text-decoration:line-through; color:var(--text-light);">Ks ${product.originalPrice.toLocaleString()}</span> <span style="font-size:24px; font-weight:700; color:var(--primary);">Ks ${product.price.toLocaleString()}</span></div>
-                    <div>⭐ ${product.rating} (${product.reviews} reviews)</div>
-                    <div>📍 ${product.location}</div>
-                    <div>📦 Stock: ${product.stock}</div>
-                    <button onclick="addToCart(window.currentProduct)" style="padding:14px; background:var(--primary); color:#fff; border:none; border-radius:40px; font-weight:700; font-size:16px; cursor:pointer;">Cart ထဲထည့်မည်</button>
-                    <div style="margin-top:16px; border-top:1px solid var(--card-border); padding-top:16px;">
-                        <h4>💬 Review ရေးရန်</h4>
-                        <div style="display:flex; gap:4px; margin:8px 0;">
-                            ${[1,2,3,4,5].map(s => `<button class="star-rating" data-val="${s}" style="font-size:28px; background:none; border:none; cursor:pointer; color:var(--text-light);">★</button>`).join('')}
-                        </div>
-                        <textarea placeholder="သင့်အမြင်..." rows="3" style="width:100%; padding:12px; border-radius:12px; border:1px solid var(--card-border); background:var(--card-bg); color:var(--text-primary); resize:vertical;"></textarea>
-                        <button style="margin-top:8px; padding:10px 24px; background:var(--secondary); color:#fff; border:none; border-radius:40px; font-weight:600; cursor:pointer;">Submit Review</button>
-                    </div>
+            window.allProducts = products;
+            window.filteredProducts = [...products];
+            window.currentPageNum = 1;
+            window.renderProductGrid();
+            console.log(`✅ Products loaded: ${products.length}`);
+        })
+        .catch((err) => {
+            console.warn('⚠️ Firestore error:', err.message);
+            document.getElementById('productGrid').innerHTML = `
+                <div style="grid-column:1/-1;text-align:center;padding:40px;color:#dc2626;">
+                    <i class="fas fa-exclamation-circle" style="font-size:28px;"></i>
+                    <p>ဒေတာများ ဖွင့်ရာတွင် အမှားရှိသည်။</p>
+                    <p style="font-size:12px;color:#888;">${err.message}</p>
+                    <button onclick="window.loadProducts()" style="margin-top:12px;padding:8px 24px;background:#e11b1b;color:#fff;border:none;border-radius:20px;cursor:pointer;">ပြန်ကြိုးစားမည်</button>
                 </div>
             `;
-            window.currentProduct = product;
-        }
-
-        // =============================================================
-        // ၆။ CART LOGIC (LocalStorage + UI)
-        // =============================================================
-        let cart = JSON.parse(localStorage.getItem('premiumCart')) || [];
-
-        function saveCart() {
-            localStorage.setItem('premiumCart', JSON.stringify(cart));
-            updateCartUI();
-        }
-
-        function addToCart(product) {
-            const existing = cart.find(item => item.id === product.id);
-            if (existing) {
-                existing.quantity += 1;
-            } else {
-                cart.push({ ...product, quantity: 1 });
-            }
-            saveCart();
-            // သေးငယ်တဲ့ Feedback
-            alert(`${product.name} ကို စျေးဝယ်တောင်းထဲ ထည့်လိုက်ပါပြီ။`);
-        }
-
-        function removeFromCart(id) {
-            cart = cart.filter(item => item.id !== id);
-            saveCart();
-        }
-
-        function updateQuantity(id, delta) {
-            const item = cart.find(p => p.id === id);
-            if (item) {
-                item.quantity += delta;
-                if (item.quantity <= 0) {
-                    removeFromCart(id);
-                    return;
-                }
-                saveCart();
-            }
-        }
-
-        function updateCartUI() {
-            const container = document.getElementById('cartItems');
-            const summary = document.getElementById('cartSummary');
-            const totalEl = document.getElementById('cartTotal');
-            const badge = document.getElementById('cartBadge');
-
-            const totalItems = cart.reduce((sum, i) => sum + i.quantity, 0);
-            badge.textContent = totalItems;
-            badge.classList.toggle('hidden', totalItems === 0);
-
-            if (cart.length === 0) {
-                container.innerHTML = `<div class="text-muted" style="text-align:center; padding:30px 0;"><i class="fas fa-cart-plus" style="font-size:36px; opacity:0.3;"></i><p>စျေးဝယ်တောင်း ဗလာဖြစ်နေသည်</p></div>`;
-                summary.style.display = 'none';
-                return;
-            }
-
-            let html = '';
-            let total = 0;
-            cart.forEach(item => {
-                const subtotal = item.price * item.quantity;
-                total += subtotal;
-                html += `
-                    <div style="display:flex; gap:12px; padding:10px 0; border-bottom:1px solid var(--card-border); align-items:center;">
-                        <img src="${item.image}" style="width:60px; height:60px; object-fit:cover; border-radius:10px;" />
-                        <div style="flex:1;">
-                            <div style="font-weight:600; font-size:14px;">${item.name}</div>
-                            <div style="font-size:13px; color:var(--primary);">Ks ${item.price.toLocaleString()}</div>
-                            <div style="display:flex; align-items:center; gap:8px; margin-top:4px;">
-                                <button onclick="updateQuantity('${item.id}', -1)" style="width:28px; height:28px; border-radius:50%; border:1px solid var(--card-border); background:transparent; cursor:pointer;">-</button>
-                                <span>${item.quantity}</span>
-                                <button onclick="updateQuantity('${item.id}', 1)" style="width:28px; height:28px; border-radius:50%; border:1px solid var(--card-border); background:transparent; cursor:pointer;">+</button>
-                            </div>
-                        </div>
-                        <div style="font-weight:700;">Ks ${subtotal.toLocaleString()}</div>
-                        <button onclick="removeFromCart('${item.id}')" style="background:none; border:none; color:var(--primary); font-size:18px; cursor:pointer;"><i class="fas fa-trash"></i></button>
-                    </div>
-                `;
-            });
-
-            container.innerHTML = html;
-            summary.style.display = 'block';
-            totalEl.textContent = `Ks ${total.toLocaleString()}`;
-        }
-
-        // Make functions globally accessible for inline onclick
-        window.addToCart = addToCart;
-        window.removeFromCart = removeFromCart;
-        window.updateQuantity = updateQuantity;
-
-        // =============================================================
-        // ၇။ CHECKOUT FLOW (Step by Step)
-        // =============================================================
-        // Step 1: Address form
-        checkoutForm1.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const name = document.getElementById('chkName').value.trim();
-            const phone = document.getElementById('chkPhone').value.trim();
-            const address = document.getElementById('chkAddress').value.trim();
-            if (name && phone && address) {
-                // Save to session or localStorage for later
-                sessionStorage.setItem('checkoutName', name);
-                sessionStorage.setItem('checkoutPhone', phone);
-                sessionStorage.setItem('checkoutAddress', address);
-                navigateTo('#checkout-payment');
-            } else {
-                alert('ကျေးဇူးပြုပြီး အချက်အလက်အားလုံးကို ဖြည့်သွင်းပါ။');
-            }
         });
+};
 
-        // Step 2: Payment (Wave Pay)
-        let countdownInterval = null;
-        let countdownSeconds = 3600; // 60 minutes
+// Category filter
+document.querySelectorAll('.category-chip').forEach(chip => {
+    chip.addEventListener('click', function() {
+        document.querySelectorAll('.category-chip').forEach(c => {
+            c.style.background = '#eee';
+            c.style.color = '#333';
+        });
+        this.style.background = '#e11b1b';
+        this.style.color = '#fff';
+        const cat = this.dataset.cat;
+        window.filteredProducts = cat === 'all' ? [...window.allProducts] : window.allProducts.filter(p => p.category === cat);
+        window.currentPageNum = 1;
+        window.renderProductGrid();
+    });
+});
 
-        function startCountdown() {
-            if (countdownInterval) clearInterval(countdownInterval);
-            countdownSeconds = 3600;
-            updateCountdownDisplay();
-            countdownInterval = setInterval(() => {
-                countdownSeconds--;
-                updateCountdownDisplay();
-                if (countdownSeconds <= 0) {
-                    clearInterval(countdownInterval);
-                    alert('⏰ အချိန်ကုန်သွားပါပြီ။ အော်ဒါကို Auto-cancel လုပ်ပါမည်။');
-                    navigateTo('#home');
-                }
-            }, 1000);
+// Load more
+document.getElementById('loadMoreBtn').addEventListener('click', function() {
+    window.currentPageNum++;
+    window.renderProductGrid();
+});
+
+// =============================================================
+// MESSAGES (Globally Exposed)
+// =============================================================
+window.renderMessages = function() {
+    const container = document.getElementById('messageList');
+    if (!container) return;
+    if (window.messages.length === 0) {
+        container.innerHTML = `<div style="text-align:center;padding:30px;color:#888;"><i class="fas fa-inbox" style="font-size:36px;opacity:0.3;"></i><p>စာများ မရှိသေးပါ</p></div>`;
+        return;
+    }
+    let html = '';
+    window.messages.forEach(msg => {
+        const align = msg.isUser ? 'right' : 'left';
+        const bg = msg.isUser ? '#e11b1b' : '#eee';
+        const color = msg.isUser ? '#fff' : '#333';
+        html += `
+            <div style="text-align:${align};margin-bottom:6px;">
+                <span style="display:inline-block;padding:8px 14px;border-radius:12px;background:${bg};color:${color};max-width:80%;">
+                    ${msg.text}
+                    <div style="font-size:10px;opacity:0.7;margin-top:2px;">${msg.time || ''}</div>
+                </span>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+    container.scrollTop = container.scrollHeight;
+};
+
+// Send message
+document.getElementById('msgSendBtn').addEventListener('click', function() {
+    const input = document.getElementById('msgInput');
+    const text = input.value.trim();
+    if (!text) return;
+    if (!db) { window.showToast('Firebase ချိတ်ဆက်မှု မရှိပါ။'); return; }
+    const userId = auth.currentUser ? auth.currentUser.uid : 'guest';
+    db.collection('messages').add({
+        text: text,
+        time: new Date().toLocaleTimeString(),
+        userId: userId,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+        isUser: true
+    }).then(() => {
+        input.value = '';
+        setTimeout(() => {
+            const replies = ['မင်္ဂလာပါ! ဘာကူညီရမလဲ?', 'ကျေးဇူးပါ။ ပြန်လည်ဆက်သွယ်ပါမယ်။', 'အော်ဒါအခြေအနေ စစ်ဆေးပေးပါ့မယ်။'];
+            db.collection('messages').add({
+                text: replies[Math.floor(Math.random() * replies.length)],
+                time: new Date().toLocaleTimeString(),
+                userId: 'bot',
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                isUser: false
+            });
+        }, 1500);
+    }).catch(err => {
+        console.error('Send message error:', err);
+        window.showToast('စာပို့ရာတွင် အမှားရှိသည်။');
+    });
+});
+
+document.getElementById('msgInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') document.getElementById('msgSendBtn').click();
+});
+
+// Listen to messages
+function listenMessages() {
+    if (!db) return;
+    db.collection('messages')
+        .orderBy('timestamp', 'asc')
+        .limit(100)
+        .onSnapshot((snapshot) => {
+            window.messages = [];
+            snapshot.forEach(doc => {
+                window.messages.push({ id: doc.id, ...doc.data() });
+            });
+            window.renderMessages();
+        }, (err) => {
+            console.error('Message listener error:', err);
+        });
+}
+
+// =============================================================
+// TOAST
+// =============================================================
+window.showToast = function(message) {
+    const existing = document.querySelector('.toast');
+    if (existing) existing.remove();
+    const div = document.createElement('div');
+    div.className = 'toast';
+    div.textContent = message;
+    document.body.appendChild(div);
+    setTimeout(() => div.remove(), 3000);
+};
+
+// =============================================================
+// CHECKOUT
+// =============================================================
+document.getElementById('checkoutBtn').addEventListener('click', function() {
+    if (window.cart.length === 0) {
+        window.showToast('စျေးဝယ်တောင်းထဲ ပစ္စည်းမရှိပါ။');
+        return;
+    }
+    window.navigateTo('#checkout-address');
+});
+
+document.getElementById('checkoutForm1').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const name = document.getElementById('chkName').value.trim();
+    const phone = document.getElementById('chkPhone').value.trim();
+    const address = document.getElementById('chkAddress').value.trim();
+    if (!name || !phone || !address) {
+        window.showToast('ကျေးဇူးပြုပြီး အချက်အလက်အားလုံးကို ဖြည့်သွင်းပါ။');
+        return;
+    }
+    sessionStorage.setItem('checkoutName', name);
+    sessionStorage.setItem('checkoutPhone', phone);
+    sessionStorage.setItem('checkoutAddress', address);
+    window.navigateTo('#checkout-payment');
+});
+
+let countdownSeconds = 3600;
+let countdownInterval = null;
+
+document.getElementById('paidBtn').addEventListener('click', function() {
+    if (countdownInterval) clearInterval(countdownInterval);
+    window.showToast('✅ ငွေလွှဲပြီးပါပြီ။');
+    window.cart = [];
+    localStorage.setItem('premiumCart', JSON.stringify(window.cart));
+    window.updateCartUI();
+    window.navigateTo('#success');
+});
+
+document.getElementById('copyWaveBtn').addEventListener('click', function() {
+    navigator.clipboard?.writeText('Thae Su Phuo Ko - 09 781 145 573')
+        .then(() => window.showToast('✅ ကူးယူပြီးပါပြီ။'))
+        .catch(() => alert('Thae Su Phuo Ko - 09 781 145 573'));
+});
+
+document.getElementById('backHomeBtn').addEventListener('click', function() {
+    window.navigateTo('#home');
+});
+
+// =============================================================
+// PROFILE
+// =============================================================
+document.getElementById('logoutBtn').addEventListener('click', function() {
+    if (confirm('အကောင့်မှ ထွက်မည် သေချာပါသလား?')) {
+        localStorage.removeItem('premiumCart');
+        window.cart = [];
+        window.updateCartUI();
+        window.showToast('အကောင့်မှ ထွက်လိုက်ပါပြီ။');
+        window.navigateTo('#home');
+    }
+});
+
+// =============================================================
+// CHAT FAB
+// =============================================================
+document.getElementById('chatFab').addEventListener('click', function() {
+    window.navigateTo('#messages');
+});
+
+// =============================================================
+// AUTH
+// =============================================================
+if (auth) {
+    auth.onAuthStateChanged((user) => {
+        if (user) {
+            console.log('✅ Auth: User logged in', user.uid);
+            document.getElementById('profileName').textContent = user.displayName || 'ဝယ်သူ';
+            document.getElementById('profilePhone').textContent = user.phoneNumber || '09-XXX-XXX-XXX';
+        } else {
+            auth.signInAnonymously().catch(err => console.warn('Anonymous sign-in error:', err));
         }
+    });
+}
 
-        function updateCountdownDisplay() {
-            const mins = Math.floor(countdownSeconds / 60);
-            const secs = countdownSeconds % 60;
-            if (countdownTimer) {
-                countdownTimer.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-            }
-        }
+// =============================================================
+// SMART CLOCK
+// =============================================================
+let clockStart = Date.now();
+let isSlowMode = false;
+let slowModeMultiplier = 6;
 
-                    // Copy Wave Pay
-            copyWaveBtn.addEventListener('click', function() {
-                const text = 'Thae Su Phuo Ko - 09 781 145 573';
-                navigator.clipboard.writeText(text).then(() => {
-                    alert('✅ အကောင့်နံပါတ်ကို ကူးယူပြီးပါပြီ။');
-                }).catch(() => {
-                    prompt('အောက်ပါအတိုင်း ကူးယူပါ:', text);
-                });
-            });
+function updateClock() {
+    const el = document.getElementById('smartClock');
+    if (!el) return;
+    const elapsed = (Date.now() - clockStart) / 1000;
+    const totalSec = isSlowMode ? (elapsed / slowModeMultiplier) : elapsed;
+    const hours = Math.floor(totalSec / 3600) % 24;
+    const mins = Math.floor((totalSec % 3600) / 60);
+    const secs = Math.floor(totalSec % 60);
+    el.textContent = `${String(hours).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+    if (elapsed >= 60 && !isSlowMode) {
+        isSlowMode = true;
+        el.style.color = '#ff6b00';
+    }
+}
+setInterval(updateClock, 1000);
+updateClock();
 
-            // Paid button -> go to screenshot step
-            paidBtn.addEventListener('click', function() {
-                if (countdownInterval) clearInterval(countdownInterval);
-                navigateTo('#checkout-screenshot');
-            });
+// =============================================================
+// THEME TOGGLE
+// =============================================================
+document.getElementById('themeToggle').addEventListener('click', function() {
+    const isDark = document.documentElement.style.backgroundColor === '#1a1a2e';
+    document.documentElement.style.backgroundColor = isDark ? '#f5f5f5' : '#1a1a2e';
+    document.documentElement.style.color = isDark ? '#333' : '#eee';
+    this.textContent = isDark ? '🌙' : '☀️';
+});
 
-            // Start countdown when entering payment page
-            // We check in the navigation logic, but let's add a manual trigger
-            // We'll hook it in the route change.
+// =============================================================
+// INIT
+// =============================================================
+function init() {
+    console.log('🚀 Initializing app...');
+    window.loadProducts();
+    window.updateCartUI();
+    listenMessages();
+    const hash = window.location.hash || '#home';
+    window.navigateTo(hash);
+    console.log('✅ App initialized.');
+}
 
-            // Step 3: Screenshot Upload
-            dropZone.addEventListener('click', () => screenshotInput.click());
-            dropZone.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                dropZone.style.borderColor = 'var(--primary)';
-            });
-            dropZone.addEventListener('dragleave', () => {
-                dropZone.style.borderColor = 'var(--card-border)';
-            });
-            dropZone.addEventListener('drop', (e) => {
-                e.preventDefault();
-                dropZone.style.borderColor = 'var(--card-border)';
-                if (e.dataTransfer.files.length) {
-                    screenshotInput.files = e.dataTransfer.files;
-                    alert('📸 ဓာတ်ပုံ တင်ပြီးပါပြီ။');
-                }
-            });
-            screenshotInput.addEventListener('change', function() {
-                if (this.files.length) {
-                    alert('📸 ဓာတ်ပုံ တင်ပြီးပါပြီ။');
-                }
-            });
-
-            // Confirm Order
-            confirmOrderBtn.addEventListener('click', function() {
-                if (screenshotInput.files.length === 0) {
-                    alert('ကျေးဇူးပြုပြီး ငွေလွှဲပြီးကြောင်း Screenshot တင်ပေးပါ။');
-                    return;
-                }
-                // Firebase သို့ သိမ်းရန် (နောက်ပိုင်း)
-                alert('✅ အော်ဒါအောင်မြင်ပါသည်! ကျေးဇူးတင်ပါတယ်။');
-                // Confetti effect (basic)
-                for (let i = 0; i < 50; i++) {
-                    const el = document.createElement('div');
-                    el.className = 'confetti-piece';
-                    el.style.left = Math.random() * 100 + 'vw';
-                    el.style.top = '-10px';
-                    el.style.background = ['#e11b1b', '#ff6b00', '#facc15', '#22c55e', '#3b82f6'][Math.floor(Math.random() * 5)];
-                    el.style.animationDuration = (2 + Math.random() * 2) + 's';
-                    document.body.appendChild(el);
-                    setTimeout(() => el.remove(), 4000);
-                }
-                navigateTo('#success');
-                // Clear cart
-                cart = [];
-                saveCart();
-            });
-
-            // =============================================================
-            // ၈။ MESSAGING (UI + Firebase ready)
-            // =============================================================
-            // Local messages array (Firebase နှင့် နောက်ပိုင်းချိတ်ဆက်မည်)
-            let messages = [];
-
-            function renderMessages() {
-                if (!messageList) return;
-                if (messages.length === 0) {
-                    messageList.innerHTML = `<div class="text-muted" style="text-align:center; padding:30px 0;"><i class="fas fa-inbox" style="font-size:36px; opacity:0.3;"></i><p>စာများ မရှိသေးပါ</p></div>`;
-                    msgBadge.classList.add('hidden');
-                    return;
-                }
-                let html = '';
-                messages.forEach(msg => {
-                    html += `<div style="padding:10px 14px; background:var(--card-bg); border-radius:12px; margin-bottom:8px; border-left:4px solid ${msg.isUser ? 'var(--primary)' : 'var(--secondary)'};">${msg.text}<div style="font-size:10px; color:var(--text-light); margin-top:4px;">${msg.time}</div></div>`;
-                });
-                messageList.innerHTML = html;
-                msgBadge.textContent = messages.filter(m => !m.isUser).length;
-                msgBadge.classList.toggle('hidden', messages.filter(m => !m.isUser).length === 0);
-                // scroll to bottom
-                messageList.parentElement.scrollTop = messageList.parentElement.scrollHeight;
-            }
-
-            msgSendBtn.addEventListener('click', function() {
-                const text = msgInput.value.trim();
-                if (!text) return;
-                const now = new Date();
-                const timeStr = now.toLocaleTimeString();
-                messages.push({ text, time: timeStr, isUser: true });
-                msgInput.value = '';
-                renderMessages();
-
-                // Auto-reply (AI အတု)
-                setTimeout(() => {
-                    const replies = ['ကျေးဇူးပါ။ ကျွန်တော်တို့ ပြန်လည်ဆက်သွယ်ပါမယ်။', 'အော်ဒါအခြေအနေ စစ်ဆေးပေးပါ့မယ်။', 'ကျေးဇူးပြုပြီး စောင့်ဆိုင်းပေးပါ။', 'မင်္ဂလာပါ! ဘာကူညီရမလဲ?'];
-                    const reply = replies[Math.floor(Math.random() * replies.length)];
-                    messages.push({ text: reply, time: new Date().toLocaleTimeString(), isUser: false });
-                    renderMessages();
-                }, 1500);
-            });
-
-            // Enter key for messaging
-            msgInput.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') msgSendBtn.click();
-            });
-
-            // =============================================================
-            // ၉။ ROUTE CHANGE HOOKS (အထူးပြုလုပ်ရန်)
-            // =============================================================
-            // မူရင်း navigateTo ကိုထည့်သွင်းပြီးသားဖြစ်သော်လည်း
-            // Checkout page ဝင်တိုင်း countdown restart လုပ်ရန်
-            const originalNavigate = navigateTo;
-            navigateTo = function(hash) {
-                originalNavigate(hash);
-                const pageId = hash.replace('#', '').split('/')[0];
-                if (pageId === 'checkout-payment') {
-                    startCountdown();
-                }
-                if (pageId === 'cart') {
-                    updateCartUI();
-                }
-                if (pageId === 'messages') {
-                    renderMessages();
-                }
-                if (pageId === 'product') {
-                    // handled inside originalNavigate
-                }
-            };
-            // Override the global function
-            window.navigateTo = navigateTo;
-
-            // =============================================================
-            // ၁၀။ INITIALIZATION (စတင်ဖွင့်ခြင်း)
-            // =============================================================
-            // Cart UI ကို ပြန်လည်ပြသခြင်း
-            updateCartUI();
-
-            // နောက်ဆုံး hash ကိုဖတ်ပြီး သက်ဆိုင်ရာ Page ပြသခြင်း
-            window.addEventListener('DOMContentLoaded', function() {
-                const hash = window.location.hash || '#home';
-                navigateTo(hash);
-                renderMessages();
-                renderProductGrid(); // mock data ဖြင့် စတင်ပြသခြင်း
-
-                // Firebase Auth State (နောင်တွင်ထည့်ရန်)
-                console.log('🚀 Premium E-Commerce SPA loaded successfully!');
-            });
-
-            // =============================================================
-            // ၁၁။ FLOATING CHAT WIDGET TOGGLE
-            // =============================================================
-            chatFab.addEventListener('click', function() {
-                navigateTo('#messages');
-            });
-
-            // Logout
-            logoutBtn.addEventListener('click', function() {
-                if (confirm('အကောင့်မှ ထွက်မည် သေချာပါသလား?')) {
-                    localStorage.removeItem('premiumCart');
-                    cart = [];
-                    saveCart();
-                    alert('အကောင့်မှ ထွက်လိုက်ပါပြီ။');
-                    navigateTo('#home');
-                }
-            });
-
-            // =============================================================
-            // ၁၂။ SERVICE WORKER / OFFLINE (နောင်တွင်ထည့်ရန်)
-            // =============================================================
-            console.log('✅ index.html Part 2 ပြီးဆုံးပါပြီ။ (Lines 301-600)');
-
-        })(); // IIFE end
-    </script>
-
-    <!-- ============================================================ -->
-    <!-- ဤနေရာတွင် Part 2 ပြီးဆုံးပါသည်။ လိုင်း ၆၀၀ အတိအကျ        -->
-    <!-- Part 3 တွင် Firebase Realtime Sync, Admin Panel ချိတ်ဆက်မှု  -->
-    <!-- နှင့် ကျန်ရှိသော UI အပိုင်းများ ဆက်လက်ရေးသားပါမည်။        -->
-    <!-- ============================================================ -->
-            <!-- ============================================================ -->
-    <!-- PART 3 (LINES 601-900) – FIREBASE REAL-TIME SYNC & FEATURES  -->
-    <!-- ဤအပိုင်းတွင် Firebase Auth, Firestore Listeners, နှင့်    -->
-    <!-- Music Player, Admin ဝင်ရောက်ရန် Hidden Gesture တို့ ပါဝင်  -->
-    <!-- ============================================================ -->
-
-    <script>
-        (function() {
-            'use strict';
-
-            // =============================================================
-            // ၁၃။ FIREBASE AUTH (Anonymous Login)
-            // =============================================================
-            // Guest user အနေဖြင့် ဝင်ရောက်ရန် (နောင်တွင် အကောင့်ဝင်ရန် ထည့်နိုင်)
-            let currentUser = null;
-            let currentUserId = 'guest_' + Date.now();
-
-            function initAuth() {
-                firebase.auth().onAuthStateChanged(function(user) {
-                    if (user) {
-                        currentUser = user;
-                        currentUserId = user.uid;
-                        console.log('✅ Firebase Auth: User logged in', user.uid);
-                        // User profile update
-                        document.getElementById('profileName').textContent = user.displayName || 'ဝယ်သူ';
-                        document.getElementById('profilePhone').textContent = user.phoneNumber || '09-XXX-XXX-XXX';
-                        // Load user data
-                        loadUserData();
-                    } else {
-                        // Anonymous sign-in
-                        firebase.auth().signInAnonymously().catch(function(error) {
-                            console.error('Auth error:', error);
-                            // Fallback: local guest id
-                            currentUserId = 'guest_' + Date.now();
-                        });
-                    }
-                });
-            }
-
-            // User data from Firestore (profile)
-            function loadUserData() {
-                if (!currentUser) return;
-                const userRef = db.collection('users').doc(currentUser.uid);
-                userRef.get().then(doc => {
-                    if (doc.exists) {
-                        const data = doc.data();
-                        document.getElementById('profileName').textContent = data.name || 'ဝယ်သူ';
-                        document.getElementById('profilePhone').textContent = data.phone || '09-XXX-XXX-XXX';
-                    }
-                }).catch(err => console.warn('User profile not found', err));
-            }
-
-            // =============================================================
-            // ၁၄။ FIREBASE REALTIME SYNC – PRODUCTS
-            // =============================================================
-            // ဤနေရာတွင် Admin မှ ပြောင်းလဲမှုများကို ချက်ချင်း လက်ခံရန်
-            let productsUnsubscribe = null;
-
-            function listenProducts() {
-                if (productsUnsubscribe) productsUnsubscribe();
-                productsUnsubscribe = db.collection('products')
-                    .onSnapshot((snapshot) => {
-                        if (snapshot.empty) {
-                            // No products in DB, fallback to mock
-                            console.warn('No products in Firestore, using mock data.');
-                            return;
-                        }
-                        const products = [];
-                        snapshot.forEach(doc => {
-                            products.push({ id: doc.id, ...doc.data() });
-                        });
-                        allProducts = products;
-                        // Re-apply current category filter
-                        const activeCat = document.querySelector('.category-chip.active');
-                        const cat = activeCat ? activeCat.dataset.cat : 'all';
-                        filterProducts(cat);
-                        console.log('✅ Products synced from Firestore:', products.length);
-                    }, (error) => {
-                        console.error('Product listener error:', error);
-                        // Fallback to mock data
-                        if (allProducts.length === 0) {
-                            allProducts = generateMockProducts(50);
-                            filterProducts('all');
-                        }
-                    });
-            }
-
-            // =============================================================
-            // ၁၅။ FIREBASE REALTIME SYNC – MESSAGES
-            // =============================================================
-            let messagesUnsubscribe = null;
-
-            function listenMessages() {
-                if (messagesUnsubscribe) messagesUnsubscribe();
-                messagesUnsubscribe = db.collection('messages')
-                    .orderBy('timestamp', 'asc')
-                    .onSnapshot((snapshot) => {
-                        const msgs = [];
-                        snapshot.forEach(doc => {
-                            const data = doc.data();
-                            msgs.push({
-                                id: doc.id,
-                                text: data.text,
-                                time: data.time || '--:--',
-                                isUser: data.userId === currentUserId,
-                                userId: data.userId
-                            });
-                        });
-                        messages = msgs;
-                        renderMessages();
-                        console.log('✅ Messages synced:', messages.length);
-                    }, (error) => {
-                        console.error('Message listener error:', error);
-                        // Keep local messages if offline
-                    });
-            }
-
-            // Override send message to save to Firestore
-            const originalSend = msgSendBtn.click;
-            msgSendBtn.addEventListener('click', function() {
-                const text = msgInput.value.trim();
-                if (!text) return;
-                const now = new Date();
-                const timeStr = now.toLocaleTimeString();
-                const msgData = {
-                    text: text,
-                    time: timeStr,
-                    userId: currentUserId,
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                    isUser: true
-                };
-                // Save to Firestore
-                db.collection('messages').add(msgData).then(() => {
-                    msgInput.value = '';
-                }).catch(err => {
-                    console.error('Send message error:', err);
-                    // Fallback: local save
-                    messages.push({ text, time: timeStr, isUser: true, userId: currentUserId });
-                    renderMessages();
-                    msgInput.value = '';
-                });
-            });
-
-            // =============================================================
-            // ၁၆။ ADMIN CONFIG (UI Config Sync)
-            // =============================================================
-            let configUnsubscribe = null;
-
-            function listenAdminConfig() {
-                if (configUnsubscribe) configUnsubscribe();
-                configUnsubscribe = db.collection('adminConfig').doc('uiSettings')
-                    .onSnapshot((doc) => {
-                        if (!doc.exists) return;
-                        const config = doc.data();
-                        // Apply grid columns
-                        const grid = document.querySelector('.product-grid');
-                        if (config.gridColumns) {
-                            grid.style.gridTemplateColumns = `repeat(${config.gridColumns}, 1fr)`;
-                        }
-                        // Apply colors
-                        if (config.primaryColor) {
-                            document.documentElement.style.setProperty('--primary', config.primaryColor);
-                        }
-                        if (config.secondaryColor) {
-                            document.documentElement.style.setProperty('--secondary', config.secondaryColor);
-                        }
-                        // Slow mode multiplier
-                        if (config.slowMultiplier) {
-                            slowModeMultiplier = config.slowMultiplier;
-                        }
-                        // Show/Hide category bar
-                        if (config.showCategories === false) {
-                            document.getElementById('categoryBar').style.display = 'none';
-                        } else {
-                            document.getElementById('categoryBar').style.display = '';
-                        }
-                        console.log('✅ Admin config applied:', config);
-                    }, (err) => {
-                        console.warn('Config listener error:', err);
-                    });
-            }
-
-            // =============================================================
-            // ၁၇။ MUSIC PLAYER (YouTube Playlist)
-            // =============================================================
-            // Admin မှ ထည့်သွင်းထားသော YouTube Link များကို ဖွင့်ရန်
-            let musicPlaylist = [];
-            let currentTrackIndex = 0;
-            let musicPlayerVisible = false;
-            let musicIframe = null;
-
-            function loadMusicPlaylist() {
-                // Firestore မှ playlist ကိုဖတ်ရန်
-                db.collection('adminConfig').doc('musicSettings')
-                    .onSnapshot((doc) => {
-                        if (doc.exists && doc.data().playlist) {
-                            musicPlaylist = doc.data().playlist.filter(url => url.trim() !== '');
-                            if (musicPlaylist.length > 0 && !musicIframe) {
-                                createMusicPlayer();
-                            }
-                        }
-                    }, (err) => {
-                        console.warn('Music config error:', err);
-                    });
-            }
-
-            function createMusicPlayer() {
-                if (musicIframe) return;
-                const container = document.createElement('div');
-                container.id = 'musicPlayerContainer';
-                container.style.cssText = `
-                    position:fixed; bottom:calc(var(--nav-height) + 80px); right:16px;
-                    width:280px; background:var(--card-bg); backdrop-filter:var(--glass-blur);
-                    border-radius:16px; border:1px solid var(--card-border);
-                    padding:12px; z-index:45; box-shadow:var(--shadow);
-                    display:none; transition:all var(--transition);
-                `;
-                container.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <span style="font-weight:600; font-size:13px;">🎵 သီချင်းဖွင့်စက်</span>
-                        <button id="closeMusicBtn" style="background:none; border:none; font-size:16px; cursor:pointer; color:var(--text-secondary);">&times;</button>
-                    </div>
-                    <div id="musicIframeWrapper" style="margin-top:8px; border-radius:10px; overflow:hidden;">
-                        <iframe id="musicIframe" width="100%" height="120" src="" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen style="border-radius:10px;"></iframe>
-                    </div>
-                    <div style="display:flex; justify-content:space-between; margin-top:8px; gap:8px;">
-                        <button id="prevTrackBtn" style="flex:1; padding:6px; background:var(--primary); color:#fff; border:none; border-radius:20px; cursor:pointer;">⏮</button>
-                        <button id="playPauseBtn" style="flex:1; padding:6px; background:var(--secondary); color:#fff; border:none; border-radius:20px; cursor:pointer;">▶</button>
-                        <button id="nextTrackBtn" style="flex:1; padding:6px; background:var(--primary); color:#fff; border:none; border-radius:20px; cursor:pointer;">⏭</button>
-                    </div>
-                `;
-                document.body.appendChild(container);
-                musicIframe = document.getElementById('musicIframe');
-                // Event listeners
-                document.getElementById('closeMusicBtn').addEventListener('click', () => {
-                    container.style.display = 'none';
-                    musicPlayerVisible = false;
-                });
-                document.getElementById('prevTrackBtn').addEventListener('click', () => playTrack(-1));
-                document.getElementById('nextTrackBtn').addEventListener('click', () => playTrack(1));
-                document.getElementById('playPauseBtn').addEventListener('click', togglePlayPause);
-                // Load first track
-                if (musicPlaylist.length > 0) {
-                    playTrack(0);
-                }
-                container.style.display = 'block';
-                musicPlayerVisible = true;
-            }
-
-            function playTrack(direction) {
-                if (musicPlaylist.length === 0) return;
-                if (typeof direction === 'number') {
-                    currentTrackIndex = (currentTrackIndex + direction + musicPlaylist.length) % musicPlaylist.length;
-                } else {
-                    currentTrackIndex = direction;
-                }
-                const url = musicPlaylist[currentTrackIndex];
-                // Extract video ID for YouTube embed
-                const videoId = url.match(/(?:v=|\/)([a-zA-Z0-9_-]{11})/);
-                if (videoId) {
-                    musicIframe.src = `https://www.youtube.com/embed/${videoId[1]}?autoplay=1&enablejsapi=1`;
-                } else {
-                    musicIframe.src = url;
-                }
-                // Store current track index in localStorage
-                localStorage.setItem('musicTrack', currentTrackIndex);
-            }
-
-            function togglePlayPause() {
-                const btn = document.getElementById('playPauseBtn');
-                if (btn.textContent === '▶') {
-                    btn.textContent = '⏸';
-                    // Resume playback (reload iframe)
-                    if (musicIframe.src) {
-                        const src = musicIframe.src;
-                        musicIframe.src = src.replace('autoplay=1', 'autoplay=1');
-                    }
-                } else {
-                    btn.textContent = '▶';
-                    // Pause (stop autoplay by reloading without autoplay)
-                    if (musicIframe.src) {
-                        const src = musicIframe.src.replace('autoplay=1', 'autoplay=0');
-                        musicIframe.src = src;
-                    }
-                }
-            }
-
-            // Music toggle button in header
-            document.getElementById('musicToggle').addEventListener('click', function() {
-                const container = document.getElementById('musicPlayerContainer');
-                if (container) {
-                    if (container.style.display === 'none' || container.style.display === '') {
-                        container.style.display = 'block';
-                        musicPlayerVisible = true;
-                    } else {
-                        container.style.display = 'none';
-                        musicPlayerVisible = false;
-                    }
-                } else {
-                    // Create if not exists
-                    createMusicPlayer();
-                }
-            });
-
-            // Restore music state from localStorage
-            const savedTrack = parseInt(localStorage.getItem('musicTrack'));
-            if (!isNaN(savedTrack) && savedTrack >= 0) {
-                currentTrackIndex = savedTrack;
-            }
-
-            // =============================================================
-            // ၁၈။ ORDER SAVING TO FIRESTORE
-            // =============================================================
-            // Confirm order button override
-            const originalConfirm = confirmOrderBtn.click;
-            confirmOrderBtn.addEventListener('click', function() {
-                if (screenshotInput.files.length === 0) {
-                    alert('ကျေးဇူးပြုပြီး ငွေလွှဲပြီးကြောင်း Screenshot တင်ပေးပါ။');
-                    return;
-                }
-
-                // Get checkout data
-                const name = sessionStorage.getItem('checkoutName') || 'Unknown';
-                const phone = sessionStorage.getItem('checkoutPhone') || 'N/A';
-                const address = sessionStorage.getItem('checkoutAddress') || 'N/A';
-                const items = cart.map(item => ({
-                    id: item.id,
-                    name: item.name,
-                    price: item.price,
-                    quantity: item.quantity
-                }));
-                const total = cart.reduce((sum, i) => sum + i.price * i.quantity, 0);
-
-                // Upload screenshot to Firebase Storage
-                const file = screenshotInput.files[0];
-                const storageRef = storage.ref(`orders/${currentUserId}_${Date.now()}_${file.name}`);
-                storageRef.put(file).then((snapshot) => {
-                    return snapshot.ref.getDownloadURL();
-                }).then((downloadURL) => {
-                    // Save order to Firestore
-                    const orderData = {
-                        userId: currentUserId,
-                        name: name,
-                        phone: phone,
-                        address: address,
-                        items: items,
-                        total: total,
-                        status: 'pending',
-                        paymentProof: downloadURL,
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                    };
-                    return db.collection('orders').add(orderData);
-                }).then((docRef) => {
-                    console.log('✅ Order saved:', docRef.id);
-                    // Send Telegram notification (via Cloud Function or direct fetch)
-                    sendTelegramNotification(name, total, docRef.id);
-                    // Clear cart
-                    cart = [];
-                    saveCart();
-                    // Success
-                    alert('✅ အော်ဒါအောင်မြင်ပါသည်! ကျေးဇူးတင်ပါတယ်။');
-                    // Confetti
-                    for (let i = 0; i < 80; i++) {
-                        const el = document.createElement('div');
-                        el.className = 'confetti-piece';
-                        el.style.left = Math.random() * 100 + 'vw';
-                        el.style.top = '-10px';
-                        el.style.background = ['#e11b1b', '#ff6b00', '#facc15', '#22c55e', '#3b82f6', '#8b5cf6'][Math.floor(Math.random() * 6)];
-                        el.style.animationDuration = (2 + Math.random() * 3) + 's';
-                        document.body.appendChild(el);
-                        setTimeout(() => el.remove(), 5000);
-                    }
-                    navigateTo('#success');
-                }).catch((err) => {
-                    console.error('Order save error:', err);
-                    alert('အော်ဒါမှတ်တမ်းတင်ရာတွင် အမှားရှိသည်။ နောက်မှကြိုးစားပါ။');
-                });
-            });
-
-            // =============================================================
-            // ၁၉။ TELEGRAM NOTIFICATION (via fetch)
-            // =============================================================
-            function sendTelegramNotification(name, total, orderId) {
-                // Round-Robin Bot Tokens
-                const tokens = [
-                    '8869917655:AAFk9tcBhEkmaFEOzXsbmcRQtymBtSZ3M9g',
-                    '8914390345:AAE-oorODF1HQbOLkuKJkNXwy-w2XbXtud0',
-                    '8684986169:AAE2JP-iOydPWEStbg2iDQ4koipL1czWYs0',
-                    '8949147819:AAGBSy8ZexmYrDMo2pRuqUA1k8PyOyE9OJQ'
-                ];
-                const chatId = '6917040501';
-                // Simple round-robin: use order id hash to pick token
-                const index = Math.floor(Math.random() * tokens.length);
-                const token = tokens[index];
-                const message = `🛒 အော်ဒါအသစ်!\n\n👤 ${name}\n💰 စုစုပေါင်း: Ks ${total.toLocaleString()}\n📦 အော်ဒါ ID: ${orderId}\n\nကျေးဇူးပြုပြီး စစ်ဆေးပေးပါ။`;
-                const url = `https://api.telegram.org/bot${token}/sendMessage`;
-                fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        chat_id: chatId,
-                        text: message,
-                        parse_mode: 'HTML'
-                    })
-                }).then(res => res.json())
-                    .then(data => console.log('✅ Telegram sent:', data))
-                    .catch(err => console.warn('Telegram error:', err));
-            }
-
-            // =============================================================
-            // ၂၀။ HIDDEN ADMIN ACCESS (Logo double-tap)
-            // =============================================================
-            let logoClickCount = 0;
-            let logoClickTimer = null;
-            document.querySelector('.logo').addEventListener('click', function() {
-                logoClickCount++;
-                if (logoClickTimer) clearTimeout(logoClickTimer);
-                logoClickTimer = setTimeout(() => { logoClickCount = 0; }, 2000);
-                if (logoClickCount >= 5) {
-                    logoClickCount = 0;
-                    // Ask for admin password
-                    const password = prompt('Admin Password ထည့်ပါ (မူလ: 2003):');
-                    if (password === '2003') {
-                        // Navigate to admin panel (in a new tab or replace)
-                        window.location.href = 'admin.html';
-                    } else if (password !== null) {
-                        alert('မှားယွင်းသော စကားဝှက်။');
-                    }
-                }
-            });
-
-            // =============================================================
-            // ၂၁။ INITIALIZE ALL (စတင်ဖွင့်ခြင်း)
-            // =============================================================
-            function init() {
-                // Auth
-                initAuth();
-                // Listen to Firestore
-                listenProducts();
-                listenMessages();
-                listenAdminConfig();
-                loadMusicPlaylist();
-                // Cart UI
-                updateCartUI();
-                // DOM ready: parse hash
-                const hash = window.location.hash || '#home';
-                setTimeout(() => navigateTo(hash), 100);
-                // Auto-start music if available
-                setTimeout(() => {
-                    if (musicPlaylist.length > 0 && !musicIframe) {
-                        createMusicPlayer();
-                    }
-                }, 2000);
-                console.log('🚀 All systems initialized. Part 3 complete.');
-            }
-
-            // Run on DOM ready
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', init);
-            } else {
-                init();
-            }
-
-        })();
-    </script>
-    <!-- ============================================================ -->
-    <!-- ဤနေရာတွင် index.html Part 3 (Lines 601-900) ပြီးဆုံးပါသည်။ -->
-    <!-- index.html ဖိုင်အတွက် စုစုပေါင်း လိုင်း ၉၀၀ အထိ ရောက်ရှိပါပြီ။ -->
-    <!-- ကျန်ရှိသော ဖိုင်များ (admin.html, admin.js, user.js) ကို  -->
-    <!-- Part 4, Part 5, ... အဖြစ် ဆက်လက်ရေးသားပေးပါမည်။           -->
-    <!-- ============================================================ -->
-</body>
-</html>
-                    
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}
+</script>
